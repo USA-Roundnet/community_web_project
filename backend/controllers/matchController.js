@@ -1,4 +1,3 @@
-const express = require('express');
-const router = express.Router();
+const matchService = require('../services/matchService');
 
-module.exports = router;
+module.exports = {};

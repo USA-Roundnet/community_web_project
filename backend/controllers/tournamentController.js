@@ -1,5 +1,3 @@
-const express = require('express');
-const router = express.Router();
+const tournamentService = require('../services/tournamentService');
 
-
-module.exports = router;
+module.exports = {};

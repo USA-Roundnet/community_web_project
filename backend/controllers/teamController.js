@@ -1,5 +1,3 @@
-const express = require('express');
-const router = express.Router();
+const teamService = require('../services/teamService');
 
-
-module.exports = router;
+module.exports = {};
