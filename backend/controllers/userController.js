@@ -5,7 +5,8 @@ const getAllUsers = async (req, res) => {
     const users = await userService.getAllUsers();
     res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+    res.status(500).json({ message: 'Failed to fetch users', details: error.message });
   }
 };
-module.exports = {getAllUsers};
+
+module.exports = { getAllUsers };
