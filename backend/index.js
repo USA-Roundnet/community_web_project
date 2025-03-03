@@ -18,6 +18,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'))
+app.use('/api/organizations', require('./routes/organizationRoutes'))
+app.use('/api/tournaments', require('./routes/tournamentRoutes'))
 
 // Catch-all Route
 app.use((req, res) => {
