@@ -1,4 +1,4 @@
-const knex = require('../db');
+const knex = require('../knex');
 
 const getAllUserOrganizations = async () => {
   return await knex('UserOrganization').select('*');

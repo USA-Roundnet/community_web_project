@@ -11,14 +11,25 @@ module.exports = {
       user: process.env.DB_USER || 'root', 
       password: process.env.DB_PASSWORD || '', 
       database: process.env.DB_NAME || 'community_web_project',
-      port: process.env.DB_PORT || 3306
+      port: process.env.DB_PORT || 3306,
+      charset: 'utf8mb4'
     },
-    migrations: {
-      directory: './migrations'
+    migrations: { directory: './migrations' },
+    seeds: { directory: './seeds' }
+  },
+
+  test: {
+    client: 'mysql2',
+    connection: {
+      host: process.env.TEST_DB_HOST || '127.0.0.1',
+      user: process.env.TEST_DB_USER || 'root',
+      password: process.env.TEST_DB_PASSWORD || '',
+      database: process.env.TEST_DB_NAME || 'community_web_project_test',
+      port: process.env.TEST_DB_PORT || 3306,
+      charset: 'utf8mb4'
     },
-    seeds: {
-      directory: './seeds'
-    }
+    migrations: { directory: './migrations' },
+    seeds: { directory: './seeds' }
   },
 
   staging: {

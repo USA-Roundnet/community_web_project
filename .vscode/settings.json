@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "xprotocol",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 33060,
+            "driver": "MySQL",
+            "name": "Community Web Project",
+            "database": "community_web_project",
+            "username": "root",
+            "password": "HUT54re5up3rc0O!",
+            "connectionTimeout": 30
+        }
+    ]
+}

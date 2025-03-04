@@ -1,4 +1,4 @@
-const knex = require('../db');
+const knex = require('../knex');
 
 const getAllTeams = async () => {
   return await knex('Team').select('*');
