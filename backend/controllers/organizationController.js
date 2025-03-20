@@ -5,12 +5,10 @@ const getAllOrganizations = async (req, res) => {
     const organizations = await organizationService.getAllOrganizations();
     res.status(200).json(organizations);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Failed to fetch organizations",
-        details: error.message,
-      });
+    res.status(500).json({
+      message: "Failed to fetch organizations",
+      details: error.message,
+    });
   }
 };
 
@@ -25,12 +23,10 @@ const getOrganizationById = async (req, res) => {
       res.status(404).json({ message: "Organization not found" });
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Failed to fetch organization",
-        details: error.message,
-      });
+    res.status(500).json({
+      message: "Failed to fetch organization",
+      details: error.message,
+    });
   }
 };
 
@@ -39,9 +35,7 @@ const createOrganization = async (req, res) => {
 
   // Validate required fields
   if (!name || !location) {
-    return res
-      .status(400)
-      .json({ message: "Validation failed: name and location are required" });
+    return res.status(400).json({ message: "Validation failed" });
   }
 
   try {
@@ -50,12 +44,10 @@ const createOrganization = async (req, res) => {
     );
     res.status(201).json(newOrganization);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Failed to create organization",
-        details: error.message,
-      });
+    res.status(500).json({
+      message: "Failed to create organization",
+      details: error.message,
+    });
   }
 };
 
@@ -71,12 +63,10 @@ const updateOrganization = async (req, res) => {
       res.status(404).json({ message: "Organization not found" });
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Failed to update organization",
-        details: error.message,
-      });
+    res.status(500).json({
+      message: "Failed to update organization",
+      details: error.message,
+    });
   }
 };
 
@@ -89,12 +79,10 @@ const deleteOrganization = async (req, res) => {
       res.status(404).json({ message: "Organization not found" });
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Failed to delete organization",
-        details: error.message,
-      });
+    res.status(500).json({
+      message: "Failed to delete organization",
+      details: error.message,
+    });
   }
 };
 

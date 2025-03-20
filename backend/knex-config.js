@@ -5,8 +5,8 @@ const knexConfig = require("./knexfile");
 const environment = process.env.NODE_ENV || "development";
 
 // Debugging
-console.log(`Using environment: ${environment}`);
-console.log("Knex configuration:", knexConfig[environment]);
+// console.log(`Using environment: ${environment}`);
+// console.log("Knex configuration:", knexConfig[environment]);
 
 if (!knexConfig[environment]) {
   console.error(`Knex configuration for '${environment}' is missing.`);
