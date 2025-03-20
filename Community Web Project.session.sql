@@ -57,13 +57,10 @@ CREATE TABLE IF NOT EXISTS Tournament (
 CREATE TABLE IF NOT EXISTS Team (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    captain_id INT,
     public BOOLEAN DEFAULT TRUE,
     size INT,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (captain_id) REFERENCES User(id) ON DELETE
-    SET NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- Division Table
 CREATE TABLE IF NOT EXISTS Division (

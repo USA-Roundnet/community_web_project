@@ -5,12 +5,6 @@ exports.up = async function (knex) {
     return knex.schema.createTable("Team", (table) => {
       table.increments("id").primary();
       table.string("name", 255).notNullable();
-      table
-        .integer("captain_id")
-        .unsigned()
-        .references("id")
-        .inTable("User")
-        .onDelete("SET NULL");
       table.boolean("public").defaultTo(true);
       table.integer("size");
       table.text("description");

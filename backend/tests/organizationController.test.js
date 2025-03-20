@@ -1,6 +1,6 @@
 const request = require("supertest"); // Supertest for API testing
 const { app, server } = require("../index"); // Import both app and server
-const db = require("../knex"); // Import database connection
+const db = require("../knex-config"); // Import database connection
 
 beforeAll(async () => {
   console.log("Running migrations...");
@@ -81,7 +81,7 @@ describe("Organization Controller API Tests", () => {
   });
 
   test("POST /api/organizations should return 400 for invalid input", async () => {
-    const invalidOrg = { name: "" }; // Missing required fields
+    const invalidOrg = { location: "Test City" }; // Missing required 'name' field
 
     const res = await request(app)
       .post("/api/organizations")

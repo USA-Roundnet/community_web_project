@@ -1,15 +1,15 @@
-const knex = require('../knex.js'); 
+const knex = require("../knex-config.js");
 
 const getAllOrganizations = async () => {
-  return await knex('Organization').select('*');
+  return await knex("Organization").select("*");
 };
 
 const getOrganizationById = async (id) => {
-  return await knex('Organization').where({ id }).first();
+  return await knex("Organization").where({ id }).first();
 };
 
 const createOrganization = async (orgData) => {
-  const [insertedId] = await knex('Organization').insert({
+  const [insertedId] = await knex("Organization").insert({
     name: orgData.name,
     city: orgData.city,
     state_province: orgData.state_province,
@@ -23,7 +23,7 @@ const createOrganization = async (orgData) => {
 };
 
 const updateOrganization = async (id, orgData) => {
-  const rowsAffected = await knex('Organization').where({ id }).update({
+  const rowsAffected = await knex("Organization").where({ id }).update({
     name: orgData.name,
     city: orgData.city,
     state_province: orgData.state_province,
@@ -40,7 +40,7 @@ const updateOrganization = async (id, orgData) => {
 };
 
 const deleteOrganization = async (id) => {
-  const rowsDeleted = await knex('Organization').where({ id }).del();
+  const rowsDeleted = await knex("Organization").where({ id }).del();
   return rowsDeleted > 0;
 };
 

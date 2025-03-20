@@ -1,15 +1,15 @@
-const knex = require('../knex');
+const knex = require("../knex-config");
 
 const getAllTeams = async () => {
-  return await knex('Team').select('*');
+  return await knex("Team").select("*");
 };
 
 const getTeamById = async (id) => {
-  return await knex('Team').where({ id }).first();
+  return await knex("Team").where({ id }).first();
 };
 
 const createTeam = async (teamData) => {
-  const [insertedId] = await knex('Team').insert({
+  const [insertedId] = await knex("Team").insert({
     name: teamData.name,
     captain_id: teamData.captain_id,
     public: teamData.public,
@@ -20,15 +20,13 @@ const createTeam = async (teamData) => {
 };
 
 const updateTeam = async (id, teamData) => {
-  const rowsAffected = await knex('Team')
-    .where({ id })
-    .update({
-      name: teamData.name,
-      captain_id: teamData.captain_id,
-      public: teamData.public,
-      size: teamData.size,
-      description: teamData.description,
-    });
+  const rowsAffected = await knex("Team").where({ id }).update({
+    name: teamData.name,
+    captain_id: teamData.captain_id,
+    public: teamData.public,
+    size: teamData.size,
+    description: teamData.description,
+  });
   if (rowsAffected) {
     return getTeamById(id);
   }
@@ -36,7 +34,7 @@ const updateTeam = async (id, teamData) => {
 };
 
 const deleteTeam = async (id) => {
-  const rowsDeleted = await knex('Team').where({ id }).del();
+  const rowsDeleted = await knex("Team").where({ id }).del();
   return rowsDeleted > 0;
 };
 
