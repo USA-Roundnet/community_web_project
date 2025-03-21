@@ -2,7 +2,7 @@
 exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("Tournament");
   if (!exists) {
-    return knex.schema.createTable("Tournament", (table) => {
+    await knex.schema.createTable("Tournament", (table) => {
       table.increments("id").primary();
       table.string("name", 255).notNullable();
       table.string("city", 100);
@@ -25,6 +25,6 @@ exports.up = async function (knex) {
   }
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("Tournament");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("Tournament");
 };

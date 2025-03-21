@@ -2,26 +2,16 @@
 exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("UserTeam");
   if (!exists) {
-    return knex.schema.createTable("UserTeam", (table) => {
+    await knex.schema.createTable("UserTeam", (table) => {
       table.increments("id").primary();
-      table
-        .integer("user_id")
-        .unsigned()
-        .references("id")
-        .inTable("User")
-        .onDelete("CASCADE");
-      table
-        .integer("team_id")
-        .unsigned()
-        .references("id")
-        .inTable("Team")
-        .onDelete("CASCADE");
+      table.integer("user_id").unsigned().notNullable();
+      table.integer("team_id").unsigned().notNullable();
       table.enum("status", ["invited", "accepted", "declined"]).notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });
   }
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("UserTeam");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("UserTeam");
 };

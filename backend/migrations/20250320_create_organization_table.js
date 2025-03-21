@@ -1,8 +1,8 @@
 // migrations/20250320_create_organization_table.js
 exports.up = async function (knex) {
-  const exists = await knex.schema.hasTable("Division");
+  const exists = await knex.schema.hasTable("Organization");
   if (!exists) {
-    return knex.schema.createTable("Organization", (table) => {
+    await knex.schema.createTable("Organization", (table) => {
       table.increments("id").primary();
       table.string("name", 255).notNullable();
       table.string("city", 100);
@@ -17,6 +17,6 @@ exports.up = async function (knex) {
   }
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("Organization");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("Organization");
 };

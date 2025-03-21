@@ -2,26 +2,11 @@
 exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("Serie");
   if (!exists) {
-    return knex.schema.createTable("Serie", (table) => {
+    await knex.schema.createTable("Serie", (table) => {
       table.increments("id").primary();
-      table
-        .integer("tournament_id")
-        .unsigned()
-        .references("id")
-        .inTable("Tournament")
-        .onDelete("CASCADE");
-      table
-        .integer("registration1_id")
-        .unsigned()
-        .references("id")
-        .inTable("Registration")
-        .onDelete("CASCADE");
-      table
-        .integer("registration2_id")
-        .unsigned()
-        .references("id")
-        .inTable("Registration")
-        .onDelete("CASCADE");
+      table.integer("tournament_id").unsigned().notNullable();
+      table.integer("registration1_id").unsigned().notNullable();
+      table.integer("registration2_id").unsigned().notNullable();
       table
         .enum("series_type", ["best_of_1", "best_of_3", "best_of_5"])
         .notNullable();
@@ -31,6 +16,6 @@ exports.up = async function (knex) {
   }
 };
 
-exports.down = function (knex) {
-  return knex.schema.dropTableIfExists("Serie");
+exports.down = async function (knex) {
+  await knex.schema.dropTableIfExists("Serie");
 };
