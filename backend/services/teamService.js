@@ -11,7 +11,6 @@ const getTeamById = async (id) => {
 const createTeam = async (teamData) => {
   const [insertedId] = await knex("Team").insert({
     name: teamData.name,
-    captain_id: teamData.captain_id,
     public: teamData.public,
     size: teamData.size,
     description: teamData.description,
@@ -22,7 +21,6 @@ const createTeam = async (teamData) => {
 const updateTeam = async (id, teamData) => {
   const rowsAffected = await knex("Team").where({ id }).update({
     name: teamData.name,
-    captain_id: teamData.captain_id,
     public: teamData.public,
     size: teamData.size,
     description: teamData.description,

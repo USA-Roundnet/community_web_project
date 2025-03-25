@@ -3,6 +3,7 @@ const knex = require("knex");
 const knexConfig = require("./knexfile");
 
 const environment = process.env.NODE_ENV || "development";
+const db = knex(knexConfig[environment]);
 
 // Debugging
 // console.log(`Using environment: ${environment}`);
@@ -13,4 +14,4 @@ if (!knexConfig[environment]) {
   process.exit(1); // Stop execution if config is missing
 }
 
-module.exports = knex(knexConfig[environment]);
+module.exports = db;
