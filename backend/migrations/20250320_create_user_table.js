@@ -3,6 +3,7 @@ exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("User");
   if (!exists) {
     await knex.schema.createTable("User", (table) => {
+      // add elo, rank, and status
       table.increments("id").primary();
       table.string("first_name", 255).notNullable();
       table.string("last_name", 255).notNullable();

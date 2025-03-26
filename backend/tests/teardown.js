@@ -1,4 +1,3 @@
-// tests/teardown.js
 const db = require("../knex-config");
 const { server } = require("../index");
 
