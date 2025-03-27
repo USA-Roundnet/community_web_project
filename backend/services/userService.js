@@ -8,7 +8,7 @@ const getUserById = async (id) => {
   return await knex("User").where({ id }).first();
 };
 
-const createUser = async (userData) => {
+const createUser = async (userData) => { 
   const [insertedId] = await knex("User").insert({
     first_name: userData.first_name,
     last_name: userData.last_name,
@@ -25,6 +25,9 @@ const createUser = async (userData) => {
     password: userData.password,
     auth_provider: userData.auth_provider,
     google_id: userData.google_id,
+    elo: userData.elo,
+    rank: userData.rank,
+    status: userData.status,
   });
 
   return getUserById(insertedId);
@@ -47,6 +50,9 @@ const updateUser = async (id, userData) => {
     password: userData.password,
     auth_provider: userData.auth_provider,
     google_id: userData.google_id,
+    elo: userData.elo,
+    rank: userData.rank,
+    status: userData.status,
   });
 
   if (rowsAffected) {

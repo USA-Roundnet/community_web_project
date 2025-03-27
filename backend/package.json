@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "migrate": "knex migrate:latest",
+    "rollback": "knex migrate:rollback",
     "seed": "knex seed:run"
   },
   "keywords": [],
