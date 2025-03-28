@@ -4,7 +4,6 @@ const Hero = () => {
   return (
     <section
       className="relative text-center text-white bg-cover bg-center p-10"
-      style={{ backgroundImage: "url('/your-background.jpg')" }}
     >
       <h2 className="text-3xl font-bold">Welcome to Rally Point!</h2>
       <p className="text-lime-500 text-2xl">Tailwind test!</p>

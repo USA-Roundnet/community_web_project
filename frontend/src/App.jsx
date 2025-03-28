@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import LoginPage from './components/LoginPage.jsx';
-import CreateAccountPage from './components/CreateAccountPage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import CreateAccountPage from './pages/CreateAccountPage.jsx';
 import Grid from './components/Grid.jsx';
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
