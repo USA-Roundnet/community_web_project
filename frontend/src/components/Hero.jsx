@@ -3,14 +3,21 @@ import React from 'react';
 const Hero = () => {
   return (
     <section
-      className="relative text-center text-white bg-cover bg-center p-10"
+      className="relative h-[300px] bg-cover bg-center text-white flex flex-col items-center justify-center"
+      style={{
+        backgroundImage: "url('/spikeball-default.jpeg')" // make sure this image exists in /public
+      }}
     >
-      <h2 className="text-3xl font-bold">Welcome to Rally Point!</h2>
-      <p className="text-lime-500 text-2xl">Tailwind test!</p>
-      <p>Your home for everything roundnet. Become a member now, click to learn more.</p>
-      <button className="bg-red-500 text-white px-4 py-2 mt-4 rounded">Become a member</button>
+      <div className="absolute inset-0 bg-black/50" /> {/* semi-transparent overlay */}
+      <div className="relative z-10 text-center">
+        <h2 className="text-3xl font-bold mb-2">Welcome to Rally Point!</h2>
+        <p className="text-green-400 text-xl mb-2">Tailwind test!</p>
+        <p className="mb-4">Your home for everything roundnet.</p>
+        <button className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Become a member</button>
+      </div>
     </section>
   );
 };
+
 
 export default Hero;
