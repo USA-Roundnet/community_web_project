@@ -24,3 +24,10 @@ rm -rf node_modules package-lock.json
 npm install
 npm run dev
 ```
+
+## Frontend Tech Stack
+
+- [React](https://reactjs.org/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [React Router](https://reactrouter.com/)
