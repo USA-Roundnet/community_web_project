@@ -4,8 +4,7 @@ import Grid from '../components/Grid';
 
 const HomePage = () => {
   return (
-    <div className="border-4 border-red-500">
-        <div className="min-h-screen bg-gray-50">
+      <div className="w-screen min-h-screen bg-gray-50">
         <Navbar />
         <Hero />
 
@@ -13,8 +12,7 @@ const HomePage = () => {
             <h2 className="text-2xl font-semibold mb-4">You are new and want to:</h2>
             <Grid />
         </section>
-        </div>
-    </div>
+      </div>
   );
 };
 

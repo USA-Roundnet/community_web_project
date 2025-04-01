@@ -5,7 +5,7 @@ const Hero = () => {
     <section
       className="relative h-[300px] bg-cover bg-center text-white flex flex-col items-center justify-center"
       style={{
-        backgroundImage: "url('/spikeball-default.jpeg')" // make sure this image exists in /public
+        backgroundImage: "url('/spikeball-default.jpeg')"
       }}
     >
       <div className="absolute inset-0 bg-black/50" /> {/* semi-transparent overlay */}
