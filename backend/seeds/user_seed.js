@@ -18,7 +18,6 @@ exports.seed = async function (knex) {
         date_of_birth: "1990-01-01",
         profile_picture_url: "https://example.com/john.jpg",
         password: "hashedpassword123",
-        auth_provider: "local",
       },
     ]);
     console.log("Inserted seed data for users");
