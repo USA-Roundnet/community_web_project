@@ -8,7 +8,27 @@ const getUserById = async (id) => {
   return await knex("User").where({ id }).first();
 };
 
+/*
+* creats a new user, ensuring gender, statuse, and auth_provider are all valid
+* values 
+*/
 const createUser = async (userData) => { 
+
+  const validGenders = ["male", "female", "other"];
+  if (!validGenders.includes(userData.gender))  {
+    throw new Error('invalid gender, must me male, female, or other');
+  }
+
+  const validStatus = ["bronze", "silver", "gold", "pro"];
+  if (userData.status && !validStatus.includes(userData.status))  {
+    throw new Error('invalid status, must be bronze, silver, gold, pro');
+  }
+
+  const validAuth = ["local", "google"];
+  if (userData.auth_provider && !validAuth.includes(userData.auth_provider))  {
+    throw new Error('invalid authentication provider, must be local or google');
+  }
+
   const [insertedId] = await knex("User").insert({
     first_name: userData.first_name,
     last_name: userData.last_name,
