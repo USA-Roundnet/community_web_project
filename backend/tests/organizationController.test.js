@@ -1,45 +1,97 @@
 const request = require("supertest");
 const { app } = require("../index");
+const knex = require("../knex-config.js");
+const { setupTestUser } = require("./testUtils.js");
 
 describe("Organization Controller API Tests", () => {
-  let testOrgId;
+  let testUserAuthToken;
+  let testUserId;
+  let testOrganizationId;
 
-  test("GET /api/organizations should return a list of organizations", async () => {
-    const res = await request(app).get("/api/organizations");
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+  beforeAll(async () => {
+    // Use the global setupTestUser to register and log in a test user
+    try {
+      const { id, token } = await setupTestUser();
+      testUserId = id;
+      testUserAuthToken = token;
+      console.log("Test user created:", { testUserId, testUserAuthToken });
+    } catch (error) {
+      console.error("Error in beforeAll:", error.message);
+      throw error;
+    }
   });
 
-  test("POST /api/organizations should create a new organization", async () => {
-    const newOrg = { name: "Test Organization", location: "Test City" };
-    const res = await request(app).post("/api/organizations").send(newOrg);
+  afterAll(async () => {
+    // Clean up the database after tests
+    try {
+      if (testUserId) {
+        await knex("User").where({ id: testUserId }).del();
+        console.log("Test user deleted:", testUserId);
+      }
+    } catch (error) {
+      console.error("Error in afterAll:", error.message);
+      throw error;
+    }
+    await knex.destroy(); // Close the database connection
+  });
+
+  test("POST /api/organizations should create an organization", async () => {
+    const res = await request(app)
+      .post("/api/organizations")
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Test Organization",
+        location: "Test Location",
+      });
 
     expect(res.statusCode).toBe(201);
     expect(res.body).toHaveProperty("id");
-    testOrgId = res.body.id;
+    testOrganizationId = res.body.id;
   });
 
-  test("GET /api/organizations/:id should return a single organization", async () => {
-    const res = await request(app).get(`/api/organizations/${testOrgId}`);
+  test("GET /api/organizations should return all organizations", async () => {
+    const res = await request(app)
+      .get("/api/organizations")
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
+
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty("id", testOrgId);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.some((org) => org.id === testOrganizationId)).toBe(true);
+  });
+
+  test("GET /api/organizations/:id should return a specific organization", async () => {
+    const res = await request(app)
+      .get(`/api/organizations/${testOrganizationId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.id).toBe(testOrganizationId);
   });
 
   test("PUT /api/organizations/:id should update an organization", async () => {
-    const updatedOrg = { name: "Updated Organization" };
     const res = await request(app)
-      .put(`/api/organizations/${testOrgId}`)
-      .send(updatedOrg);
+      .put(`/api/organizations/${testOrganizationId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Updated Organization Name",
+        location: "Updated Location",
+      });
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.name).toBe(updatedOrg.name);
+    expect(res.body.name).toBe("Updated Organization Name");
   });
 
   test("DELETE /api/organizations/:id should delete an organization", async () => {
-    const res = await request(app).delete(`/api/organizations/${testOrgId}`);
+    const res = await request(app)
+      .delete(`/api/organizations/${testOrganizationId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
+
     expect(res.statusCode).toBe(200);
 
-    const checkRes = await request(app).get(`/api/organizations/${testOrgId}`);
+    // Verify deletion
+    const checkRes = await request(app)
+      .get(`/api/organizations/${testOrganizationId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
     expect(checkRes.statusCode).toBe(404);
   });
 });

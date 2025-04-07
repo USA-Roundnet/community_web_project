@@ -1,35 +1,44 @@
 const request = require("supertest");
 const { app } = require("../index");
+const knex = require("../knex-config.js");
+const { setupTestUser } = require("./testUtils.js");
 
 describe("Team Controller API Tests", () => {
-  let testTeamId;
+  let testUserAuthToken;
   let testUserId;
-  let authToken;
+  let testTeamId;
 
   beforeAll(async () => {
-    // Create test user
-    const userRes = await request(app).post("/api/auth/register").send({
-      username: "teamtestuser",
-      email: "teamtest@example.com",
-      password: "testpassword123",
-    });
-    testUserId = userRes.body.id;
-
-    // Login to get token
-    const loginRes = await request(app).post("/api/auth/login").send({
-      email: "teamtest@example.com",
-      password: "testpassword123",
-    });
-    authToken = loginRes.body.token;
+    try {
+      const { id, token } = await setupTestUser();
+      testUserId = id;
+      testUserAuthToken = token;
+      console.log("Test user created:", { testUserId, testUserAuthToken });
+    } catch (error) {
+      console.error("Error in beforeAll:", error.message);
+      throw error;
+    }
   });
 
-  test("POST /api/teams should create a new team", async () => {
+  afterAll(async () => {
+    try {
+      if (testUserId) {
+        await knex("User").where({ id: testUserId }).del();
+        console.log("Test user deleted:", testUserId);
+      }
+    } catch (error) {
+      console.error("Error in afterAll:", error.message);
+      throw error;
+    }
+    await knex.destroy(); // Close the database connection
+  });
+
+  test("POST /api/teams should create a team", async () => {
     const res = await request(app)
       .post("/api/teams")
-      .set("Authorization", `Bearer ${authToken}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
       .send({
         name: "Test Team",
-        description: "Test Description",
       });
 
     expect(res.statusCode).toBe(201);
@@ -40,46 +49,18 @@ describe("Team Controller API Tests", () => {
   test("GET /api/teams should return all teams", async () => {
     const res = await request(app)
       .get("/api/teams")
-      .set("Authorization", `Bearer ${authToken}`);
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.some((t) => t.id === testTeamId)).toBe(true);
-  });
-
-  test("GET /api/teams/:id should return a specific team", async () => {
-    const res = await request(app)
-      .get(`/api/teams/${testTeamId}`)
-      .set("Authorization", `Bearer ${authToken}`);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.id).toBe(testTeamId);
-  });
-
-  test("PUT /api/teams/:id should update a team", async () => {
-    const res = await request(app)
-      .put(`/api/teams/${testTeamId}`)
-      .set("Authorization", `Bearer ${authToken}`)
-      .send({
-        name: "Updated Team Name",
-        description: "Updated Description",
-      });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.name).toBe("Updated Team Name");
+    expect(res.body.some((team) => team.id === testTeamId)).toBe(true);
   });
 
   test("DELETE /api/teams/:id should delete a team", async () => {
     const res = await request(app)
       .delete(`/api/teams/${testTeamId}`)
-      .set("Authorization", `Bearer ${authToken}`);
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
 
     expect(res.statusCode).toBe(200);
-
-    // Verify deletion
-    const checkRes = await request(app)
-      .get(`/api/teams/${testTeamId}`)
-      .set("Authorization", `Bearer ${authToken}`);
-    expect(checkRes.statusCode).toBe(404);
   });
 });

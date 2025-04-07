@@ -22,6 +22,7 @@ app.use("/api/userOrganizations", require("./routes/userOrganizationRoutes"));
 app.use("/api/teams", require("./routes/teamRoutes"));
 app.use("/api/userTeams", require("./routes/userTeamRoutes"));
 app.use("/api/tournaments", require("./routes/tournamentRoutes"));
+app.use("/api/auth", require("./routes/authRoutes"));
 
 // Catch-all Route
 app.use((req, res) => {
@@ -34,7 +35,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Internal Server Error" });
 });
 
-// At the bottom of index.js:
 let server = null;
 
 if (!server) {

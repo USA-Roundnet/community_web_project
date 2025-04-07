@@ -1,40 +1,45 @@
 const request = require("supertest");
 const { app } = require("../index");
+const knex = require("../knex-config.js");
+const { setupTestUser } = require("./testUtils.js");
 
 describe("Tournament Controller API Tests", () => {
-  let testTournamentId;
+  let testUserAuthToken;
+  let testUserId;
   let testTeamId;
-  let authToken;
+  let testTournamentId;
 
   beforeAll(async () => {
-    // Create test user
-    const userRes = await request(app).post("/api/auth/register").send({
-      username: "tournamenttestuser",
-      email: "tournamenttest@example.com",
-      password: "testpassword123",
-    });
+    // Use the global setupTestUser to register and log in a test user
+    try {
+      const { id, token } = await setupTestUser();
+      testUserId = id;
+      testUserAuthToken = token;
+      console.log("Test user created:", { testUserId, testUserAuthToken });
+    } catch (error) {
+      console.error("Error in beforeAll:", error.message);
+      throw error;
+    }
+  });
 
-    // Login to get token
-    const loginRes = await request(app).post("/api/auth/login").send({
-      email: "tournamenttest@example.com",
-      password: "testpassword123",
-    });
-    authToken = loginRes.body.token;
-
-    // Create test team
-    const teamRes = await request(app)
-      .post("/api/teams")
-      .set("Authorization", `Bearer ${authToken}`)
-      .send({
-        name: "Tournament Test Team",
-      });
-    testTeamId = teamRes.body.id;
+  afterAll(async () => {
+    // Clean up the database after tests
+    try {
+      if (testUserId) {
+        await knex("User").where({ id: testUserId }).del();
+        console.log("Test user deleted:", testUserId);
+      }
+    } catch (error) {
+      console.error("Error in afterAll:", error.message);
+      throw error;
+    }
+    await knex.destroy(); // Close the database connection
   });
 
   test("POST /api/tournaments should create a tournament", async () => {
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${authToken}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
       .send({
         name: "Test Tournament",
         start_date: "2023-01-01",
@@ -49,7 +54,7 @@ describe("Tournament Controller API Tests", () => {
   test("GET /api/tournaments should return all tournaments", async () => {
     const res = await request(app)
       .get("/api/tournaments")
-      .set("Authorization", `Bearer ${authToken}`);
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -59,7 +64,7 @@ describe("Tournament Controller API Tests", () => {
   test("GET /api/tournaments/:id should return a specific tournament", async () => {
     const res = await request(app)
       .get(`/api/tournaments/${testTournamentId}`)
-      .set("Authorization", `Bearer ${authToken}`);
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.id).toBe(testTournamentId);
@@ -68,7 +73,7 @@ describe("Tournament Controller API Tests", () => {
   test("PUT /api/tournaments/:id should update a tournament", async () => {
     const res = await request(app)
       .put(`/api/tournaments/${testTournamentId}`)
-      .set("Authorization", `Bearer ${authToken}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
       .send({
         name: "Updated Tournament Name",
         description: "New Description",
@@ -81,14 +86,14 @@ describe("Tournament Controller API Tests", () => {
   test("DELETE /api/tournaments/:id should delete a tournament", async () => {
     const res = await request(app)
       .delete(`/api/tournaments/${testTournamentId}`)
-      .set("Authorization", `Bearer ${authToken}`);
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
 
     expect(res.statusCode).toBe(200);
 
     // Verify deletion
     const checkRes = await request(app)
       .get(`/api/tournaments/${testTournamentId}`)
-      .set("Authorization", `Bearer ${authToken}`);
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
     expect(checkRes.statusCode).toBe(404);
   });
 });
