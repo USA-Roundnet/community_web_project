@@ -1,4 +1,16 @@
+const { app, startServer, stopServer } = require("../index");
 const { registerUser, loginUser } = require("./testUtils");
+
+let server;
+
+beforeAll((done) => {
+  server = startServer(); // Explicitly start the server
+  done();
+});
+
+afterAll((done) => {
+  stopServer(done); // Explicitly stop the server
+});
 
 describe("Auth Controller API Tests", () => {
   let authToken;

@@ -31,27 +31,40 @@ app.use((req, res) => {
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Internal Server Error" });
+  console.error(err.message);
+  res
+    .status(err.status || 500)
+    .json({ message: err.message || "Internal Server Error" });
 });
 
 let server = null;
 
-if (!server) {
-  if (process.env.NODE_ENV === "test") {
-    // In test environment, create server on random port
-    server = app.listen(0); // 0 means random available port
-    console.log(`Test server created on port ${server.address().port}`);
-  } else {
-    // In dev/prod, use configured port
-    const PORT = process.env.PORT || 5000;
-    server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(
-        `Swagger docs available at http://localhost:${PORT}/api-docs`
-      );
-    });
+const startServer = () => {
+  if (!server) {
+    if (process.env.NODE_ENV === "test") {
+      // In test environment, create server on random port
+      server = app.listen(0, () => {
+        console.log(`Test server created on port ${server.address().port}`);
+      });
+    } else {
+      // In dev/prod, use configured port
+      const PORT = process.env.PORT || 5000;
+      server = app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(
+          `Swagger docs available at http://localhost:${PORT}/api-docs`
+        );
+      });
+    }
   }
-}
+  return server;
+};
 
-module.exports = { app, server };
+const stopServer = (done) => {
+  if (server) {
+    server.close(done);
+    server = null;
+  }
+};
+
+module.exports = { app, startServer, stopServer };

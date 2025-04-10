@@ -1,7 +1,8 @@
 const request = require("supertest");
-const { app } = require("../index");
+const { app, startServer, stopServer } = require("../index");
 const knex = require("../knex-config.js");
 const { setupTestUser } = require("./testUtils.js");
+const { serve } = require("swagger-ui-express");
 
 describe("Tournament Controller API Tests", () => {
   let testUserAuthToken;
@@ -9,7 +10,11 @@ describe("Tournament Controller API Tests", () => {
   let testTeamId;
   let testTournamentId;
 
+  let Server;
+
   beforeAll(async () => {
+    server = startServer(); // Explicitly start the server
+
     // Use the global setupTestUser to register and log in a test user
     try {
       const { id, token } = await setupTestUser();
@@ -33,6 +38,7 @@ describe("Tournament Controller API Tests", () => {
       console.error("Error in afterAll:", error.message);
       throw error;
     }
+    stopServer(); // Explicitly stop the server
     await knex.destroy(); // Close the database connection
   });
 

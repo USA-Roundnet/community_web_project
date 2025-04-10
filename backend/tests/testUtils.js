@@ -64,7 +64,7 @@ const setupTestUser = async (userData = null) => {
 
   const token = await loginUser(finalUserData.email, finalUserData.password);
 
-  return { ...registeredUser, token };
+  return { ...registeredUser, password: finalUserData.password, token };
 };
 
 const setupTestTournament = async (authToken, tournamentData = null) => {

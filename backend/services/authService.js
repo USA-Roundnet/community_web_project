@@ -61,7 +61,7 @@ const loginUser = async ({ email, password }) => {
   // If the user doesn't exist or the password doesn't match, throw an error
   // TODO: should encrypt on client
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    throw new Error("Invalid credentials");
+    throw new Error("Invalid email or password");
   }
 
   // Generate a JWT token for the user

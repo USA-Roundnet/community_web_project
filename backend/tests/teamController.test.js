@@ -1,5 +1,5 @@
 const request = require("supertest");
-const { app } = require("../index");
+const { app, startServer, stopServer } = require("../index");
 const knex = require("../knex-config.js");
 const { setupTestUser } = require("./testUtils.js");
 
@@ -8,7 +8,11 @@ describe("Team Controller API Tests", () => {
   let testUserId;
   let testTeamId;
 
+  let server;
+
   beforeAll(async () => {
+    server = startServer(); // Explicitly start the server
+
     try {
       const { id, token } = await setupTestUser();
       testUserId = id;
@@ -30,6 +34,7 @@ describe("Team Controller API Tests", () => {
       console.error("Error in afterAll:", error.message);
       throw error;
     }
+    stopServer(); // Explicitly stop the server
     await knex.destroy(); // Close the database connection
   });
 
