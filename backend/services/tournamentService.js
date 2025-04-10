@@ -56,10 +56,75 @@ const deleteTournament = async (id) => {
   return rowsDeleted > 0;
 };
 
+// Fetch all teams registered for a specific tournament
+const getTournamentTeams = async (tournament_id) => {
+  // Fetch all teams registered for the tournament
+  const teams = await db("Team")
+    .join("Registration", "Team.id", "Registration.team_id")
+    .join(
+      "TournamentDivision",
+      "Registration.tournament_division_id",
+      "TournamentDivision.id"
+    )
+    .where("TournamentDivision.tournament_id", tournament_id)
+    .select("Team.*");
+
+  console.log("Fetched teams for tournament:", tournament_id, teams);
+  return teams;
+};
+
+const registerForTournament = async (
+  tournament_id,
+  user_id,
+  team_id,
+  tournament_division_id
+) => {
+  console.log("Registering team:", {
+    tournament_id,
+    user_id,
+    team_id,
+    tournament_division_id,
+  });
+
+  const existingRegistration = await db("Registration")
+    .where({ team_id, tournament_division_id })
+    .first();
+
+  if (existingRegistration) {
+    throw new Error("Team is already registered for this tournament division");
+  }
+
+  const [registrationId] = await db("Registration").insert({
+    team_id,
+    tournament_division_id,
+    status: "registered",
+    payment_status: "unpaid",
+    created_at: new Date(),
+  });
+
+  return { id: registrationId };
+};
+
+// Fetch tournaments a user is registered for
+const getUserTournaments = async (userId) => {
+  return await db("Tournament")
+    .join(
+      "TournamentRegistration",
+      "Tournament.id",
+      "TournamentRegistration.tournament_id"
+    )
+    .join("Team", "TournamentRegistration.team_id", "Team.id")
+    .where("Team.created_by", userId)
+    .select("Tournament.*");
+};
+
 module.exports = {
   getAllTournaments,
   getTournamentById,
   createTournament,
   updateTournament,
   deleteTournament,
+  getTournamentTeams,
+  registerForTournament,
+  getUserTournaments,
 };

@@ -4,7 +4,7 @@ exports.up = async function (knex) {
   if (!exists) {
     await knex.schema.createTable("Division", (table) => {
       table.increments("id").primary();
-      table.enum("name", ["contender", "premier"]).notNullable();
+      table.enum("name", ["open", "premier"]).notNullable();
       table.integer("max_teams");
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });
