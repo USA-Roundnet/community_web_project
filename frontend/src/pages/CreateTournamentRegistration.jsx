@@ -2,18 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/LoginPage.css';
 
-const CreateTournamentBasicInfo = () => {
+const CreateTournamentRegistration = () => {
   const [formData, setFormData] = useState({
-    tournamentName: '',
-    description: '',
-    date: '',
-    time: '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: ''
+    generalFormat: '',
+    teamSize: '',
+    rules: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,7 +31,7 @@ const CreateTournamentBasicInfo = () => {
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      navigate('/tournaments/create/format', { replace: true });
+      navigate('/tournaments/create/registration', { replace: true });
     } catch (err) {
       setError('Tournament creation failed. Please try again.');
     } finally {
@@ -50,10 +43,53 @@ const CreateTournamentBasicInfo = () => {
     <div className="login-container" style={{ minHeight: '100vh', backgroundColor: 'lightgray' }}>
       <div className="login-card">
         <h1>Create Tournament</h1>
-        <h2>Basic Info</h2>
+        <h2>Registration Info</h2>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
-          {/* Row 1: Tournament Name */}
+
+          {/* Drop down menu?: Traditional (Pool Play & Bracket), Swiss, etc.
+                Talk to Ben - add as many tournament formats as possible */}
+          
+          {/* Option 1: Traditional Tournament format = Pool Play + Bracket
+                Check Fwango for tournament options? */}
+
+          {/* Format 1: General Format */}
+          <div className="form-group">
+            <label htmlFor="format">Format</label>
+            <select
+              id="format"
+              name="format"
+              value={formData.format}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select format</option>
+              <option value="traditonal">Tradional</option>
+              <option value="swiss">Swiss</option>
+              <option value="custom">Custom</option>
+              <option value="other">other</option>
+            </select>
+          </div>
+
+            {/* Format 2: Team Format */}
+            <div className="form-group">
+              <label htmlFor="teamSize">Gender</label>
+              <select
+                id="teamSize"
+                name="teamSize"
+                value={formData.teamSize}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select team size</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="squad">squad</option>
+              </select>
+            </div>
+
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="tournamentName">Tournament Name</label>
@@ -69,17 +105,17 @@ const CreateTournamentBasicInfo = () => {
             </div>
           </div>
 
-          {/* Row 2: Tournament Description */}
+          {/* Row 2: Tournament Rules */}
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="description">Description</label>
+              <label htmlFor="rules">Rules</label>
               <input
-                type="textarea"
-                id="description"
-                name="description"
-                value={formData.description}
+                type="longText"
+                id="rules"
+                name="rules"
+                value={formData.rules}
                 onChange={handleChange}
-                placeholder="Description"
+                placeholder="Ruleset"
                 optional
               />
             </div>
@@ -198,4 +234,4 @@ const CreateTournamentBasicInfo = () => {
   );
 };
 
-export default CreateTournamentBasicInfo;
+export default CreateTournamentRegistration;

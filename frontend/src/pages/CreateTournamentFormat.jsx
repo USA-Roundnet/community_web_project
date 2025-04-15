@@ -4,8 +4,8 @@ import '../styles/LoginPage.css';
 
 const CreateTournamentFormat = () => {
   const [formData, setFormData] = useState({
-    generalFormat: '',
-    teamSize: ''
+    format: '',
+    bracketStyle: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -14,6 +14,7 @@ const CreateTournamentFormat = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
   };
 
   const handleSubmit = async (e) => {
@@ -21,9 +22,14 @@ const CreateTournamentFormat = () => {
     setIsLoading(true);
     setError(null);
 
-    if (!formData.tournamentName || !formData.date || !formData.address1 || !formData.city || 
-        !formData.state || !formData.zipCode || !formData.country) {
+    if (!formData.format || !formData.bracketStyle) {
       setError('All fields are required.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.format != 'traditional') {
+      setError('Only Traditional Format is currently supported.');
       setIsLoading(false);
       return;
     }
@@ -53,173 +59,56 @@ const CreateTournamentFormat = () => {
                 Check Fwango for tournament options? */}
 
           {/* Format 1: General Format */}
-          <div className="form-group">
-            <label htmlFor="format">Format</label>
-            <select
-              id="format"
-              name="format"
-              value={formData.format}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Select format</option>
-              <option value="traditonal">Tradional</option>
-              <option value="swiss">Swiss</option>
-              <option value="custom">Custom</option>
-              <option value="other">other</option>
-            </select>
-          </div>
 
-            {/* Format 2: Team Format */}
+          <div className="form-row">
             <div className="form-group">
-              <label htmlFor="teamSize">Gender</label>
+              <label htmlFor="format">Format</label>
               <select
-                id="teamSize"
-                name="teamSize"
-                value={formData.teamSize}
+                id="format"
+                name="format"
+                value={formData.format}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select team size</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="squad">squad</option>
+                <option value="">Select format</option>
+                <option value="traditional">Tradional (Pool play + Bracket)</option>
+                {/*<option value="swiss">Swiss</option>*/}
+                <option value="custom">Custom</option>
+                <option value="other">other</option>
               </select>
             </div>
+          </div>
 
           <div className="form-row">
+            {/* Format 2: Bracket Style */}
             <div className="form-group">
-              <label htmlFor="tournamentName">Tournament Name</label>
-              <input
-                type="text"
-                id="tournamentName"
-                name="tournamentName"
-                value={formData.tournamentName}
+              <label htmlFor="bracketStyle">Bracket Style</label>
+              <select
+                id="bracketStyle"
+                name="bracketStyle"
+                value={formData.bracketStyle}
                 onChange={handleChange}
-                placeholder="Tournament Name"
                 required
-              />
+              >
+                <option value="">Select Bracket</option>
+                <option value="single">Single Elimination</option>
+                <option value="double">Double Elimination</option>
+              </select>
             </div>
           </div>
 
-          {/* Row 2: Tournament Description */}
           <div className="form-row">
+            {/* Row 3: Tournament Rules */}
             <div className="form-group">
-              <label htmlFor="description">Description</label>
+              <label htmlFor="rules">Rules</label>
               <input
                 type="longText"
-                id="description"
-                name="description"
-                value={formData.description}
+                id="rules"
+                name="rules"
+                value={formData.rules}
                 onChange={handleChange}
-                placeholder="Description"
+                placeholder="Ruleset"
                 optional
-              />
-            </div>
-          </div>
-
-          {/* Row 3: Date and Time */}
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="date">Date</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                placeholder="Date"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="time">Time</label>
-              <input
-                type="time"
-                id="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                placeholder="12:00"
-                optional
-              />
-            </div>
-          </div>
-
-          {/* Row 4,5,6: Location */}
-          <label htmlFor="location">Location</label>
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="address1"
-                name="address1"
-                value={formData.address1}
-                onChange={handleChange}
-                placeholder="Address 1"
-                required
-              />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="address2"
-                name="address2"
-                value={formData.address2}
-                onChange={handleChange}
-                placeholder="Address 2"
-                optional
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="City"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                id="state"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                placeholder="State"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                id="zipCode"
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleChange}
-                placeholder="Zip"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                placeholder="United States"
-                required
               />
             </div>
           </div>
