@@ -8,9 +8,9 @@ exports.up = async function (knex) {
         .inTable("User")
         .onDelete("CASCADE");
       table
-        .foreign("tournament_division_id")
+        .foreign("tournament_id")
         .references("id")
-        .inTable("TournamentDivision")
+        .inTable("Tournament")
         .onDelete("CASCADE");
     });
   }
@@ -21,7 +21,7 @@ exports.down = async function (knex) {
   if (exists) {
     await knex.schema.alterTable("TournamentUser", (table) => {
       table.dropForeign("user_id");
-      table.dropForeign("tournament_division_id");
+      table.dropForeign("tournament_id");
     });
   }
 };

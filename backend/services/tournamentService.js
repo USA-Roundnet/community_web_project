@@ -1,4 +1,5 @@
 const knex = require("../knex-config.js");
+const { validateDuplicateRegistration } = require("../utils/validation");
 
 const getAllTournaments = async () => {
   return await knex("Tournament").select("*");
@@ -86,72 +87,142 @@ const registerForTournament = async (
   team_id,
   tournament_division_id
 ) => {
-  // console.log("Registering team:", {tournament_id, user_id, team_id, tournament_division_id,});
+  try {
+    console.log("Registering team:", {
+      tournament_id,
+      user_id,
+      team_id,
+      tournament_division_id,
+    });
 
-  // Validate that the tournament exists
-  const tournament = await knex("Tournament")
-    .where({ id: tournament_id })
-    .first();
-  // console.log("Tournament found:", tournament);
-  if (!tournament) {
-    throw new Error("Tournament not found");
+    // Validate that the tournament exists
+    const tournament = await knex("Tournament")
+      .where({ id: tournament_id })
+      .first();
+    if (!tournament) {
+      console.log("Tournament not found:", tournament_id);
+      return { status: 404, message: "Tournament not found" };
+    }
+
+    // Validate that the tournament division exists
+    const tournamentDivision = await knex("TournamentDivision")
+      .where({ id: tournament_division_id, tournament_id })
+      .first();
+    if (!tournamentDivision) {
+      console.log("Tournament division not found:", {
+        tournament_division_id,
+        tournament_id,
+      });
+      return { status: 404, message: "Tournament division not found" };
+    }
+
+    // Validate duplicate registration
+    try {
+      await validateDuplicateRegistration(team_id, tournament_division_id);
+    } catch (error) {
+      console.log("Duplicate registration detected:", error.message);
+      return error; // Return the error object to the controller
+    }
+
+    // Insert the registration
+    const [registrationId] = await knex("Registration").insert({
+      team_id,
+      tournament_division_id,
+      status: "registered",
+      payment_status: "unpaid",
+      created_at: new Date(),
+    });
+    console.log("Registration created with ID:", registrationId);
+
+    // Link the user to the tournament in the TournamentUser table
+    const existingTournamentUser = await knex("TournamentUser")
+      .where({ user_id, tournament_id })
+      .first();
+    if (!existingTournamentUser) {
+      await knex("TournamentUser").insert({
+        user_id,
+        tournament_id,
+        created_at: new Date(),
+      });
+      console.log("User linked to tournament:", { user_id, tournament_id });
+    }
+
+    return { id: registrationId };
+  } catch (error) {
+    console.log("Error in registerForTournament:", error.message);
+    throw error; // Re-throw unexpected errors
   }
+};
 
-  // Validate that the tournament division exists
-  const tournamentDivision = await knex("TournamentDivision")
-    .where({ id: tournament_division_id, tournament_id })
-    .first();
-  // console.log("Tournament division found:", tournamentDivision);
-  if (!tournamentDivision) {
-    throw new Error("Tournament division not found");
+const unregisterFromTournament = async (
+  tournament_id,
+  user_id,
+  team_id,
+  tournament_division_id
+) => {
+  try {
+    console.log("Unregistering team:", {
+      tournament_id,
+      user_id,
+      team_id,
+      tournament_division_id,
+    });
+
+    // Validate that the registration exists
+    const registration = await knex("Registration")
+      .where({ team_id, tournament_division_id })
+      .first();
+    if (!registration) {
+      console.log("Registration not found:", {
+        team_id,
+        tournament_division_id,
+      });
+      return { status: 404, message: "Registration not found" };
+    }
+
+    // Delete the registration
+    await knex("Registration").where({ team_id, tournament_division_id }).del();
+    console.log("Registration deleted for team:", {
+      team_id,
+      tournament_division_id,
+    });
+
+    // Check if the user is still associated with the tournament
+    const remainingRegistrations = await knex("Registration")
+      .join(
+        "TournamentDivision",
+        "Registration.tournament_division_id",
+        "TournamentDivision.id"
+      )
+      .where("TournamentDivision.tournament_id", tournament_id)
+      .andWhere("Registration.team_id", team_id)
+      .count("Registration.id as count")
+      .first();
+
+    if (remainingRegistrations.count === 0) {
+      // Remove the user from the TournamentUser table
+      await knex("TournamentUser").where({ user_id, tournament_id }).del();
+      console.log("User removed from tournament:", { user_id, tournament_id });
+    }
+
+    return {
+      status: 200,
+      message: "Successfully unregistered from the tournament",
+    };
+  } catch (error) {
+    console.log("Error in unregisterFromTournament:", error.message);
+    throw error;
   }
-
-  // Check if the team is already registered
-  const existingRegistration = await knex("Registration")
-    .where({ team_id, tournament_division_id })
-    .first();
-  // console.log("Existing registration:", existingRegistration);
-  if (existingRegistration) {
-    throw new Error("Team is already registered for this tournament division");
-  }
-
-  // Insert the registration
-  const [registrationId] = await knex("Registration").insert({
-    team_id,
-    tournament_division_id,
-    status: "registered",
-    payment_status: "unpaid",
-    created_at: new Date(),
-  });
-
-  // Link the user to the tournament in the TournamentUser table
-  await knex("TournamentUser").insert({
-    user_id,
-    tournament_division_id,
-    created_at: new Date(),
-  });
-  console.log("Inserted into TournamentUser:", {
-    user_id,
-    tournament_division_id,
-  });
-
-  // console.log("Registration created with ID:", registrationId);
-  return { id: registrationId };
 };
 
 // Fetch tournaments a user is registered for
 const getUserTournaments = async (user_id) => {
   console.log("Fetching tournaments for user_id:", user_id);
   const tournaments = await knex("TournamentUser")
-    .join(
-      "TournamentDivision",
-      "TournamentUser.tournament_division_id",
-      "TournamentDivision.id"
-    )
-    .join("Tournament", "TournamentDivision.tournament_id", "Tournament.id")
+    .join("Tournament", "TournamentUser.tournament_id", "Tournament.id")
     .where("TournamentUser.user_id", user_id)
     .select("Tournament.*");
-  console.log("Tournaments fetched:", tournaments);
+  console.log("Query result:", tournaments);
   return tournaments;
 };
 
@@ -163,5 +234,6 @@ module.exports = {
   deleteTournament,
   getTournamentTeams,
   registerForTournament,
+  unregisterFromTournament,
   getUserTournaments,
 };

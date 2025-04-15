@@ -62,11 +62,29 @@ router.post(
   asyncHandler(tournamentController.registerForTournament)
 );
 
-// Fetch tournaments a user is registered for
-router.get(
-  "/user/:id",
+router.delete(
+  "/:id/unregister",
   verifyToken,
-  asyncHandler(tournamentController.getUserTournaments)
+  asyncHandler(tournamentController.unregisterFromTournament)
 );
+
+// Fetch tournaments a user is registered for
+const { getUserTournaments } = require("../services/tournamentService");
+
+router.get("/api/users/:id/tournaments", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const tournaments = await getUserTournaments(userId);
+    if (!tournaments || tournaments.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No tournaments found for this user" });
+    }
+    res.status(200).json(tournaments);
+  } catch (error) {
+    console.error("Error fetching user tournaments:", error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 module.exports = router;

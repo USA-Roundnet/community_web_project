@@ -1,3 +1,5 @@
+const knex = require("../knex-config");
+
 const validateUserData = (userData) => {
   const errors = [];
 
@@ -47,8 +49,31 @@ const validateUserData = (userData) => {
     errors.push("Password is required for local authentication.");
   }
 
-  //console.log("Validation errors:", errors); // Debugging
   return errors;
 };
 
-module.exports = { validateUserData };
+// Validate duplicate registration
+const validateDuplicateRegistration = async (
+  team_id,
+  tournament_division_id
+) => {
+  const existingRegistration = await knex("Registration")
+    .where({ team_id, tournament_division_id })
+    .first();
+
+  if (existingRegistration) {
+    console.log("Duplicate registration detected:", {
+      team_id,
+      tournament_division_id,
+    });
+    throw {
+      status: 400,
+      message: "Team is already registered for this tournament division",
+    };
+  }
+};
+
+module.exports = {
+  validateUserData,
+  validateDuplicateRegistration,
+};

@@ -5,7 +5,7 @@ exports.up = async function (knex) {
     await knex.schema.createTable("TournamentUser", (table) => {
       table.increments("id").primary();
       table.integer("user_id").unsigned().notNullable();
-      table.integer("tournament_division_id").unsigned().notNullable();
+      table.integer("tournament_id").unsigned().notNullable(); // Changed from tournament_division_id to tournament_id
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });
   }

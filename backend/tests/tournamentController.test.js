@@ -104,21 +104,21 @@ describe("Tournament Controller API Tests", () => {
 
   afterAll(async () => {
     // Clean up the database after tests
-    try {
-      if (testUserObject.id) {
-        await knex("User").where({ id: testUserObject.id }).del();
-        // console.log("Test user deleted:", testUserObject.id);
-      }
-      if (testTeamId) {
-        await knex("Team").where({ id: testTeamId }).del();
-      }
-      if (testTournamentId) {
-        await knex("Tournament").where({ id: testTournamentId }).del();
-      }
-    } catch (error) {
-      console.error("Error in afterAll:", error.message);
-      throw error;
-    }
+    // try {
+    //   if (testUserObject.id) {
+    //     await knex("User").where({ id: testUserObject.id }).del();
+    //     // console.log("Test user deleted:", testUserObject.id);
+    //   }
+    //   if (testTeamId) {
+    //     await knex("Team").where({ id: testTeamId }).del();
+    //   }
+    //   if (testTournamentId) {
+    //     await knex("Tournament").where({ id: testTournamentId }).del();
+    //   }
+    // } catch (error) {
+    //   console.error("Error in afterAll:", error.message);
+    //   throw error;
+    // }
     stopServer(); // Explicitly stop the server
     await knex.destroy(); // Close the database connection
   });
@@ -225,11 +225,11 @@ describe("Tournament Controller API Tests", () => {
     const tournamentUser = await knex("TournamentUser")
       .where({
         user_id: testUserObject.id,
-        tournament_division_id: tournamentDivisionId,
+        tournament_id: testTournamentId,
       })
       .first();
     expect(tournamentUser).not.toBeNull();
-    expect(tournamentUser.tournament_division_id).toBe(tournamentDivisionId);
+    expect(tournamentUser.tournament_id).toBe(testTournamentId);
   });
 
   test("GET /api/tournaments/:id/teams should return all teams registered for a tournament", async () => {
@@ -243,61 +243,121 @@ describe("Tournament Controller API Tests", () => {
     expect(res.body.some((team) => team.id === testTeamId)).toBe(true);
   });
 
-  // test("GET /api/users/:id/tournaments should return tournaments a user is registered for", async () => {
-  //   // Fetch tournaments for the test user
-  //   const res = await request(app)
-  //     .get(`/api/users/${testUserObject.id}/tournaments`)
-  //     .set("Authorization", `Bearer ${testUserObject.token}`);
+  test("GET /api/users/:id/tournaments should return tournaments a user is registered for", async () => {
+    const tournamentUsers = await knex("TournamentUser").select("*");
+    console.log("TournamentUser table state:", tournamentUsers);
 
-  //   expect(res.statusCode).toBe(200);
-  //   expect(Array.isArray(res.body)).toBe(true);
-  //   expect(res.body.some((t) => t.id === testTournamentId)).toBe(true);
-  // });
+    // Fetch tournaments for the test user
+    const res = await request(app)
+      .get(`/api/users/${testUserObject.id}/tournaments`)
+      .set("Authorization", `Bearer ${testUserObject.token}`);
 
-  // test("GET /api/tournaments/:id/teams should return 404 for a non-existent tournament", async () => {
-  //   const res = await request(app)
-  //     .get("/api/tournaments/999999/teams") // Non-existent tournament ID
-  //     .set("Authorization", `Bearer ${testUserAuthToken}`);
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.some((t) => t.id === testTournamentId)).toBe(true);
+  });
 
-  //   expect(res.statusCode).toBe(404);
-  //   expect(res.body.message).toBe("Tournament not found");
-  // });
+  test("DELETE /api/tournaments/:id/unregister should unregister a team from a tournament", async () => {
+    // First, register the team
+    await request(app)
+      .post(`/api/tournaments/${testTournamentId}/register`)
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      });
 
-  // test("POST /api/tournaments/:id/register should return 404 for a non-existent tournament", async () => {
-  //   const res = await request(app)
-  //     .post("/api/tournaments/999999/register") // Non-existent tournament ID
-  //     .set("Authorization", `Bearer ${testUserAuthToken}`)
-  //     .send({
-  //       team_id: testTeamId,
-  //       division: "Open",
-  //     });
+    // Unregister the team
+    const res = await request(app)
+      .delete(`/api/tournaments/${testTournamentId}/unregister`)
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      });
 
-  //   expect(res.statusCode).toBe(404);
-  //   expect(res.body.message).toBe("Tournament not found");
-  // });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toBe(
+      "Successfully unregistered from the tournament"
+    );
 
-  // test("POST /api/tournaments/:id/register should prevent duplicate registrations", async () => {
-  //   // First registration
-  //   const firstRes = await request(app)
-  //     .post(`/api/tournaments/${testTournamentId}/register`)
-  //     .set("Authorization", `Bearer ${testUserAuthToken}`)
-  //     .send({
-  //       team_id: testTeamId,
-  //       division: "Open",
-  //     });
+    // Verify the registration no longer exists
+    const registration = await knex("Registration")
+      .where({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      })
+      .first();
+    expect(registration).toBeNull();
 
-  //   expect(firstRes.statusCode).toBe(201);
+    // Verify the user is removed from the TournamentUser table if no other registrations exist
+    const tournamentUser = await knex("TournamentUser")
+      .where({
+        user_id: testUserObject.id,
+        tournament_id: testTournamentId,
+      })
+      .first();
+    expect(tournamentUser).toBeNull();
+  });
 
-  //   // Duplicate registration
-  //   const secondRes = await request(app)
-  //     .post(`/api/tournaments/${testTournamentId}/register`)
-  //     .set("Authorization", `Bearer ${testUserAuthToken}`)
-  //     .send({
-  //       team_id: testTeamId,
-  //       division: "Open",
-  //     });
+  test("POST /api/tournaments/:id/register should prevent duplicate registrations", async () => {
+    // First registration
+    const firstRes = await request(app)
+      .post(`/api/tournaments/${testTournamentId}/register`)
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      });
 
-  //   expect(secondRes.statusCode).toBe(400);
-  //   expect(secondRes.body.message).toBe("Team is already registered for this tournament");
-  // });
+    expect(firstRes.statusCode).toBe(201); // Ensure the first registration succeeds
+
+    // Verify the registration exists in the database
+    const registration = await knex("Registration")
+      .where({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      })
+      .first();
+
+    expect(registration).not.toBeNull();
+    expect(registration.team_id).toBe(testTeamId);
+    expect(registration.tournament_division_id).toBe(tournamentDivisionId);
+
+    // Duplicate registration
+    const duplicateRes = await request(app)
+      .post(`/api/tournaments/${testTournamentId}/register`)
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      });
+
+    expect(duplicateRes.statusCode).toBe(400); // Ensure the duplicate registration is blocked
+    expect(duplicateRes.body.message).toBe(
+      "Team is already registered for this tournament division"
+    );
+  });
+
+  test("GET /api/tournaments/:id/teams should return 404 for a non-existent tournament", async () => {
+    const res = await request(app)
+      .get("/api/tournaments/999999/teams") // Non-existent tournament ID
+      .set("Authorization", `Bearer ${testUserObject.token}`);
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body.message).toBe("Tournament not found");
+  });
+
+  test("POST /api/tournaments/:id/register should return 404 for a non-existent tournament", async () => {
+    const res = await request(app)
+      .post("/api/tournaments/999999/register") // Non-existent tournament ID
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        team_id: testTeamId,
+        tournament_division_id: tournamentDivisionId,
+      });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body.message).toBe("Tournament not found");
+  });
 });

@@ -95,10 +95,45 @@ const registerForTournament = async (req, res) => {
       tournament_division_id
     );
 
+    // Handle validation errors returned by the service
+    if (registration.status && registration.status !== 201) {
+      return res
+        .status(registration.status)
+        .json({ message: registration.message });
+    }
+
     res.status(201).json(registration); // Return the data directly
   } catch (error) {
     res.status(500).json({
       message: "Failed to register for tournament",
+      details: error.message,
+    });
+  }
+};
+
+const unregisterFromTournament = async (req, res) => {
+  try {
+    const { team_id, tournament_division_id } = req.body;
+
+    const result = await tournamentService.unregisterFromTournament(
+      req.params.id, // tournament_id
+      req.user.id, // user_id
+      team_id,
+      tournament_division_id
+    );
+
+    if (result.status && result.status !== 200) {
+      return res.status(result.status).json({ message: result.message });
+    }
+
+    res.status(200).json({ message: result.message });
+  } catch (error) {
+    console.error(
+      "Error in unregisterFromTournament controller:",
+      error.message
+    );
+    res.status(500).json({
+      message: "Failed to unregister from tournament",
       details: error.message,
     });
   }
@@ -132,5 +167,6 @@ module.exports = {
   deleteTournament,
   getTournamentTeams,
   registerForTournament,
+  unregisterFromTournament,
   getUserTournaments,
 };

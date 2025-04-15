@@ -8,6 +8,7 @@ exports.up = async function (knex) {
       table.integer("group_id");
       table.integer("tournament_division_id").unsigned().notNullable();
       table.integer("placement");
+      // TODO: move seed to team table
       table.integer("seed");
       table.enum("status", ["registered", "withdrawn"]);
       table.enum("payment_status", ["paid", "pending", "unpaid"]).notNullable();
