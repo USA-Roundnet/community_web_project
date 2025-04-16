@@ -80,10 +80,22 @@ const deleteUser = async (id) => {
   return rowsDeleted > 0;
 };
 
+// Fetch tournaments a user is registered for
+const getUserTournaments = async (user_id) => {
+  // console.log("Fetching tournaments for user_id:", user_id);
+  const tournaments = await knex("TournamentUser")
+    .join("Tournament", "TournamentUser.tournament_id", "Tournament.id")
+    .where("TournamentUser.user_id", user_id)
+    .select("Tournament.*");
+  // console.log("Query result:", tournaments);
+  return tournaments;
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  getUserTournaments,
 };

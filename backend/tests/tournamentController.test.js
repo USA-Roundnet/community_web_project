@@ -10,7 +10,6 @@ describe("Tournament Controller API Tests", () => {
   let testTeamId;
   let testTournamentId;
   let tournamentDivisionId;
-  let registrationId;
   let deleteTestTournamentId;
 
   let server;
@@ -56,7 +55,7 @@ describe("Tournament Controller API Tests", () => {
       });
 
       testTournamentId = tournament[0];
-      console.log("Test tournament created, Tournament id:", testTournamentId);
+      // console.log("Test tournament created, Tournament id:", testTournamentId);
 
       const tournamentDivision = await knex("TournamentDivision").insert({
         division_id: 1,
@@ -66,36 +65,13 @@ describe("Tournament Controller API Tests", () => {
       });
 
       tournamentDivisionId = tournamentDivision[0];
-      console.log(
-        "Inserting into TournamentDivision table, id:",
-        testTournamentId
-      );
+      // console.log("Inserting into TournamentDivision table, id:", testTournamentId);
 
       // Verify the TournamentDivision exists in the database
       const divisionTest = await knex("TournamentDivision")
         .where({ id: tournamentDivisionId })
         .first();
-      console.log("TournamentDivision in database:", divisionTest);
-
-      // const registration = await knex("Registration").insert({
-      //   team_id: testTeamId,
-      //   tournament_division_id: tournamentDivisionId,
-      //   status: "registered",
-      //   payment_status: "unpaid",
-      //   created_at: new Date(),
-      // });
-
-      // registrationId = registration[0];
-      // console.log("Test registration created, Registration id:", registrationId);
-
-      // const registrationTest = await knex("Registration")
-      //   .where({
-      //     team_id: testTeamId,
-      //     tournament_division_id: tournamentDivisionId,
-      //   })
-      //   .first();
-
-      // console.log("Registration in beforeAll:", registrationTest);
+      // console.log("TournamentDivision in database:", divisionTest);
     } catch (error) {
       console.error("Error in beforeAll:", error.message);
       throw error;
@@ -104,21 +80,21 @@ describe("Tournament Controller API Tests", () => {
 
   afterAll(async () => {
     // Clean up the database after tests
-    // try {
-    //   if (testUserObject.id) {
-    //     await knex("User").where({ id: testUserObject.id }).del();
-    //     // console.log("Test user deleted:", testUserObject.id);
-    //   }
-    //   if (testTeamId) {
-    //     await knex("Team").where({ id: testTeamId }).del();
-    //   }
-    //   if (testTournamentId) {
-    //     await knex("Tournament").where({ id: testTournamentId }).del();
-    //   }
-    // } catch (error) {
-    //   console.error("Error in afterAll:", error.message);
-    //   throw error;
-    // }
+    try {
+      if (testUserObject.id) {
+        await knex("User").where({ id: testUserObject.id }).del();
+        // console.log("Test user deleted:", testUserObject.id);
+      }
+      if (testTeamId) {
+        await knex("Team").where({ id: testTeamId }).del();
+      }
+      if (testTournamentId) {
+        await knex("Tournament").where({ id: testTournamentId }).del();
+      }
+    } catch (error) {
+      console.error("Error in afterAll:", error.message);
+      throw error;
+    }
     stopServer(); // Explicitly stop the server
     await knex.destroy(); // Close the database connection
   });
@@ -245,7 +221,7 @@ describe("Tournament Controller API Tests", () => {
 
   test("GET /api/users/:id/tournaments should return tournaments a user is registered for", async () => {
     const tournamentUsers = await knex("TournamentUser").select("*");
-    console.log("TournamentUser table state:", tournamentUsers);
+    // console.log("TournamentUser table state:", tournamentUsers);
 
     // Fetch tournaments for the test user
     const res = await request(app)
@@ -258,15 +234,6 @@ describe("Tournament Controller API Tests", () => {
   });
 
   test("DELETE /api/tournaments/:id/unregister should unregister a team from a tournament", async () => {
-    // First, register the team
-    await request(app)
-      .post(`/api/tournaments/${testTournamentId}/register`)
-      .set("Authorization", `Bearer ${testUserObject.token}`)
-      .send({
-        team_id: testTeamId,
-        tournament_division_id: tournamentDivisionId,
-      });
-
     // Unregister the team
     const res = await request(app)
       .delete(`/api/tournaments/${testTournamentId}/unregister`)
@@ -288,7 +255,8 @@ describe("Tournament Controller API Tests", () => {
         tournament_division_id: tournamentDivisionId,
       })
       .first();
-    expect(registration).toBeNull();
+    // console.log("Registration after deletion:", registration);
+    expect(registration).toBeUndefined();
 
     // Verify the user is removed from the TournamentUser table if no other registrations exist
     const tournamentUser = await knex("TournamentUser")
@@ -297,7 +265,7 @@ describe("Tournament Controller API Tests", () => {
         tournament_id: testTournamentId,
       })
       .first();
-    expect(tournamentUser).toBeNull();
+    expect(tournamentUser).toBeUndefined();
   });
 
   test("POST /api/tournaments/:id/register should prevent duplicate registrations", async () => {

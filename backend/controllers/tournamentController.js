@@ -139,26 +139,6 @@ const unregisterFromTournament = async (req, res) => {
   }
 };
 
-// Fetch tournaments a user is registered for
-const getUserTournaments = async (req, res) => {
-  try {
-    console.log("Fetching tournaments for user:", req.params.id);
-    const tournaments = await tournamentService.getUserTournaments(
-      req.params.id
-    );
-    console.log("Tournaments found:", tournaments);
-    if (tournaments.length === 0) {
-      return res.status(404).json({ message: "No tournaments found for user" });
-    }
-    res.status(200).json(tournaments);
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch user tournaments",
-      details: error.message,
-    });
-  }
-};
-
 module.exports = {
   getAllTournaments,
   getTournamentById,
@@ -168,5 +148,4 @@ module.exports = {
   getTournamentTeams,
   registerForTournament,
   unregisterFromTournament,
-  getUserTournaments,
 };

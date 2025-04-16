@@ -76,10 +76,32 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getUserTournaments = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    // console.log("Fetching tournaments for user:", userId);
+
+    const tournaments = await userService.getUserTournaments(userId);
+    // console.log("Tournaments found:", tournaments);
+
+    if (!tournaments || tournaments.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No tournaments found for this user" });
+    }
+
+    res.status(200).json(tournaments);
+  } catch (error) {
+    console.error("Error fetching user tournaments:", error.message);
+    res.status(500).json({ message: "Failed to fetch user tournaments" });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  getUserTournaments,
 };

@@ -100,7 +100,7 @@ const registerForTournament = async (
       .where({ id: tournament_id })
       .first();
     if (!tournament) {
-      console.log("Tournament not found:", tournament_id);
+      // console.log("Tournament not found:", tournament_id);
       return { status: 404, message: "Tournament not found" };
     }
 
@@ -109,10 +109,7 @@ const registerForTournament = async (
       .where({ id: tournament_division_id, tournament_id })
       .first();
     if (!tournamentDivision) {
-      console.log("Tournament division not found:", {
-        tournament_division_id,
-        tournament_id,
-      });
+      // console.log("Tournament division not found:", { tournament_division_id, tournament_id,});
       return { status: 404, message: "Tournament division not found" };
     }
 
@@ -132,7 +129,7 @@ const registerForTournament = async (
       payment_status: "unpaid",
       created_at: new Date(),
     });
-    console.log("Registration created with ID:", registrationId);
+    // console.log("Registration created with ID:", registrationId);
 
     // Link the user to the tournament in the TournamentUser table
     const existingTournamentUser = await knex("TournamentUser")
@@ -144,7 +141,7 @@ const registerForTournament = async (
         tournament_id,
         created_at: new Date(),
       });
-      console.log("User linked to tournament:", { user_id, tournament_id });
+      // console.log("User linked to tournament:", { user_id, tournament_id });
     }
 
     return { id: registrationId };
@@ -202,7 +199,7 @@ const unregisterFromTournament = async (
     if (remainingRegistrations.count === 0) {
       // Remove the user from the TournamentUser table
       await knex("TournamentUser").where({ user_id, tournament_id }).del();
-      console.log("User removed from tournament:", { user_id, tournament_id });
+      // console.log("User removed from tournament:", { user_id, tournament_id });
     }
 
     return {
@@ -215,17 +212,6 @@ const unregisterFromTournament = async (
   }
 };
 
-// Fetch tournaments a user is registered for
-const getUserTournaments = async (user_id) => {
-  console.log("Fetching tournaments for user_id:", user_id);
-  const tournaments = await knex("TournamentUser")
-    .join("Tournament", "TournamentUser.tournament_id", "Tournament.id")
-    .where("TournamentUser.user_id", user_id)
-    .select("Tournament.*");
-  console.log("Query result:", tournaments);
-  return tournaments;
-};
-
 module.exports = {
   getAllTournaments,
   getTournamentById,
@@ -235,5 +221,4 @@ module.exports = {
   getTournamentTeams,
   registerForTournament,
   unregisterFromTournament,
-  getUserTournaments,
 };
