@@ -58,8 +58,7 @@ const CreateTournamentFormat = () => {
           {/* Option 1: Traditional Tournament format = Pool Play + Bracket
                 Check Fwango for tournament options? */}
 
-          {/* Format 1: General Format */}
-
+          {/* Dropdown 1: Format */}
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="format">Format</label>
@@ -79,8 +78,8 @@ const CreateTournamentFormat = () => {
             </div>
           </div>
 
+          {/* Dropdown 2: Bracket Style */}
           <div className="form-row">
-            {/* Format 2: Bracket Style */}
             <div className="form-group">
               <label htmlFor="bracketStyle">Bracket Style</label>
               <select
@@ -97,8 +96,8 @@ const CreateTournamentFormat = () => {
             </div>
           </div>
 
+          {/* Row 3: Tournament Rules */}
           <div className="form-row">
-            {/* Row 3: Tournament Rules */}
             <div className="form-group">
               <label htmlFor="rules">Rules</label>
               <input

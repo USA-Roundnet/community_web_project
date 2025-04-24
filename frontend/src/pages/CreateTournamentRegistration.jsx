@@ -1,20 +1,85 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/LoginPage.css';
+import Checkbox from '../components/Checkbox';
 
 const CreateTournamentRegistration = () => {
   const [formData, setFormData] = useState({
-    generalFormat: '',
-    teamSize: '',
-    rules: ''
+    deadline: '',
+    availability: '',
+    divisionsType: '',
+    numDivisons: 1,
+    divisions: [{
+      divisionName: '',
+      playersPerTeam: 1,
+      maxTeams: ''
+    }]
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+    
+  //   setFormData((prev) => {
+  //     let updatedData = {
+  //       ...prev,
+  //       [name]: name === 'numDivisons' ? parseInt(value) : value
+  //     };
+  
+  //     // Handle updating divisions array only when numDivisons changes
+  //     if (name === 'numDivisons') {
+  //       const num = parseInt(value) || 1;
+  //       updatedData.divisions = Array.from({ length: num }, (_, i) =>
+  //         prev.divisions[i] || { divisionName: '', playersPerTeam: '', maxTeams: '' }
+  //       );
+  //     }
+  
+  //     return updatedData;
+  //   });
+
+  //   if (formData.divisionsType == "usar") {
+  //     // Use formData.divisionsType == "usar" && "html"
+  //     // Create usar Divisions checkbox component to display
+  //   }
+  // };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  
+    // Match inputs like "divisionName-0", "playersPerTeam-1", etc.
+    const divisionMatch = name.match(/^(divisionName|playersPerTeam|maxTeams)-(\d+)$/);
+  
+    if (divisionMatch) {
+      const field = divisionMatch[1]; // e.g., "divisionName"
+      const index = parseInt(divisionMatch[2]); // e.g., 0, 1, 2
+  
+      setFormData((prev) => {
+        const updatedDivisions = [...prev.divisions];
+        updatedDivisions[index] = {
+          ...updatedDivisions[index],
+          [field]: value
+        };
+        return { ...prev, divisions: updatedDivisions };
+      });
+    } else {
+      setFormData((prev) => {
+        const updated = {
+          ...prev,
+          [name]: name === 'numDivisons' ? parseInt(value) : value
+        };
+  
+        if (name === 'numDivisons') {
+          const num = parseInt(value) || 1;
+          updated.divisions = Array.from({ length: num }, (_, i) =>
+            prev.divisions[i] || { divisionName: '', playersPerTeam: 1, maxTeams: '' }
+          );
+        }
+  
+        return updated;
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -22,8 +87,7 @@ const CreateTournamentRegistration = () => {
     setIsLoading(true);
     setError(null);
 
-    if (!formData.tournamentName || !formData.date || !formData.address1 || !formData.city || 
-        !formData.state || !formData.zipCode || !formData.country) {
+    if (!formData.deadline ) {
       setError('All fields are required.');
       setIsLoading(false);
       return;
@@ -47,183 +111,120 @@ const CreateTournamentRegistration = () => {
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
 
-          {/* Drop down menu?: Traditional (Pool Play & Bracket), Swiss, etc.
-                Talk to Ben - add as many tournament formats as possible */}
-          
-          {/* Option 1: Traditional Tournament format = Pool Play + Bracket
-                Check Fwango for tournament options? */}
-
-          {/* Format 1: General Format */}
-          <div className="form-group">
-            <label htmlFor="format">Format</label>
-            <select
-              id="format"
-              name="format"
-              value={formData.format}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Select format</option>
-              <option value="traditonal">Tradional</option>
-              <option value="swiss">Swiss</option>
-              <option value="custom">Custom</option>
-              <option value="other">other</option>
-            </select>
-          </div>
-
-            {/* Format 2: Team Format */}
+          {/* Option 1: Registration Deadline */}
+          <div className="form-row">
             <div className="form-group">
-              <label htmlFor="teamSize">Gender</label>
+              <label htmlFor="deadline">Registration Deadline</label>
               <select
-                id="teamSize"
-                name="teamSize"
-                value={formData.teamSize}
+                id="deadline"
+                name="deadline"
+                value={formData.deadline}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select team size</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="squad">squad</option>
+                <option value="">Select deadline</option>
+                <option value="1day">1 Day before tournament</option>
+                <option value="2day">2 Days before tournament</option>
+                <option value="1week">1 Week before tournament</option>
+                <option value="2week">2 Weeks before tournament</option>
+                <option value="1month">1 Month before tournament</option>
+                <option value="2month">2 Months before tournament</option>
+                <option value="other">other</option>
               </select>
             </div>
 
+            {/* Option 2: Tournament Availability */}
+            <div className="form-group">
+              <label htmlFor="availability">Tournament Availability</label>
+              <select
+                id="availability"
+                name="availability"
+                value={formData.availability}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select availability</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Divsions for Registration */}
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="tournamentName">Tournament Name</label>
-              <input
-                type="text"
-                id="tournamentName"
-                name="tournamentName"
-                value={formData.tournamentName}
+              <label htmlFor="divisionsType">USAR Divisons or Custom Divisions</label>
+              <select
+                id="divisionsType"
+                name="divisionsType"
+                value={formData.divisionsType}
                 onChange={handleChange}
-                placeholder="Tournament Name"
+                required
+              >
+                <option value="">Select type</option>
+                <option value="custom">Custom Divisions</option>
+                <option value="usar">USAR Divisions</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label htmlFor="numDivisons"># of Divisions</label>
+              <input
+                type="number"
+                id="numDivisons"
+                name="numDivisons"
+                value={formData.numDivisons}
+                onChange={handleChange}
+                placeholder="# of Divisions"
                 required
               />
             </div>
           </div>
 
-          {/* Row 2: Tournament Rules */}
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="rules">Rules</label>
-              <input
-                type="longText"
-                id="rules"
-                name="rules"
-                value={formData.rules}
-                onChange={handleChange}
-                placeholder="Ruleset"
-                optional
-              />
-            </div>
-          </div>
+          {/* <pre>{JSON.stringify(formData.divisions, null, 2)}</pre> */}
 
-          {/* Row 3: Date and Time */}
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="date">Date</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                placeholder="Date"
-                required
-              />
+          {/* Display once for each division*/}
+          {formData.divisions.map((division, index) => (
+            <div key={index}>
+              <h2>Division #{index + 1}</h2>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={`divisionName-${index}`}>Division Name</label>
+                  <input
+                    type="text"
+                    id={`divisionName-${index}`}
+                    name={`divisionName-${index}`}
+                    value={division.divisionName}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor={`playersPerTeam-${index}`}>Players per Team</label>
+                  <input
+                    type="number"
+                    id={`playersPerTeam-${index}`}
+                    name={`playersPerTeam-${index}`}
+                    value={division.playersPerTeam}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor={`maxTeams-${index}`}>Max # of Teams</label>
+                  <input
+                    type="number"
+                    id={`maxTeams-${index}`}
+                    name={`maxTeams-${index}`}
+                    value={division.maxTeams}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
             </div>
-            <div className="form-group">
-              <label htmlFor="time">Time</label>
-              <input
-                type="time"
-                id="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                placeholder="12:00"
-                optional
-              />
-            </div>
-          </div>
-
-          {/* Row 4,5,6: Location */}
-          <label htmlFor="location">Location</label>
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="address1"
-                name="address1"
-                value={formData.address1}
-                onChange={handleChange}
-                placeholder="Address 1"
-                required
-              />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="address2"
-                name="address2"
-                value={formData.address2}
-                onChange={handleChange}
-                placeholder="Address 2"
-                optional
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <input
-                type="text"
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="City"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                id="state"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                placeholder="State"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                id="zipCode"
-                name="zipCode"
-                value={formData.zipCode}
-                onChange={handleChange}
-                placeholder="Zip"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <input
-                type="text"
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                placeholder="United States"
-                required
-              />
-            </div>
-          </div>
+          ))}
 
           <button type="next" disabled={isLoading}>
             {isLoading ? 'Next...' : 'Next'}
