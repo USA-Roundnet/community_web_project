@@ -6,4 +6,5 @@ module.exports = {
   maxWorkers: 1, // Ensure tests run sequentially
   detectOpenHandles: true,
   forceExit: true,
+  collectCoverage: true,
 };
