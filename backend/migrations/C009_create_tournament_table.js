@@ -1,4 +1,3 @@
-// migrations/20250425_create_tournament_table.js
 exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("Tournament");
   if (!exists) {
@@ -9,35 +8,7 @@ exports.up = async function (knex) {
       table.string("state_province", 100);
       table.string("zip_code", 20);
       table.string("country", 100);
-      table
-        .enum("timezone", [
-          "UTC -12",
-          "UTC -11",
-          "UTC -10",
-          "UTC -9",
-          "UTC -8",
-          "UTC -7",
-          "UTC -6",
-          "UTC -5",
-          "UTC -4",
-          "UTC -3",
-          "UTC -2",
-          "UTC -1",
-          "UTC",
-          "UTC +1",
-          "UTC +2",
-          "UTC +3",
-          "UTC +4",
-          "UTC +5",
-          "UTC +6",
-          "UTC +7",
-          "UTC +8",
-          "UTC +9",
-          "UTC +10",
-          "UTC +11",
-          "UTC +12",
-        ])
-        .notNullable();
+      table.string("timezone", 50).notNullable(); // Use time zone strings
       table
         .enum("status", ["upcoming", "in_progress", "completed"])
         .notNullable();

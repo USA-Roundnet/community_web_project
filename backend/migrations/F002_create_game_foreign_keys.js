@@ -3,9 +3,9 @@ exports.up = async function (knex) {
   if (exists) {
     await knex.schema.alterTable("Game", (table) => {
       table
-        .foreign("serie_id")
+        .foreign("series_id")
         .references("id")
-        .inTable("Serie")
+        .inTable("Series")
         .onDelete("CASCADE");
     });
   }
@@ -15,7 +15,7 @@ exports.down = async function (knex) {
   const exists = await knex.schema.hasTable("Game");
   if (exists) {
     await knex.schema.alterTable("Game", (table) => {
-      table.dropForeign("serie_id");
+      table.dropForeign("series_id");
     });
   }
 };

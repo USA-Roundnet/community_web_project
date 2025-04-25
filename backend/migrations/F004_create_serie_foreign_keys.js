@@ -1,7 +1,7 @@
 exports.up = async function (knex) {
-  const exists = await knex.schema.hasTable("Serie");
+  const exists = await knex.schema.hasTable("Series");
   if (exists) {
-    await knex.schema.alterTable("Serie", (table) => {
+    await knex.schema.alterTable("Series", (table) => {
       table
         .foreign("tournament_id")
         .references("id")
@@ -22,9 +22,9 @@ exports.up = async function (knex) {
 };
 
 exports.down = async function (knex) {
-  const exists = await knex.schema.hasTable("Serie");
+  const exists = await knex.schema.hasTable("Series");
   if (exists) {
-    await knex.schema.alterTable("Serie", (table) => {
+    await knex.schema.alterTable("Series", (table) => {
       table.dropForeign("tournament_id");
       table.dropForeign("registration1_id");
       table.dropForeign("registration2_id");

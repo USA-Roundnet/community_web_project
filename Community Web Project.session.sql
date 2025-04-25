@@ -42,34 +42,7 @@ CREATE TABLE IF NOT EXISTS Tournament (
     state_province VARCHAR(100),
     zip_code VARCHAR(20),
     country VARCHAR(100),
-    timezone ENUM(
-        'UTC -12',
-        'UTC -11',
-        'UTC -10',
-        'UTC -9',
-        'UTC -8',
-        'UTC -7',
-        'UTC -6',
-        'UTC -5',
-        'UTC -4',
-        'UTC -3',
-        'UTC -2',
-        'UTC -1',
-        'UTC',
-        'UTC +1',
-        'UTC +2',
-        'UTC +3',
-        'UTC +4',
-        'UTC +5',
-        'UTC +6',
-        'UTC +7',
-        'UTC +8',
-        'UTC +9',
-        'UTC +10',
-        'UTC +11',
-        'UTC +12'
-    ) NOT NULL,
-    -- timezone will be derived from address
+    timezone VARCHAR(50) NOT NULL,
     status ENUM('upcoming', 'in_progress', 'completed') NOT NULL,
     format ENUM('asl', 'college', 'classic') NOT NULL,
     phone_number VARCHAR(20),
@@ -106,7 +79,7 @@ CREATE TABLE IF NOT EXISTS TournamentDivision (
     FOREIGN KEY (division_id) REFERENCES Division(id) ON DELETE CASCADE,
     FOREIGN KEY (tournament_id) REFERENCES Tournament(id) ON DELETE CASCADE
 );
--- Registration Table (created without serie_id initially)
+-- Registration Table (created without series_id initially)
 CREATE TABLE IF NOT EXISTS Registration (
     id INT AUTO_INCREMENT PRIMARY KEY,
     team_id INT,
@@ -120,8 +93,8 @@ CREATE TABLE IF NOT EXISTS Registration (
     FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE,
     FOREIGN KEY (tournament_division_id) REFERENCES TournamentDivision(id) ON DELETE CASCADE
 );
--- Serie Table (created after Registration)
-CREATE TABLE IF NOT EXISTS Serie (
+-- Series Table (created after Registration)
+CREATE TABLE IF NOT EXISTS Series (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tournament_id INT,
     registration1_id INT,
@@ -135,18 +108,18 @@ CREATE TABLE IF NOT EXISTS Serie (
     FOREIGN KEY (winner_id) REFERENCES Registration(id) ON DELETE
     SET NULL
 );
--- Add serie_id column and foreign key to Registration table
+-- Add series_id column and foreign key to Registration table
 SET @col_exists = (
         SELECT COUNT(*)
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_NAME = 'Registration'
-            AND COLUMN_NAME = 'serie_id'
+            AND COLUMN_NAME = 'series_id'
     );
 SET @sql_stmt = IF(
         @col_exists = 0,
         'ALTER TABLE Registration 
-ADD COLUMN serie_id INT, 
-ADD CONSTRAINT fk_serie_id FOREIGN KEY (serie_id) REFERENCES Serie(id) ON DELETE
+ADD COLUMN series_id INT, 
+ADD CONSTRAINT fk_serie_id FOREIGN KEY (series_id) REFERENCES Series(id) ON DELETE
 SET NULL;',
         'SELECT "Column exists, skipping";'
     );
@@ -178,13 +151,13 @@ CREATE TABLE IF NOT EXISTS UserOrganization (
 -- Game Table
 CREATE TABLE IF NOT EXISTS Game (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    serie_id INT,
+    series_id INT,
     game_number INT,
     team1_score INT,
     team2_score INT,
     status ENUM('not_started', 'in_progress', 'completed') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (serie_id) REFERENCES Serie(id) ON DELETE CASCADE
+    FOREIGN KEY (series_id) REFERENCES Series(id) ON DELETE CASCADE
 );
 -- BoxScore Table
 CREATE TABLE IF NOT EXISTS BoxScore (

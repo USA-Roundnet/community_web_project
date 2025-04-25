@@ -1,8 +1,7 @@
-// migrations/20250320_create_serie_table.js
 exports.up = async function (knex) {
-  const exists = await knex.schema.hasTable("Serie");
+  const exists = await knex.schema.hasTable("Series");
   if (!exists) {
-    await knex.schema.createTable("Serie", (table) => {
+    await knex.schema.createTable("Series", (table) => {
       table.increments("id").primary();
       table.integer("tournament_id").unsigned().notNullable();
       table.integer("registration1_id").unsigned().notNullable();
@@ -17,5 +16,5 @@ exports.up = async function (knex) {
 };
 
 exports.down = async function (knex) {
-  await knex.schema.dropTableIfExists("Serie");
+  await knex.schema.dropTableIfExists("Series");
 };

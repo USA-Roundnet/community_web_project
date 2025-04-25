@@ -1,4 +1,3 @@
-// migrations/20250320_create_tournament_division_table.js
 exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("TournamentDivision");
   if (!exists) {

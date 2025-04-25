@@ -1,4 +1,3 @@
-// migrations/20250320_create_box_score_table.js
 exports.up = async function (knex) {
   const exists = await knex.schema.hasTable("BoxScore");
   if (!exists) {
