@@ -31,8 +31,7 @@ const validateUserData = (userData) => {
   }
 
   if (phone_number) {
-    const validPhoneNumber =
-      /^(\+1\s?)?(\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}$/;
+    const validPhoneNumber = /^[\d\s()+-]+$/; // Allows digits, spaces, parentheses, plus, and dashes
     if (!validPhoneNumber.test(phone_number)) {
       errors.push("Invalid phone number.");
     }
