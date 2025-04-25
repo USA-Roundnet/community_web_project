@@ -1,0 +1,1 @@
+copy the file path to the index.html file in the lcov-report directory into your browser to see the coverage report
