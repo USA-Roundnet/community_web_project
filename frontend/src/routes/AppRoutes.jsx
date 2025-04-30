@@ -8,6 +8,7 @@ import HomePage from '../pages/HomePage';
 // import CreateTournamentPage from '../pages/CreateTournamentPage';
 // import RankingsPage from '../pages/RankingsPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import EventsPage from '../pages/EventsPage';
 
 const AppRoutes = () => {
   return (
@@ -19,6 +20,7 @@ const AppRoutes = () => {
       <Route path="/tournaments/create" element={<CreateTournamentPage />} />
       <Route path="/rankings" element={<RankingsPage />} /> */}
 
+      <Route path="/events" element={<EventsPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
