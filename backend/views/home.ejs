@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amazon Cognito authentication with Node example</title>
+</head>
+<body>
+<div>
+    <h1>Amazon Cognito User Pool Demo</h1>
+    
+    <% if (isAuthenticated) { %>
+        <div>
+            <h2>Welcome, <%= userInfo.username || userInfo.email %></h2>
+            <p>Here are some attributes you can use as a developer:</p>
+            <p><%= JSON.stringify(userInfo, null, 4) %></p>
+        </div>
+        <a href="/logout">Logout</a>
+    <% } else { %>
+        <p>Please log in to continue</p>
+        <a href="/login">Login</a>
+    <% } %>
+</div>
+</body>
+</html>

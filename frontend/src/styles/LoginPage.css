@@ -1,0 +1,95 @@
+.login-container {
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5;
+  }
+  
+  .login-card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 800px; /* Increased for multiple columns */
+    color: black;
+  }
+  
+  .login-card h2 {
+    color: black;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem; /* Space between columns */
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group {
+    flex: 1; /* Equal width for columns */
+    min-width: 150px; /* Minimum width for readability */
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: black;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: black;
+    background-color: white;
+  }
+  
+  .form-group input::placeholder {
+    color: #666;
+  }
+  
+  button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  button:disabled {
+    background-color: #cccccc;
+    color: white;
+    cursor: not-allowed;
+  }
+  
+  .error-message {
+    color: #dc3545;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    background-color: #f8d7da;
+  }
+  
+  .create-account-link, .login-link {
+    color: black;
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .create-account-link a, .login-link a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .create-account-link a:hover, .login-link a:hover {
+    text-decoration: underline;
+  }
