@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/LoginPage.css';
-import Checkbox from '../components/Checkbox';
 
 const CreateTournamentRegistration = () => {
   const [formData, setFormData] = useState({
