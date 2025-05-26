@@ -11,44 +11,19 @@ const CreateTournamentRegistration = () => {
     divisions: [{
       divisionName: '',
       playersPerTeam: 1,
-      maxTeams: ''
+      maxTeams: '',
+      fee: ''
     }]
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // const handleChange = (e) => {
-  //   const { name, value } = e.target;
-    
-  //   setFormData((prev) => {
-  //     let updatedData = {
-  //       ...prev,
-  //       [name]: name === 'numDivisons' ? parseInt(value) : value
-  //     };
-  
-  //     // Handle updating divisions array only when numDivisons changes
-  //     if (name === 'numDivisons') {
-  //       const num = parseInt(value) || 1;
-  //       updatedData.divisions = Array.from({ length: num }, (_, i) =>
-  //         prev.divisions[i] || { divisionName: '', playersPerTeam: '', maxTeams: '' }
-  //       );
-  //     }
-  
-  //     return updatedData;
-  //   });
-
-  //   if (formData.divisionsType == "usar") {
-  //     // Use formData.divisionsType == "usar" && "html"
-  //     // Create usar Divisions checkbox component to display
-  //   }
-  // };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
   
     // Match inputs like "divisionName-0", "playersPerTeam-1", etc.
-    const divisionMatch = name.match(/^(divisionName|playersPerTeam|maxTeams)-(\d+)$/);
+    const divisionMatch = name.match(/^(divisionName|playersPerTeam|maxTeams|fee)-(\d+)$/);
   
     if (divisionMatch) {
       const field = divisionMatch[1]; // e.g., "divisionName"
@@ -72,7 +47,7 @@ const CreateTournamentRegistration = () => {
         if (name === 'numDivisons') {
           const num = parseInt(value) || 1;
           updated.divisions = Array.from({ length: num }, (_, i) =>
-            prev.divisions[i] || { divisionName: '', playersPerTeam: 1, maxTeams: '' }
+            prev.divisions[i] || { divisionName: '', playersPerTeam: 2, maxTeams: '', fee: '' }
           );
         }
   
@@ -179,12 +154,10 @@ const CreateTournamentRegistration = () => {
             </div>
           </div>
 
-          {/* <pre>{JSON.stringify(formData.divisions, null, 2)}</pre> */}
-
           {/* Display once for each division*/}
           {formData.divisions.map((division, index) => (
             <div key={index}>
-              <h2>Division #{index + 1}</h2>
+              <h2 className="text-lg font-bold">Division #{index + 1}</h2>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor={`divisionName-${index}`}>Division Name</label>
@@ -219,6 +192,17 @@ const CreateTournamentRegistration = () => {
                     value={division.maxTeams}
                     onChange={handleChange}
                     required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor={`fee-${index}`}>Registration Fee (USD)</label>
+                  <input
+                    type="number"
+                    id={`fee-${index}`}
+                    name={`fee-${index}`}
+                    value={division.fee}
+                    onChange={handleChange}
+                    optional
                   />
                 </div>
               </div>

@@ -7,7 +7,7 @@ const TournamentsPage = () => {
     <div className="w-screen min-h-screen bg-gray-50">
       <Navbar />
       
-      <section>
+      <section className="max-w-7xl mx-auto px-4 py-8">
         <h1>Tournaments Page</h1>
         <Link to="/tournaments/create">
           <button id="createButton"

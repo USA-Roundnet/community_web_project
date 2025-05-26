@@ -13,7 +13,10 @@ const CreateTournamentBasicInfo = () => {
     city: '',
     state: '',
     zipCode: '',
-    country: ''
+    country: '',
+    tdName: '',
+    tdPhone: '',
+    tdEmail: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,7 +33,8 @@ const CreateTournamentBasicInfo = () => {
     setError(null);
 
     if (!formData.tournamentName || !formData.date || !formData.address1 || !formData.city || 
-        !formData.state || !formData.zipCode || !formData.country) {
+        !formData.state || !formData.zipCode || !formData.country ||
+        !formData.tdName || !formData.tdPhone || !formData.tdEmail) {
       setError('All fields are required.');
       setIsLoading(false);
       return;
@@ -50,7 +54,7 @@ const CreateTournamentBasicInfo = () => {
     <div className="login-container" style={{ minHeight: '100vh', backgroundColor: 'lightgray' }}>
       <div className="login-card">
         <h1>Create Tournament</h1>
-        <h2>Basic Info</h2>
+        <h2 className="text-xl mt-5">Basic Info</h2>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           {/* Row 1: Tournament Name */}
@@ -184,6 +188,49 @@ const CreateTournamentBasicInfo = () => {
                 value={formData.country}
                 onChange={handleChange}
                 placeholder="United States"
+                required
+              />
+            </div>
+          </div>
+
+          {/* TD info - should add readonly fields that pull from Account info */}
+          <h2 className="text-xl mt-5">Tournament Director Info</h2>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="tdName">TD Name</label>
+              <input
+                type="text"
+                id="tdName"
+                name="tdName"
+                value={formData.tdName}
+                onChange={handleChange}
+                placeholder="Name"
+                required
+              />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="tdPhone">TD Phone Number</label>
+              <input
+                type="tel"
+                id="tdPhone"
+                name="tdPhone"
+                value={formData.tdPhone}
+                onChange={handleChange}
+                placeholder="1234567890"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="tdEmail">TD Email Address</label>
+              <input
+                type="email"
+                id="tdEmail"
+                name="tdEmail"
+                value={formData.tdEmail}
+                onChange={handleChange}
+                placeholder="example@email.com"
                 required
               />
             </div>
