@@ -1,3 +1,4 @@
+
 .login-container {
     min-height: 100vh;
     min-width: 100vw;
@@ -13,7 +14,7 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 800px; /* Increased for multiple columns */
+    max-width: 800px; 
     color: black;
   }
   
@@ -26,13 +27,13 @@
   .form-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem; /* Space between columns */
+    gap: 1rem; 
     margin-bottom: 1.5rem;
   }
   
   .form-group {
-    flex: 1; /* Equal width for columns */
-    min-width: 150px; /* Minimum width for readability */
+    flex: 1; 
+    min-width: 150px; 
   }
   
   .form-group label {
@@ -54,7 +55,7 @@
   .form-group input::placeholder {
     color: #666;
   }
-  
+  /*
   button {
     width: 100%;
     padding: 0.75rem;
@@ -70,7 +71,7 @@
     color: white;
     cursor: not-allowed;
   }
-  
+  */
   .error-message {
     color: #dc3545;
     padding: 0.75rem;
@@ -93,3 +94,4 @@
   .create-account-link a:hover, .login-link a:hover {
     text-decoration: underline;
   }
+  
