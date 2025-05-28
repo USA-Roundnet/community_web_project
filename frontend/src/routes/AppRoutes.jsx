@@ -15,9 +15,9 @@ import EventsPage from '../pages/EventsPage';
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<LoginPage />} />
-      <Route path="/create-account" element={<CreateAccountPage />} />
-      <Route path="/home" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<CreateAccountPage />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/tournaments" element={<TournamentsPage />} />
       <Route path="/tournaments/create" element={<CreateTournamentBasicInfo />} />
       <Route path="/tournaments/create/format" element={<CreateTournamentFormat />} />
