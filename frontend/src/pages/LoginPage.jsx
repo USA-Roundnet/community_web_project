@@ -29,7 +29,11 @@ const LoginPage = () => {
         <div className="h-[100vh] flex flex-row justify-center items-center min-h-screen">
             <div className="bg-[#f8f8f8] h-full w-1/2 flex justify-center items-center p-8">
                 <Link to="/">
-                    <img src={logo} alt="RallyPoint logo" className="h-[30vh]" />
+                    <img
+                        src={logo}
+                        alt="RallyPoint logo"
+                        className="h-[30vh]"
+                    />
                 </Link>
             </div>
             <div className="bg-[#225975] w-1/2 h-full flex flex-col justify-center items-center p-8">
@@ -88,6 +92,16 @@ const LoginPage = () => {
                         </Link>
                         .
                     </p>
+                </div>
+                <div className="w-[60%] h-[3%]"><hr /></div>
+
+                <div className="w-[60%] h-[10%] flex flex-col justify-evenly items-center">
+                    <button
+                        className="w-full p-4 rounded-md bg-black text-white font-semibold"
+                        disabled={isLoading}
+                    >
+                        Login with Google
+                    </button>
                 </div>
             </div>
         </div>
