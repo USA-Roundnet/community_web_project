@@ -58,7 +58,7 @@ const Navbar = () => {
                 </div>
                 <div className="flex items-center">
                     <Link
-                        className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300"
+                        className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
                         to={loggedIn ? "/profile" : "/login"}
                     >
                         {loggedIn ? "Account" : "Login"}
