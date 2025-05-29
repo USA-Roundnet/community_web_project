@@ -2,7 +2,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import LoginPage from "../pages/LoginPage";
-import CreateAccountPage from "../pages/CreateAccountPage";
+import RegistrationPage from "../pages/RegistrationPage";
 import HomePage from "../pages/HomePage";
 import TournamentsPage from "../pages/TournamentsPage";
 import CreateTournamentBasicInfo from "../pages/CreateTournamentBasicInfo";
@@ -12,6 +12,7 @@ import CreateTournamentRegistration from "../pages/CreateTournamentRegistration"
 import NotFoundPage from "../pages/NotFoundPage";
 import EventsPage from "../pages/EventsPage";
 import Layout from "../components/Outlet";
+import ForgotPage from "../pages/ForgotPage";
 
 const AppRoutes = () => {
     return (
@@ -25,12 +26,11 @@ const AppRoutes = () => {
                 <Route path="/events" element={<EventsPage />} />
             </Route>
 
-            {/* Routes that DO NOT use the layout */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<CreateAccountPage />} />
-            <Route path="/forgot" element={<LoginPage />} />
+            <Route path="/register" element={<RegistrationPage />} />
+            <Route path="/forgot" element={<ForgotPage />} />
+        
 
-            {/* 404 Page */}
             <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );
