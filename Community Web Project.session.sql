@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS User (
     id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    username VARCHAR(255) UNIQUE,
+    username VARCHAR(255) UNIQUE NOT NULL,
     gender ENUM('male', 'female', 'other'),
     email VARCHAR(255) UNIQUE NOT NULL,
     city VARCHAR(100),
@@ -60,7 +60,9 @@ CREATE TABLE IF NOT EXISTS Team (
     public BOOLEAN DEFAULT TRUE,
     size INT,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_type_id) REFERENCES TeamType(id) ON DELETE
+    SET NULL
 );
 -- Division Table
 CREATE TABLE IF NOT EXISTS Division (
@@ -132,10 +134,19 @@ CREATE TABLE IF NOT EXISTS UserTeam (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
     team_id INT,
+    role ENUM('player', 'coach', 'other') NOT NULL,
     status ENUM('invited', 'accepted', 'declined') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE
+);
+CREATE TABLE TeamType (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50),
+    -- e.g., "4-player", "with-coach"
+    max_players INT,
+    max_coaches INT description TEXT,
+    description TEXT,
 );
 -- UserOrganization Table
 CREATE TABLE IF NOT EXISTS UserOrganization (

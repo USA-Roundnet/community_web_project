@@ -5,6 +5,7 @@ exports.up = async function (knex) {
       table.increments("id").primary();
       table.integer("user_id").unsigned().notNullable();
       table.integer("team_id").unsigned().notNullable();
+      table.enum("role", ["player", "coach", "other"]).notNullable();
       table.enum("status", ["invited", "accepted", "declined"]).notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });

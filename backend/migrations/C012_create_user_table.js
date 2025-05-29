@@ -18,7 +18,7 @@ exports.up = async function (knex) {
       table.string("profile_picture_url", 255);
       table.text("password");
       table.enum("auth_provider", ["local", "google"]);
-      table.string("google_id", 255);
+      table.string("google_id", 255).unique();
       table.timestamp("created_at").defaultTo(knex.fn.now());
       table.integer("elo");
       table.integer("rank");
