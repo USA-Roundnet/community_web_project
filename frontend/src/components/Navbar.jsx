@@ -1,15 +1,13 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
 const Navbar = () => {
     const location = useLocation();
-    const [loggedIn, setLoggedIn] = React.useState(false);
+    const [loggedIn, setLoggedIn] = useState(false);
 
     // Simulate logged-in state for demonstration purposes
-    React.useEffect(() => {
-        // Here you would typically check the authentication state
-        // For this example, we'll just toggle loggedIn state
+    useEffect(() => {
         const isAuthenticated = localStorage.getItem("loggedIn") === "true";
         setLoggedIn(isAuthenticated);
     }, []);
@@ -41,10 +39,7 @@ const Navbar = () => {
                         <Link to="/" className={`${isActive("/")}`}>
                             Home
                         </Link>
-                        <Link
-                            to="/events"
-                            className={`${isActive("/events")}`}
-                        >
+                        <Link to="/events" className={`${isActive("/events")}`}>
                             Events
                         </Link>
                         <Link
@@ -62,10 +57,11 @@ const Navbar = () => {
                     </div>
                 </div>
                 <div className="flex items-center">
-                    <Link to={loggedIn ? "profile" : "login"}>
-                        <button className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300">
-                            {loggedIn ? "Account" : "Login"}
-                        </button>
+                    <Link
+                        className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300"
+                        to={loggedIn ? "/profile" : "/login"}
+                    >
+                        {loggedIn ? "Account" : "Login"}
                     </Link>
                 </div>
             </div>
