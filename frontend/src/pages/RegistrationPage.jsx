@@ -84,7 +84,7 @@ const RegistrationPage = () => {
                 </h2>
                 {error && <div className="error-message">{error}</div>}
                 <form
-                    className="flex flex-col h-[55%] justify-between w-[60%]"
+                    className="flex flex-col h-[55%] justify-between w-[75%]"
                     onSubmit={handleSubmit}
                 >
                     {/* Row 1: First Name, Last Name */}
