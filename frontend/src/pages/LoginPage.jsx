@@ -28,7 +28,9 @@ const LoginPage = () => {
     return (
         <div className="h-[100vh] flex flex-row justify-center items-center min-h-screen">
             <div className="bg-[#f8f8f8] h-full w-1/2 flex justify-center items-center p-8">
-                <img src={logo} className="h-[30vh]" />
+                <Link to="/">
+                    <img src={logo} className="h-[30vh]" />
+                </Link>
             </div>
             <div className="bg-[#225975] w-1/2 h-full flex flex-col justify-center items-center p-8">
                 <h2 className="text-[#fff] text-3xl h-[10%] font-bold">
