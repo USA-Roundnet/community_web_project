@@ -1,28 +1,15 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
-const LoginPage = () => {
+function ForgotPage() {
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const navigate = useNavigate();
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setError(null);
-
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            navigate("/dashboard", { replace: true });
-        } catch (err) {
-            console.error("Login error:", err);
-            setError("Login failed. Please check your credentials.");
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     return (
@@ -33,12 +20,12 @@ const LoginPage = () => {
                 </Link>
             </div>
             <div className="bg-[#225975] w-1/2 h-full flex flex-col justify-center items-center p-8">
-                <h2 className="text-[#fff] text-3xl h-[10%] font-bold">
-                    Login
+                <h2 className="text-[#fff] text-3xl h-[7%] font-bold">
+                    Forgot Password
                 </h2>
-                {error && <div className="">{error}</div>}
+                <p className="text-[#fff] h-[7%]">Enter your email and we&apos;ll send you a link to reset your password.</p>
                 <form
-                    className="flex flex-col h-[30%] justify-around w-[60%]"
+                    className="flex flex-col h-[20%] justify-around w-[60%]"
                     onSubmit={handleSubmit}
                 >
                     <input
@@ -50,39 +37,21 @@ const LoginPage = () => {
                         placeholder="Email"
                         required
                     />
-                    <input
-                        className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        required
-                    />
-                    <p>
-                        Forgot your password? Reset it{" "}
-                        <Link
-                            className="text-[#FFE34A] transition-colors duration-200 underline "
-                            to="/forgot"
-                        >
-                            here
-                        </Link>
-                        .
-                    </p>
+                   
                     <button
                         className="w-full p-4 rounded-md bg-black text-white font-semibold"
                         type="submit"
                         disabled={isLoading}
                     >
-                        {isLoading ? "Logging in..." : "Login"}
+                        {isLoading ? "Sending Reset Link..." : "Send Reset Link"}
                     </button>
                 </form>
                 <div className="h-[10%] flex flex-col justify-evenly items-center">
                     <p>
-                        Don&apos;t have an account? Sign up{" "}
+                        Have an account? Login{" "}
                         <Link
                             className="text-[#FFE34A] transition-colors duration-200 underline "
-                            to="/register"
+                            to="/login"
                         >
                             here
                         </Link>
@@ -92,6 +61,6 @@ const LoginPage = () => {
             </div>
         </div>
     );
-};
+}
 
-export default LoginPage;
+export default ForgotPage;
