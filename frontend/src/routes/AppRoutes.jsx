@@ -24,6 +24,7 @@ const AppRoutes = () => {
                 <Route path="/tournaments/create/format" element={<CreateTournamentFormat />} />
                 <Route path="/tournaments/create/registration" element={<CreateTournamentRegistration />} />
                 <Route path="/events" element={<EventsPage />} />
+                <Route path="*" element={<NotFoundPage />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />
@@ -31,7 +32,7 @@ const AppRoutes = () => {
             <Route path="/forgot" element={<ForgotPage />} />
         
 
-            <Route path="*" element={<NotFoundPage />} />
+            
         </Routes>
     );
 };
