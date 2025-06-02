@@ -39,14 +39,14 @@ const Navbar = () => {
                         <Link to="/" className={`${isActive("/")}`}>
                             Home
                         </Link>
-                        <Link to="/events" className={`${isActive("/events")}`}>
-                            Events
+                        <Link to="/about" className={`${isActive("/about")}`}>
+                            About
                         </Link>
                         <Link
-                            to="/tournaments"
-                            className={`${isActive("/tournaments")}`}
+                            to="/events"
+                            className={`${isActive("/events")}`}
                         >
-                            Tournaments
+                            Events
                         </Link>
                         <Link
                             to="/rankings"
