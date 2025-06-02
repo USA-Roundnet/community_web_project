@@ -10,20 +10,20 @@ import CreateTournamentFormat from "../pages/CreateTournamentFormat";
 import CreateTournamentRegistration from "../pages/CreateTournamentRegistration";
 // import RankingsPage from '../pages/RankingsPage';
 import NotFoundPage from "../pages/NotFoundPage";
-import EventsPage from "../pages/EventsPage";
 import Layout from "../components/Outlet";
 import ForgotPage from "../pages/ForgotPage";
+import AboutPage from "../pages/AboutPage";
 
 const AppRoutes = () => {
     return (
          <Routes>
             <Route element={<Layout />}>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/tournaments" element={<TournamentsPage />} />
-                <Route path="/tournaments/create" element={<CreateTournamentBasicInfo />} />
-                <Route path="/tournaments/create/format" element={<CreateTournamentFormat />} />
-                <Route path="/tournaments/create/registration" element={<CreateTournamentRegistration />} />
-                <Route path="/events" element={<EventsPage />} />
+                <Route path="/events" element={<TournamentsPage />} />
+                <Route path="/events/create" element={<CreateTournamentBasicInfo />} />
+                <Route path="/events/create/format" element={<CreateTournamentFormat />} />
+                <Route path="/events/create/registration" element={<CreateTournamentRegistration />} />
+                <Route path="/about" element={<AboutPage />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Route>
 
