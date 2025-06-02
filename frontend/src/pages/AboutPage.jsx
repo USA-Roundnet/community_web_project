@@ -2,7 +2,7 @@ import { useState } from "react";
 import EventCard from "../components/EventCard";
 import TabButton from "../components/TabButton";
 
-const EventsPage = () => {
+const AboutPage = () => {
     const [activeTab, setActiveTab] = useState("upcoming");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -101,4 +101,4 @@ const EventsPage = () => {
     );
 };
 
-export default EventsPage;
+export default AboutPage;
