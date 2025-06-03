@@ -1,8 +1,3 @@
-/**
- * Tournament Controller API Tests
- * NOTE: might not work with current schema changes 6/3/2025
- */
-
 const request = require("supertest");
 const { app, startServer, stopServer } = require("../index");
 const knex = require("../knex-config.js");
