@@ -70,7 +70,7 @@ const AccountPage = () => {
                     {activeTab === "account" && (
                         <PersonalInfo user={userData} />
                     )}
-                    {activeTab === "memberships" && <Memberships />}
+                    {activeTab === "memberships" }
                     {activeTab === "stats" && (
                         <PersonalStats stats={userStats} />
                     )}
