@@ -2,8 +2,13 @@ const PersonalInfo = ({ user }) => {
     return (
         <div className="personal-info">
             <h2 className="text-2xl font-bold">Personal Information</h2>
-            <div className="info-item">
-                <strong>Name:</strong> {user.firstName} {user.lastName}
+            <div className="">
+                <h2>
+                    {user.firstName} {user.lastName}
+                </h2>
+                <p>
+                    {user.city}, {user.state}, {user.country}
+                </p>
             </div>
             <div className="info-item">
                 <strong>Email:</strong> {user.email}
@@ -11,15 +16,11 @@ const PersonalInfo = ({ user }) => {
             <div className="info-item">
                 <strong>Phone Number:</strong> {user.phoneNumber}
             </div>
-            <div className="info-item">
-                <strong>City:</strong> {user.city}
-            </div>
-            <div className="info-item">
-                <strong>State:</strong> {user.state}
-            </div>
-            <div className="info-item">
-                <strong>Country:</strong> {user.country}
-            </div>
+            <h2 className="text-lg font-bold mb-2">Memberships</h2>
+            <ul>
+                <li>NYC Roundnet Club - Active</li>
+                <li>USA Roundnet Association - Expired</li>
+            </ul>
         </div>
     );
 };
