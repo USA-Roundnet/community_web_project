@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import PersonalInfo from "../components/PersonalInfo";
 import PersonalStats from "../components/PersonalStats";
 import Memberships from "../components/Memberships";
+import Teammates from "../components/Teammates";
 
 const AccountPage = () => {
     const [activeTab, setActiveTab] = useState("account");
@@ -13,6 +14,7 @@ const AccountPage = () => {
         city: "NYC",
         state: "NY",
         country: "USA",
+        gender: "Male",
         profilePicture: "",
     };
 
@@ -28,10 +30,29 @@ const AccountPage = () => {
         errors: 10,
     };
 
+    const teammates = [
+    {
+        name: "Alice Johnson",
+        email: "alice.johnson@example.com",
+        events: ["NYC Roundnet Tournament", "LA Roundnet Meetup"],
+    },
+    {
+        name: "Bob Smith",
+        email: "bob.smith@example.com",
+        events: ["Chicago Roundnet Championship"],
+    },
+    {
+        name: "Charlie Lee",
+        email: "charlie.lee@example.com",
+        events: ["Miami Beach Roundnet Festival", "Austin Roundnet Jam"],
+    },
+];
+
     // Refs for scrolling
     const accountRef = useRef(null);
     const membershipsRef = useRef(null);
     const statsRef = useRef(null);
+    const teammatesRef = useRef(null);
 
     // Scroll to the selected section
     const handleScrollTo = (section) => {
@@ -40,6 +61,7 @@ const AccountPage = () => {
         if (section === "account") ref = accountRef;
         else if (section === "memberships") ref = membershipsRef;
         else if (section === "stats") ref = statsRef;
+        else if (section === "teammates") ref = teammatesRef;
         if (ref && ref.current) {
             ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
         }
@@ -79,6 +101,16 @@ const AccountPage = () => {
                     >
                         Player Stats
                     </button>
+                    <button
+                        className={`px-4 py-2 text-xl rounded transition-colors hover:cursor-pointer ${
+                            activeTab === "teammates"
+                                ? "text-blue-900 font-bold"
+                                : "hover:text-blue-900"
+                        }`}
+                        onClick={() => handleScrollTo("teammates")}
+                    >
+                        Teammates
+                    </button>
                 </div>
 
                 <div
@@ -104,6 +136,8 @@ const AccountPage = () => {
                     <div ref={statsRef}>
                         <PersonalStats stats={userStats} />
                     </div>
+                    <div ref={teammatesRef}>
+                        <Teammates teammates={teammates} /></div>
                 </div>
             </div>
         </div>
