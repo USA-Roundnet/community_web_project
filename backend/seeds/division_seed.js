@@ -7,12 +7,10 @@ exports.seed = async function (knex) {
   await knex("Division").insert([
     {
       name: "Open",
-      max_teams: 16,
       created_at: new Date(),
     },
     {
       name: "Premier",
-      max_teams: 16,
       created_at: new Date(),
     },
   ]);

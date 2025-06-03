@@ -7,7 +7,7 @@ exports.seed = async function (knex) {
       state_province: "State 1",
       zip_code: "12345",
       country: "Country 1",
-      timezone: "EST",
+      timezone: "America/New_York",
       status: "upcoming",
       format: "asl",
       phone_number: "123-456-7890",
