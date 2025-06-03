@@ -1,7 +1,7 @@
-import UpcomingEvents from "../components/UpcomingEvents";
+import { useState, useRef } from "react";
 import PersonalInfo from "../components/PersonalInfo";
 import PersonalStats from "../components/PersonalStats";
-import { useState } from "react";
+import Memberships from "../components/Memberships";
 
 const AccountPage = () => {
     const [activeTab, setActiveTab] = useState("account");
@@ -28,52 +28,82 @@ const AccountPage = () => {
         errors: 10,
     };
 
+    // Refs for scrolling
+    const accountRef = useRef(null);
+    const membershipsRef = useRef(null);
+    const statsRef = useRef(null);
+
+    // Scroll to the selected section
+    const handleScrollTo = (section) => {
+        setActiveTab(section);
+        let ref = null;
+        if (section === "account") ref = accountRef;
+        else if (section === "memberships") ref = membershipsRef;
+        else if (section === "stats") ref = statsRef;
+        if (ref && ref.current) {
+            ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
+
     return (
         <div className="h-[85vh] w-full flex flex-row items-center justify-center p-8 bg-[#f8f8f8] text-black">
-            <div className="h-full w-7/8 full flex flex-row">
-                <div className="flex flex-col h-1/4 justify-evenly items-center w-1/4 items-start">
+            <div className="h-full w-7/8 flex flex-row">
+                <div className="flex flex-col h-1/4 justify-evenly items-center w-1/4 items-start sticky top-24">
                     <button
-                        className={`px-4 py-2 text-xl rounded transition-colors  ${
+                        className={`px-4 py-2 text-xl rounded transition-colors hover:cursor-pointer ${
                             activeTab === "account"
                                 ? "text-blue-900 font-bold"
                                 : "hover:text-blue-900"
                         }`}
-                        onClick={() => setActiveTab("account")}
+                        onClick={() => handleScrollTo("account")}
                     >
                         Account
                     </button>
                     <button
-                        className={`px-4 py-2 text-xl rounded transition-colors ${
+                        className={`px-4 py-2 text-xl rounded transition-colors hover:cursor-pointer ${
                             activeTab === "memberships"
                                 ? "text-blue-900 font-bold"
                                 : "hover:text-blue-900"
                         }`}
-                        onClick={() => setActiveTab("memberships")}
+                        onClick={() => handleScrollTo("memberships")}
                     >
                         Memberships
                     </button>
                     <button
-                        className={`px-4 py-2 text-xl rounded transition-colors ${
+                        className={`px-4 py-2 text-xl rounded transition-colors hover:cursor-pointer ${
                             activeTab === "stats"
                                 ? "text-blue-900 font-bold"
                                 : "hover:text-blue-900"
                         }`}
-                        onClick={() => setActiveTab("stats")}
+                        onClick={() => handleScrollTo("stats")}
                     >
                         Player Stats
                     </button>
                 </div>
 
-                <div className="w-3/4 p-8">
-                    <UpcomingEvents />
-
-                    {activeTab === "account" && (
+                <div
+                    className="w-3/4 p-8 overflow-y-auto max-h-[75vh] space-y-12 hide-scrollbar"
+                    style={{
+                        scrollbarWidth: "none", // Firefox
+                        msOverflowStyle: "none", // IE and Edge
+                    }}
+                >
+                    <style>
+                        {`
+                        .hide-scrollbar::-webkit-scrollbar {
+                            display: none;
+                        }
+                        `}
+                    </style>
+                    <div ref={accountRef}>
                         <PersonalInfo user={userData} />
-                    )}
-                    {activeTab === "memberships" }
-                    {activeTab === "stats" && (
+                    </div>
+                    <div ref={membershipsRef}>
+                        <Memberships />
+                    </div>
+                    <div ref={statsRef}>
                         <PersonalStats stats={userStats} />
-                    )}
+                    </div>
                 </div>
             </div>
         </div>
