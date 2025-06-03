@@ -26,7 +26,6 @@ describe("Tournament Controller API Tests", () => {
       const teamRes = await knex("Team").insert({
         name: "Test Team",
         public: true,
-        size: 2,
         description: "Test Team Description",
         created_at: new Date(),
       });

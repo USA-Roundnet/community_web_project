@@ -17,6 +17,11 @@ exports.up = async function (knex) {
         .references("id")
         .inTable("Registration")
         .onDelete("CASCADE");
+      table
+        .foreign("winner_id")
+        .references("id")
+        .inTable("Registration")
+        .onDelete("SET NULL");
     });
   }
 };
@@ -28,6 +33,7 @@ exports.down = async function (knex) {
       table.dropForeign("tournament_id");
       table.dropForeign("registration1_id");
       table.dropForeign("registration2_id");
+      table.dropForeign("winner_id");
     });
   }
 };

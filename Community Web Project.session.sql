@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS Series (
     tournament_id INT,
     registration1_id INT,
     registration2_id INT,
-    series_type ENUM('best_of_1', 'best_of_3', 'best_of_5') NOT NULL,
+    wins_needed TINYINT UNSIGNED NOT NULL,
     location VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tournament_id) REFERENCES Tournament(id) ON DELETE CASCADE,

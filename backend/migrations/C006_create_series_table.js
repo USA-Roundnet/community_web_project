@@ -6,9 +6,8 @@ exports.up = async function (knex) {
       table.integer("tournament_id").unsigned().notNullable();
       table.integer("registration1_id").unsigned().notNullable();
       table.integer("registration2_id").unsigned().notNullable();
-      table
-        .enum("series_type", ["best_of_1", "best_of_3", "best_of_5"])
-        .notNullable();
+      table.integer("winner_id").unsigned().nullable();
+      table.tinyint("wins_needed").unsigned().notNullable().defaultTo(1);
       table.string("location", 255);
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });

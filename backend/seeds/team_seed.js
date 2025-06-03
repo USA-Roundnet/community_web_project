@@ -8,13 +8,11 @@ exports.seed = async function (knex) {
     {
       name: "Team Alpha",
       public: false,
-      size: 5,
       description: "A competitive team focused on winning.",
     },
     {
       name: "Team Beta",
       public: true,
-      size: 3,
       description: "A casual team for fun and practice.",
     },
   ]);
