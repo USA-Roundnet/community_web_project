@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS Team (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     public BOOLEAN DEFAULT TRUE,
-    size INT,
+    seed INT,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_type_id) REFERENCES TeamType(id) ON DELETE
@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS Registration (
     group_id INT,
     tournament_division_id INT,
     placement INT,
-    seed INT,
     status ENUM('registered', 'withdrawn'),
     payment_status ENUM('paid', 'pending', 'unpaid') NOT NULL,
+    checked_in BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE,
     FOREIGN KEY (tournament_division_id) REFERENCES TournamentDivision(id) ON DELETE CASCADE

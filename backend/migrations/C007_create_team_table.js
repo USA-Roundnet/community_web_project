@@ -5,7 +5,7 @@ exports.up = async function (knex) {
       table.increments("id").primary();
       table.string("name", 255).notNullable();
       table.boolean("public").defaultTo(true);
-      table.integer("size");
+      table.integer("seed");
       table.text("description");
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });
