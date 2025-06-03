@@ -67,8 +67,7 @@ CREATE TABLE IF NOT EXISTS Team (
 -- Division Table
 CREATE TABLE IF NOT EXISTS Division (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name ENUM('contender', 'premier') NOT NULL,
-    max_teams INT,
+    name VARCHAR(225) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- TournamentDivision Table
@@ -76,6 +75,7 @@ CREATE TABLE IF NOT EXISTS TournamentDivision (
     id INT AUTO_INCREMENT PRIMARY KEY,
     division_id INT,
     tournament_id INT,
+    max_teams INT,
     registration_fee INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (division_id) REFERENCES Division(id) ON DELETE CASCADE,

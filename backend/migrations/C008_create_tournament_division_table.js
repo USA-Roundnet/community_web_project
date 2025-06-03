@@ -5,6 +5,7 @@ exports.up = async function (knex) {
       table.increments("id").primary();
       table.integer("division_id").unsigned().notNullable();
       table.integer("tournament_id").unsigned().notNullable();
+      table.integer("max_teams");
       table.integer("registration_fee");
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });
