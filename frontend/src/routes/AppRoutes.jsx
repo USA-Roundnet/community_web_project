@@ -13,6 +13,7 @@ import NotFoundPage from "../pages/NotFoundPage";
 import Layout from "../components/Outlet";
 import ForgotPage from "../pages/ForgotPage";
 import AboutPage from "../pages/AboutPage";
+import TournamentPage from "../pages/TournamentPage";
 
 const AppRoutes = () => {
     return (
@@ -23,6 +24,7 @@ const AppRoutes = () => {
                 <Route path="/events/create" element={<CreateTournamentBasicInfo />} />
                 <Route path="/events/create/format" element={<CreateTournamentFormat />} />
                 <Route path="/events/create/registration" element={<CreateTournamentRegistration />} />
+                <Route path="/events/:tournamentid" element={<TournamentPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Route>

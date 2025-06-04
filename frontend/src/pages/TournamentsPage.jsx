@@ -11,131 +11,199 @@ const TournamentsPage = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    let events = useMemo(
+    let tournaments = useMemo(
         () => [
             {
-                date: "2025-11-15",
-                city: "New York",
+                id: "nyc-2025",
                 eventName: "NYC Roundnet Tournament",
                 description:
                     "Join us for a thrilling day of roundnet competition in the heart of NYC!",
                 teamsRegistered: 12,
                 teamLimit: 16,
                 registrationStatus: "Open",
+                date: "2025-11-15",
+                time: "10:00",
+                address1: "Central Park",
+                address2: "East Meadow",
+                city: "New York",
+                state: "NY",
+                zipCode: "10022",
+                country: "USA",
+                format: "traditional",
+                bracketStyle: "single",
+                rules: "Standard roundnet rules apply.",
+                registration: {
+                    deadline: "1week",
+                    availability: "public",
+                    divisionsType: "custom",
+                    numDivisons: 2,
+                    divisions: [
+                        {
+                            divisionName: "Open",
+                            playersPerTeam: 2,
+                            maxTeams: 16,
+                        },
+                        {
+                            divisionName: "Intermediate",
+                            playersPerTeam: 2,
+                            maxTeams: 8,
+                        },
+                    ],
+                },
             },
             {
-                date: "2025-12-01",
-                city: "Los Angeles",
+                id: "la-2025",
                 eventName: "LA Roundnet Meetup",
                 description:
                     "Meet fellow roundnet enthusiasts and play some casual games in LA.",
                 teamsRegistered: 8,
                 teamLimit: 20,
                 registrationStatus: "Open",
+                date: "2025-12-01",
+                time: "11:00",
+                address1: "Venice Beach Courts",
+                address2: "",
+                city: "Los Angeles",
+                state: "CA",
+                zipCode: "90291",
+                country: "USA",
+                format: "traditional",
+                bracketStyle: "double",
+                rules: "House rules, double elimination.",
+                registration: {
+                    deadline: "2week",
+                    availability: "public",
+                    divisionsType: "custom",
+                    numDivisons: 1,
+                    divisions: [
+                        {
+                            divisionName: "Open",
+                            playersPerTeam: 2,
+                            maxTeams: 24,
+                        },
+                    ],
+                },
             },
             {
-                date: "2025-12-10",
-                city: "Chicago",
+                id: "chicago-2025",
                 eventName: "Chicago Roundnet Championship",
                 description:
                     "Compete for the title of Chicago Roundnet Champion in this exciting tournament!",
                 teamsRegistered: 20,
                 teamLimit: 24,
                 registrationStatus: "Closed",
+                date: "2025-12-10",
+                time: "09:00",
+                address1: "Grant Park",
+                address2: "",
+                city: "Chicago",
+                state: "IL",
+                zipCode: "60601",
+                country: "USA",
+                format: "traditional",
+                bracketStyle: "single",
+                rules: "Standard rules, single elimination.",
+                registration: {
+                    deadline: "1week",
+                    availability: "public",
+                    divisionsType: "custom",
+                    numDivisons: 2,
+                    divisions: [
+                        {
+                            divisionName: "Advanced",
+                            playersPerTeam: 2,
+                            maxTeams: 12,
+                        },
+                        {
+                            divisionName: "Beginner",
+                            playersPerTeam: 2,
+                            maxTeams: 12,
+                        },
+                    ],
+                },
             },
             {
-                date: "2027-01-05",
-                city: "Miami",
+                id: "miami-2027",
                 eventName: "Miami Beach Roundnet Festival",
                 description:
                     "Enjoy a weekend of sun, sand, and roundnet at Miami Beach!",
                 teamsRegistered: 15,
                 teamLimit: 30,
                 registrationStatus: "Open",
+                date: "2027-01-05",
+                time: "13:00",
+                address1: "Miami Beach Park",
+                address2: "",
+                city: "Miami",
+                state: "FL",
+                zipCode: "33139",
+                country: "USA",
+                format: "traditional",
+                bracketStyle: "single",
+                rules: "Festival format, pool play then bracket.",
+                registration: {
+                    deadline: "2week",
+                    availability: "public",
+                    divisionsType: "custom",
+                    numDivisons: 3,
+                    divisions: [
+                        {
+                            divisionName: "Open",
+                            playersPerTeam: 2,
+                            maxTeams: 20,
+                        },
+                        {
+                            divisionName: "Recreational",
+                            playersPerTeam: 2,
+                            maxTeams: 16,
+                        },
+                        {
+                            divisionName: "Youth",
+                            playersPerTeam: 2,
+                            maxTeams: 8,
+                        },
+                    ],
+                },
             },
             {
-                date: "2021-01-20",
-                city: "Seattle",
-                eventName: "Seattle Roundnet Open",
-                description:
-                    "Join us for the Seattle Roundnet Open, where teams from all over the region compete!",
-                teamsRegistered: 10,
-                teamLimit: 18,
-                registrationStatus: "Open",
-            },
-            {
-                date: "2025-02-10",
-                city: "Austin",
+                id: "austin-2025",
                 eventName: "Austin Roundnet Jam",
                 description:
                     "A casual roundnet jam session in Austin, perfect for players of all levels.",
-                teamsRegistered: 5,
-                teamLimit: 12,
-                registrationStatus: "Closing Soon",
-            },
-            {
-                date: "2027-02-25",
-                city: "Boston",
-                eventName: "Boston Roundnet Challenge",
-                description:
-                    "Test your skills in the Boston Roundnet Challenge, open to all teams!",
-                teamsRegistered: 18,
-                teamLimit: 20,
+                teamsRegistered: 10,
+                teamLimit: 18,
                 registrationStatus: "Open",
-            },
-            {
-                date: "2029-03-10",
-                city: "San Francisco",
-                eventName: "SF Roundnet Festival",
-                description:
-                    "Celebrate roundnet with us at the SF Roundnet Festival, featuring games, food, and fun!",
-                teamsRegistered: 22,
-                teamLimit: 30,
-                registrationStatus: "Closed",
-            },
-            {
-                date: "2024-03-25",
-                city: "Denver",
-                eventName: "Denver Roundnet Showdown",
-                description:
-                    "Compete in the Denver Roundnet Showdown, where the best teams battle it out!",
-                teamsRegistered: 14,
-                teamLimit: 16,
-                registrationStatus: "Open",
-            },
-            {
-                date: "2024-04-05",
-                city: "Phoenix",
-                eventName: "Phoenix Roundnet Clash",
-                description:
-                    "Join us for the Phoenix Roundnet Clash, a day of intense competition and camaraderie.",
-                teamsRegistered: 9,
-                teamLimit: 15,
-                registrationStatus: "Open",
-            },
-            {
-                date: "2024-04-20",
-                city: "Orlando",
-                eventName: "Orlando Roundnet Extravaganza",
-                description:
-                    "Experience the Orlando Roundnet Extravaganza, featuring games, prizes, and more!",
-                teamsRegistered: 11,
-                teamLimit: 20,
-                registrationStatus: "Open",
-            },
-            {
-                date: "2024-05-01",
-                city: "Philadelphia",
-                eventName: "Philly Roundnet Fest",
-                description:
-                    "Join us for the Philly Roundnet Fest, a celebration of roundnet with games and community.",
-                teamsRegistered: 16,
-                teamLimit: 24,
-                registrationStatus: "Closed",
+                date: "2025-02-10",
+                time: "15:00",
+                address1: "Zilker Park",
+                address2: "",
+                city: "Austin",
+                state: "TX",
+                zipCode: "78704",
+                country: "USA",
+                format: "traditional",
+                bracketStyle: "single",
+                rules: "Jam session, round robin.",
+                registration: {
+                    deadline: "1week",
+                    availability: "public",
+                    divisionsType: "custom",
+                    numDivisons: 1,
+                    divisions: [
+                        {
+                            divisionName: "All Levels",
+                            playersPerTeam: 2,
+                            maxTeams: 16,
+                        },
+                    ],
+                },
             },
         ],
         []
     );
+
+    // You can use this array in your TournamentsPage, for example:
+    const [events, setEvents] = useState(tournaments);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -226,8 +294,8 @@ const TournamentsPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {filteredEvents.map((event, index) => (
-                            <EventCard key={index} {...event} />
+                        {filteredEvents.map((event) => (
+                            <EventCard key={event.id} {...event} />
                         ))}
                     </div>
                 </div>
