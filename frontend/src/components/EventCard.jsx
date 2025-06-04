@@ -1,16 +1,15 @@
-import React from "react";
+import { useNavigate } from "react-router-dom";
 
-const EventCard = ({
-    date,
-    city,
-    eventName,
-    description,
-    teamsRegistered,
-    teamLimit,
-    registrationStatus,
-}) => {
+const EventCard = (event) => {
+    const navigate = useNavigate();
+    const handleClick = () => {
+        navigate(`/events/${event.id}`, {
+            state: { event },
+        });
+    };
+
     const getRegistrationText = () => {
-        switch (registrationStatus) {
+        switch (event.registrationStatus?.toLowerCase()) {
             case "open":
                 return "Registration Open";
             case "closing":
@@ -23,7 +22,7 @@ const EventCard = ({
     };
 
     const getRegistrationColor = () => {
-        switch (registrationStatus) {
+        switch (event.registrationStatus?.toLowerCase()) {
             case "open":
                 return "text-green-500";
             case "closing":
@@ -36,20 +35,23 @@ const EventCard = ({
     };
 
     return (
-        <div className="flex items-center w-full h-[20vh] bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer">
+        <div
+            className="flex items-center w-full h-[20vh] bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer"
+            onClick={handleClick}
+        >
             <div className="flex items-center p-4">
                 <div className="w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0">
                     <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300 rounded-lg" />
                 </div>
 
                 <div className="flex-1 min-w-0 px-6">
-                    <div className="text-gray-500 text-sm">{date}</div>
-                    <h3 className="text-xl font-semibold mt-1 ">{eventName}</h3>
-                    <div className="text-gray-600 text-sm mt-1">{city}</div>
-                    {/*<p className="text-gray-600">{description}</p>*/}
+                    <div className="text-gray-500 text-sm">{event.date}</div>
+                    <h3 className="text-xl font-semibold mt-1 ">{event.eventName}</h3>
+                    <div className="text-gray-600 text-sm mt-1">{event.city}</div>
+                    {/*<p className="text-gray-600">{event.description}</p>*/}
                     <div className="text-left flex-shrink-0 ">
                         <div className="text-sm text-gray-500">
-                            Teams: {teamsRegistered}/{teamLimit}
+                            Teams: {event.teamsRegistered}/{event.teamLimit}
                         </div>
                         <div
                             className={`${getRegistrationColor()} text-sm font-medium`}
