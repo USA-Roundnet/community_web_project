@@ -8,7 +8,7 @@ exports.up = async function (knex) {
       table.string("state_province", 100);
       table.string("zip_code", 20);
       table.string("country", 100);
-      table.string("timezone", 50).notNullable(); // Use time zone strings
+      table.string("timezone", 50).notNullable();
       table
         .enum("status", ["upcoming", "in_progress", "completed"])
         .notNullable();

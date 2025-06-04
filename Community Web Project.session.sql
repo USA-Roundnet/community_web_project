@@ -110,25 +110,6 @@ CREATE TABLE IF NOT EXISTS Series (
     FOREIGN KEY (winner_id) REFERENCES Registration(id) ON DELETE
     SET NULL
 );
--- Add series_id column and foreign key to Registration table
-SET @col_exists = (
-        SELECT COUNT(*)
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_NAME = 'Registration'
-            AND COLUMN_NAME = 'series_id'
-    );
-SET @sql_stmt = IF(
-        @col_exists = 0,
-        'ALTER TABLE Registration 
-ADD COLUMN series_id INT, 
-ADD CONSTRAINT fk_serie_id FOREIGN KEY (series_id) REFERENCES Series(id) ON DELETE
-SET NULL;',
-        'SELECT "Column exists, skipping";'
-    );
-PREPARE stmt
-FROM @sql_stmt;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
 -- UserTeam Table
 CREATE TABLE IF NOT EXISTS UserTeam (
     id INT AUTO_INCREMENT PRIMARY KEY,
