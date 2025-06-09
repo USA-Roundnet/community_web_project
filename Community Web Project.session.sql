@@ -126,7 +126,7 @@ CREATE TABLE TeamType (
     name VARCHAR(50),
     -- e.g., "4-player", "with-coach"
     max_players INT,
-    max_coaches INT description TEXT,
+    max_coaches INT,
     description TEXT,
 );
 -- UserOrganization Table

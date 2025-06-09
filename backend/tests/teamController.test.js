@@ -44,6 +44,9 @@ describe("Team Controller API Tests", () => {
       .set("Authorization", `Bearer ${testUserAuthToken}`)
       .send({
         name: "Test Team",
+        team_type_id: 1,
+        public: true,
+        description: "This is a test team",
       });
 
     expect(res.statusCode).toBe(201);
