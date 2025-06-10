@@ -35,7 +35,7 @@ const CreateTournamentFormat = () => {
 
         try {
             await new Promise((resolve) => setTimeout(resolve, 1000));
-            navigate("/tournaments/create/registration", { replace: true });
+            navigate("/events/create/registration", { replace: true });
         } catch (err) {
             console.error("Error creating tournament:", err);
             setError("Tournament creation failed. Please try again.");
@@ -128,7 +128,7 @@ const CreateTournamentFormat = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors"
+                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {isLoading ? "Next..." : "Next"}
                     </button>
