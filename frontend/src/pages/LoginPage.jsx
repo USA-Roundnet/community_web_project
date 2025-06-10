@@ -26,8 +26,8 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="h-[100vh] flex flex-row justify-center items-center min-h-screen">
-            <div className="bg-[#f8f8f8] h-full w-1/2 flex justify-center items-center p-8">
+        <div className="h-[100vh] flex flex-col md:flex-row justify-center items-center min-h-screen">
+            <div className="bg-[#f8f8f8] h-full w-1/2 flex justify-center items-center p-8 hidden md:flex">
                 <Link to="/">
                     <img
                         src={logo}
@@ -36,13 +36,13 @@ const LoginPage = () => {
                     />
                 </Link>
             </div>
-            <div className="bg-[#225975] w-1/2 h-full flex flex-col justify-center items-center p-8">
+            <div className="bg-[#225975] w-full md:w-1/2 h-full flex flex-col justify-center items-center p-8">
                 <h2 className="text-[#fff] text-3xl h-[10%] font-bold">
                     Login
                 </h2>
                 {error && <div>{error}</div>}
                 <form
-                    className="flex flex-col h-[30%] justify-around w-[60%]"
+                    className="flex flex-col h-[30%] justify-around w-full max-w-md"
                     onSubmit={handleSubmit}
                 >
                     <input
