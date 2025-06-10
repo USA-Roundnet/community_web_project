@@ -1,18 +1,16 @@
-import Navbar from '../components/Navbar';
-import Hero from '../components/Hero';
-import Grid from '../components/Grid';
+import Hero from "../components/Hero";
+import Grid from "../components/Grid";
 
 const HomePage = () => {
-  return (
-      <div className="w-screen min-h-screen bg-gray-50">
-        <Navbar />
-        <Hero />
-
-        <section className="max-w-7xl mx-auto px-4 py-8">
-            <Grid />
-        </section>
-      </div>
-  );
+    return (
+        <div className="w-full flex flex-col items-center justify-evenly">
+            <Hero />
+            <section className="w-7/8 mt-10 mb-10 flex flex-col items-center text-black">
+                <h1 className="text-4xl">Events</h1>
+                <Grid />
+            </section>
+        </div>
+    );
 };
 
 export default HomePage;
