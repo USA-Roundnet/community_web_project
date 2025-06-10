@@ -304,7 +304,7 @@ const CreateTournamentRegistration = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors"
+                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {isLoading ? "Next..." : "Next"}
                     </button>
