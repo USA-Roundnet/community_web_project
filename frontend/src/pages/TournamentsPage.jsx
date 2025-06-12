@@ -503,7 +503,7 @@ const TournamentsPage = () => {
     return (
         <div className="w-full bg-[#f8f8f8] text-black flex items-center justify-center">
             <div className="min-h-screen w-7/8">
-                <div className="max-w-[1400px] mx-auto px-6 py-8">
+                <div className="mx-auto px-6 py-8">
                     <div className="flex justify-between items-center mb-3">
                         <h1 className="text-2xl font-bold mb-6">
                             Discover Events
