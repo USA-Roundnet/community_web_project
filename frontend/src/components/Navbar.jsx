@@ -19,8 +19,8 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="h-[11vh] w-full bg-[#f8f8f8] text-black p-4 flex justify-around items-center">
-            <div className="h-[11vh] w-7/8 flex justify-between items-center border-b-3 border-blue-900">
+        <nav className="h-[11vh] w-full bg-[#f8f8f8] text-black p-4 flex justify-around items-center shadow-md relative top-0 z-50">
+            <div className="h-[11vh] w-7/8 flex justify-between items-center">
                 <div className="flex items-center">
                     <div className="flex items-center">
                         <img
