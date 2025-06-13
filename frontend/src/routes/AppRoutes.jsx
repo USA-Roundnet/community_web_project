@@ -14,6 +14,7 @@ import Layout from "../components/Outlet";
 import ForgotPage from "../pages/ForgotPage";
 import AboutPage from "../pages/AboutPage";
 import TournamentPage from "../pages/TournamentPage";
+import RankingsPage from "../pages/RankingsPage";
 
 const AppRoutes = () => {
     return (
@@ -27,6 +28,7 @@ const AppRoutes = () => {
                 <Route path="/events/:tournamentid" element={<TournamentPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="*" element={<NotFoundPage />} />
+                <Route path="/rankings" element={<RankingsPage />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />
