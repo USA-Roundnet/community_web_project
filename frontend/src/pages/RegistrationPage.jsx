@@ -2,18 +2,21 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
-const GEOAPIFY_API_KEY = "3cfdf04a71db4f31a3bf17a9d206d45e"; // Replace with your Geoapify API key
+const GEOAPIFY_API_KEY = "3cfdf04a71db4f31a3bf17a9d206d45e";
+const API_BASE_URL = "http://localhost:5000";
 
 const RegistrationPage = () => {
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
+        username: "",
         phoneNumber: "",
         email: "",
         password: "",
         confirmPassword: "",
         city: "",
         state: "",
+        zip: "",
         country: "",
         dateOfBirth: "",
         gender: "",
@@ -38,6 +41,7 @@ const RegistrationPage = () => {
             city: "",
             state: "",
             country: "",
+            zip: "",
         }));
 
         if (value.length < 3) {
@@ -61,38 +65,36 @@ const RegistrationPage = () => {
             setLocationLoading(false);
         }
     };
-
     const handleLocationSelect = (feature) => {
-    // Fallbacks for city, state, country
-    const city =
-        feature.properties.city ||
-        feature.properties.town ||
-        feature.properties.village ||
-        feature.properties.hamlet ||
-        feature.properties.suburb ||
-        feature.properties.county ||
-        "";
-    const state =
-        feature.properties.state ||
-        feature.properties.region ||
-        feature.properties.state_code ||
-        "";
-    const country =
-        feature.properties.country ||
-        feature.properties.country_code ||
-        "";
+        // Fallbacks for city, state, country, and zip
+        const city =
+            feature.properties.city ||
+            feature.properties.town ||
+            feature.properties.village ||
+            feature.properties.hamlet ||
+            feature.properties.suburb ||
+            feature.properties.county ||
+            "";
+        const state =
+            feature.properties.state ||
+            feature.properties.region ||
+            feature.properties.state_code ||
+            "";
+        const country =
+            feature.properties.country || feature.properties.country_code || "";
+        const zip =
+            feature.properties.postcode || feature.properties.postal_code || "";
 
-    setFormData((prev) => ({
-        ...prev,
-        city,
-        state,
-        country,
-    }));
-    setLocationQuery(
-        [city, state, country].filter(Boolean).join(", ")
-    );
-    setLocationResults([]);
-};
+        setFormData((prev) => ({
+            ...prev,
+            city,
+            state,
+            country,
+            zip,
+        }));
+        setLocationQuery([city, state, country].filter(Boolean).join(", "));
+        setLocationResults([]);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -107,10 +109,12 @@ const RegistrationPage = () => {
         if (
             !formData.firstName ||
             !formData.lastName ||
+            !formData.phoneNumber ||
             !formData.email ||
             !formData.city ||
             !formData.state ||
             !formData.country ||
+            !formData.zip ||
             !formData.dateOfBirth ||
             !formData.gender
         ) {
@@ -120,11 +124,34 @@ const RegistrationPage = () => {
         }
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    first_name: formData.firstName,
+                    last_name: formData.lastName,
+                    username: formData.email,
+                    email: formData.email,
+                    password: formData.password,
+                    gender: formData.gender,
+                    city: formData.city,
+                    state_province: formData.state,
+                    zip_code: formData.zip,
+                    country: formData.country,
+                    phone_number: formData.phoneNumber,
+                    date_of_birth: formData.dateOfBirth,
+                }),
+                credentials: "include",
+            });
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(
+                    data.message || "Account creation failed. Please try again."
+                );
+            }
             navigate("/", { replace: true });
         } catch (err) {
-            console.error("Registration error:", err);
-            setError("Account creation failed. Please try again.");
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -143,7 +170,7 @@ const RegistrationPage = () => {
                 </h2>
                 {error && <div className="error-message">{error}</div>}
                 <form
-                    className="flex flex-col h-[55%] justify-between w-full max-w-xl"
+                    className="flex flex-col h-[65%] justify-between w-full max-w-xl"
                     onSubmit={handleSubmit}
                 >
                     <div className="flex flex-row gap-4">
@@ -172,7 +199,6 @@ const RegistrationPage = () => {
                             />
                         </div>
                     </div>
-
                     <div className="flex flex-row gap-4">
                         <div className="basis-1/2">
                             <input
@@ -257,6 +283,7 @@ const RegistrationPage = () => {
                                                 feature.properties.city,
                                                 feature.properties.state,
                                                 feature.properties.country,
+                                                feature.properties.postcode,
                                             ]
                                                 .filter(Boolean)
                                                 .join(", ")}
@@ -264,6 +291,57 @@ const RegistrationPage = () => {
                                     ))}
                                 </ul>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Show parsed location fields (readonly or editable) */}
+                    <div className="flex flex-row gap-4">
+                        <div className="basis-1/2">
+                            <input
+                                className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                placeholder="City"
+                                required
+                            />
+                        </div>
+                        <div className="basis-1/2">
+                            <input
+                                className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleChange}
+                                placeholder="State / Province"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-row gap-4">
+                        <div className="basis-1/2">
+                            <input
+                                className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
+                                type="text"
+                                name="zip"
+                                value={formData.zip}
+                                onChange={handleChange}
+                                placeholder="Postal Code"
+                                required
+                            />
+                        </div>
+                        <div className="basis-1/2">
+                            <input
+                                className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
+                                type="text"
+                                name="country"
+                                value={formData.country}
+                                onChange={handleChange}
+                                placeholder="Country"
+                                required
+                            />
                         </div>
                     </div>
 

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
+const API_BASE_URL = "http://localhost:5000";
+
 const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -15,11 +17,22 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+                credentials: "include",
+            });
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(
+                    data.message ||
+                        "Login failed. Please check your credentials."
+                );
+            }
             navigate("/", { replace: true });
         } catch (err) {
-            console.error("Login error:", err);
-            setError("Login failed. Please check your credentials.");
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -93,7 +106,9 @@ const LoginPage = () => {
                         .
                     </p>
                 </div>
-                <div className="w-[60%] h-[3%]"><hr /></div>
+                <div className="w-[60%] h-[3%]">
+                    <hr />
+                </div>
 
                 <div className="w-[60%] h-[10%] flex flex-col justify-evenly items-center">
                     <button

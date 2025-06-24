@@ -2,14 +2,36 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
+const API_BASE_URL = "http://localhost:5000";
+
 function ForgotPage() {
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-
+    const [message, setMessage] = useState("");
+    const [error, setError] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
+        setMessage("");
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || "Failed to send reset link.");
+            }
+            setMessage("Reset link sent! Please check your email.");
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -46,6 +68,12 @@ function ForgotPage() {
                         {isLoading ? "Sending Reset Link..." : "Send Reset Link"}
                     </button>
                 </form>
+                {message && (
+                    <div className="mt-4 text-green-400">{message}</div>
+                )}
+                {error && (
+                    <div className="mt-4 text-red-400">{error}</div>
+                )}
                 <div className="h-[10%] flex flex-col justify-evenly items-center">
                     <p>
                         Have an account? Login{" "}
