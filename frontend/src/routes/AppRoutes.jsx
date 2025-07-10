@@ -13,6 +13,7 @@ import NotFoundPage from "../pages/NotFoundPage";
 import AboutPage from "../pages/AboutPage";
 import Layout from "../components/Outlet";
 import ForgotPage from "../pages/ForgotPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 
 const AppRoutes = () => {
     return (
@@ -29,8 +30,8 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegistrationPage />} />
             <Route path="/forgot" element={<ForgotPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         
-
             <Route path="*" element={<NotFoundPage />} />
         </Routes>
     );

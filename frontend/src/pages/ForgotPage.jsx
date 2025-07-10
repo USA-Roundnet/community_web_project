@@ -17,7 +17,7 @@ function ForgotPage() {
         setMessage("");
         
         try {
-            const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
