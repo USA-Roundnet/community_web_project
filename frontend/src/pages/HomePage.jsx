@@ -271,24 +271,24 @@ const HomePage = () => {
     return (
         <div className="w-full min-h-screen flex flex-col items-center justify-evenly text-black">
             <section className="w-7/8 mt-10 mb-10 flex flex-col items-center">
-                <div className="h-[25vh] w-[80%] relative z-10 flex flex-col text-center items-center justify-evenly">
-                    <h2 className="text-5xl font-bold mb-2">
+                <div className="h-auto md:h-[25vh] w-full sm:w-[90%] md:w-[80%] relative z-10 flex flex-col text-center items-center justify-evenly">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">
                         Welcome to Rally Point!
                     </h2>
-                    <p className="text-lg mb-4">
+                    <p className="text-lg mb-4 px-4 sm:px-0">
                         Connecting the roundnet community — discover events,
                         resources, and more.
                     </p>
-                    <div className="w-1/3 flex flex-row items-center justify-between">
+                    <div className="w-[90%] sm:w-2/3 md:w-1/2 lg:w-1/3 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
                         <Link
                             to="/about"
-                            className="px-6 py-3 text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
+                            className="w-full sm:w-auto px-6 py-3 text-center text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
                         >
                             Explore Roundnet
                         </Link>
                         <Link
                             to="/events"
-                            className="px-6 py-3 text-blue-900 bg-[#f8f8f8] hover:bg-blue-900 hover:text-[#f8f8f8] border border-blue-900 rounded-md transition-colors duration-300"
+                            className="w-full sm:w-auto px-6 py-3 text-center text-blue-900 bg-[#f8f8f8] hover:bg-blue-900 hover:text-[#f8f8f8] border border-blue-900 rounded-md transition-colors duration-300"
                         >
                             Explore Events
                         </Link>
@@ -298,25 +298,25 @@ const HomePage = () => {
 
             <Hero />
 
-            <section className="w-7/8 h-[70vh] mt-10 mb-10 flex flex-row items-center justify-center">
-                <div className="w-full h-[55vh] flex flex-col items-start justify-between">
-                    <h1 className="text-4xl font-extrabold text-blue-900 tracking-tight">
+            <section className="w-7/8 h-auto md:h-[70vh] mt-10 mb-10 flex flex-row items-center justify-center px-4 sm:px-6 md:px-8">
+                <div className="w-full h-auto md:h-[55vh] flex flex-col items-start justify-between">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-900 tracking-tight mb-6">
                         What is Roundnet?
                     </h1>
-                    <div className="flex flex-row items-center justify-between">
+                    <div className="flex flex-col md:flex-row items-center md:justify-between gap-6 md:gap-0">
                         <img
-                            className="w-1/2 rounded-md"
+                            className="w-full md:w-1/2 rounded-md mb-6 md:mb-0"
                             src={what}
                             alt="who we are"
                         />
-                        <div className="w-7/16 h-[80%] flex flex-col items-start justify-between">
-                            <p className="text-xl text-gray-700">
+                        <div className="w-full md:w-7/16 h-auto md:h-[80%] flex flex-col items-start justify-between gap-4 md:gap-0 md:ml-8">
+                            <p className="text-lg sm:text-xl text-gray-700">
                                 This sport is a thrilling combination of skill,
                                 strategy, and teamwork. It offers participants a
                                 chance to engage in friendly competition while
                                 fostering a sense of community.
                             </p>
-                            <p className="text-xl text-gray-700">
+                            <p className="text-lg sm:text-xl text-gray-700">
                                 We are a community dedicated to promoting and
                                 celebrating the sport. Our mission is to provide
                                 a platform for enthusiasts to connect, learn,
@@ -324,7 +324,7 @@ const HomePage = () => {
                             </p>
                             <Link
                                 to="/about"
-                                className="hover:cursor-pointer px-6 py-3 text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
+                                className="hover:cursor-pointer px-6 py-3 text-center text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300 mt-2 md:mt-0"
                             >
                                 Learn more
                             </Link>
@@ -334,33 +334,35 @@ const HomePage = () => {
             </section>
 
             <section className="w-full flex justify-center items-center bg-white">
-                <div className="w-7/8 flex flex-col items-start h-full mb-15">
-                    <h1 className="text-4xl w-full mt-10 text-left font-extrabold text-blue-900 tracking-tight">
+                <div className="w-7/8 flex flex-col items-start h-full mb-15 px-4 sm:px-6 md:px-8">
+                    <h1 className="text-3xl sm:text-4xl w-full mt-10 text-left font-extrabold text-blue-900 tracking-tight">
                         Upcoming Events
                     </h1>
-                    <p className="text-lg w-full mb-10 text-left text-gray-700 mt-2">
+                    <p className="text-base sm:text-lg w-full mb-6 sm:mb-10 text-left text-gray-700 mt-2">
                         Join us for exciting roundnet events near you!
                     </p>
                     <Grid cards={events.slice(0, 6)} />
-                    <Link
-                        to="/events"
-                        className="mt-6 px-6 py-3 text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
-                    >
-                        View All Events
-                    </Link>
+                    <div className="w-full flex justify-center md:justify-start">
+                        <Link
+                            to="/events"
+                            className="mt-6 px-6 py-3 text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
+                        >
+                            View All Events
+                        </Link>
+                    </div>
                 </div>
             </section>
-            <section className="w-full h-[40vh] flex justify-center items-center">
-                <div className="w-7/8 flex items-center h-full">
-                    <h1 className="w-1/3 text-4xl font-extrabold tracking-tight">
+            <section className="w-full h-auto md:h-[40vh] flex justify-center items-center py-10 md:py-0">
+                <div className="w-7/8 flex flex-col md:flex-row items-center h-full px-4 sm:px-6 md:px-8">
+                    <h1 className="w-full md:w-1/3 text-3xl sm:text-4xl font-extrabold tracking-tight text-center md:text-left mb-8 md:mb-0">
                         Our Partners
                     </h1>
-                    <div className="flex flex-row items-center justify-evenly mt-6 w-2/3">
-                        <img src={usar} alt="usar logo" className="h-[10vh]" />
+                    <div className="flex flex-col sm:flex-row items-center justify-evenly gap-8 sm:gap-0 w-full md:w-2/3">
+                        <img src={usar} alt="usar logo" className="h-16 sm:h-[10vh]" />
                         <img
                             src={spikeball}
                             alt="spikeball logo"
-                            className="h-[10vh]"
+                            className="h-16 sm:h-[10vh]"
                         />
                     </div>
                 </div>
