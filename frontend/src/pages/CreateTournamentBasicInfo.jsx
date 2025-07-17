@@ -2,18 +2,24 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
 
+const API_BASE_URL = 'http://localhost:5000';
+
 const CreateTournamentBasicInfo = () => {
-    const [formData, setFormData] = useState({
-        tournamentName: "",
-        description: "",
-        date: "",
-        time: "",
-        address1: "",
-        address2: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "",
+    // Initialize form data from localStorage or defaults
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem('tournamentBasicInfo');
+        return saved ? JSON.parse(saved) : {
+            tournamentName: "",
+            description: "",
+            date: "",
+            time: "",
+            address1: "",
+            address2: "",
+            city: "",
+            state: "",
+            zipCode: "",
+            country: "",
+        };
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -21,10 +27,13 @@ const CreateTournamentBasicInfo = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        const updatedData = { ...formData, [name]: value };
+        setFormData(updatedData);
+        // Save to localStorage as user types
+        localStorage.setItem('tournamentBasicInfo', JSON.stringify(updatedData));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
@@ -44,7 +53,10 @@ const CreateTournamentBasicInfo = () => {
         }
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            // Save current form data to localStorage
+            localStorage.setItem('tournamentBasicInfo', JSON.stringify(formData));
+            
+            // Navigate to next step
             navigate("/events/create/format", { replace: true });
         } catch (err) {
             console.error("Error creating tournament:", err);

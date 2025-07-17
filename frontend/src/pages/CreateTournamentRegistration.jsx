@@ -2,23 +2,55 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
 
+const API_BASE_URL = 'http://localhost:5000';
+
 const CreateTournamentRegistration = () => {
-    const [formData, setFormData] = useState({
-        deadline: "",
-        availability: "",
-        divisionsType: "",
-        numDivisons: 1,
-        divisions: [
-            {
-                divisionName: "",
-                playersPerTeam: 1,
-                maxTeams: "",
-            },
-        ],
+    // Initialize form data from localStorage or defaults
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem('tournamentRegistration');
+        return saved ? JSON.parse(saved) : {
+            deadline: "",
+            availability: "",
+            divisionsType: "",
+            numDivisons: 1,
+            divisions: [
+                {
+                    divisionName: "",
+                    playersPerTeam: 1,
+                    maxTeams: "",
+                },
+            ],
+        };
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    // Helper function to make API calls
+    const makeApiCall = async (endpoint, options = {}) => {
+        const url = `${API_BASE_URL}${endpoint}`;
+        const config = {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            ...options,
+        };
+
+        // Add authorization header if token exists
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, config);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    };
 
     // const handleChange = (e) => {
     //   const { name, value } = e.target;
@@ -64,7 +96,10 @@ const CreateTournamentRegistration = () => {
                     ...updatedDivisions[index],
                     [field]: value,
                 };
-                return { ...prev, divisions: updatedDivisions };
+                const updatedData = { ...prev, divisions: updatedDivisions };
+                // Save to localStorage
+                localStorage.setItem('tournamentRegistration', JSON.stringify(updatedData));
+                return updatedData;
             });
         } else {
             setFormData((prev) => {
@@ -86,6 +121,8 @@ const CreateTournamentRegistration = () => {
                     );
                 }
 
+                // Save to localStorage
+                localStorage.setItem('tournamentRegistration', JSON.stringify(updated));
                 return updated;
             });
         }
@@ -96,18 +133,98 @@ const CreateTournamentRegistration = () => {
         setIsLoading(true);
         setError(null);
 
-        if (!formData.deadline) {
+        if (!formData.deadline || !formData.availability) {
             setError("All fields are required.");
             setIsLoading(false);
             return;
         }
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            navigate("/tournaments/create/registration", { replace: true });
+            // Get data from all steps
+            const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
+            const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
+            
+            // Calculate registration deadline based on tournament date
+            const tournamentDate = new Date(basicInfo.date);
+            let registrationDeadline = new Date(tournamentDate);
+            
+            switch (formData.deadline) {
+                case '1day':
+                    registrationDeadline.setDate(tournamentDate.getDate() - 1);
+                    break;
+                case '2day':
+                    registrationDeadline.setDate(tournamentDate.getDate() - 2);
+                    break;
+                case '1week':
+                    registrationDeadline.setDate(tournamentDate.getDate() - 7);
+                    break;
+                case '2week':
+                    registrationDeadline.setDate(tournamentDate.getDate() - 14);
+                    break;
+                case '1month':
+                    registrationDeadline.setMonth(tournamentDate.getMonth() - 1);
+                    break;
+                case '2month':
+                    registrationDeadline.setMonth(tournamentDate.getMonth() - 2);
+                    break;
+                default:
+                    registrationDeadline = tournamentDate;
+            }
+
+            // Combine date and time for start_date
+            let startDateTime = basicInfo.date;
+            if (basicInfo.time) {
+                startDateTime = `${basicInfo.date}T${basicInfo.time}:00`;
+            } else {
+                startDateTime = `${basicInfo.date}T09:00:00`; // Default start time
+            }
+
+            // Set end date to same day at 6 PM (typical tournament duration)
+            let endDateTime = basicInfo.date;
+            if (basicInfo.time) {
+                // If start time is provided, add 8 hours for end time
+                const startTime = new Date(`${basicInfo.date}T${basicInfo.time}:00`);
+                const endTime = new Date(startTime.getTime() + 8 * 60 * 60 * 1000); // Add 8 hours
+                endDateTime = endTime.toISOString().slice(0, 19); // Format: YYYY-MM-DDTHH:mm:ss
+            } else {
+                endDateTime = `${basicInfo.date}T18:00:00`; // Default end time
+            }
+
+            // Prepare tournament data for API
+            const tournamentData = {
+                name: basicInfo.tournamentName,
+                city: basicInfo.city,
+                state_province: basicInfo.state,
+                zip_code: basicInfo.zipCode,
+                country: basicInfo.country,
+                timezone: 'UTC', // Default timezone
+                status: formData.availability === 'public' ? 'upcoming' : 'upcoming',
+                format: format.format === 'traditional' ? 'classic' : 'classic', // Map to backend enum
+                start_date: startDateTime,
+                end_date: endDateTime,
+                registration_deadline: registrationDeadline.toISOString(),
+                director_id: 1, // TODO: Get from current user context when auth is implemented
+            };
+
+            // Create tournament
+            await makeApiCall('/api/tournaments/', {
+                method: 'POST',
+                body: JSON.stringify(tournamentData),
+            });
+
+            // Clear localStorage
+            localStorage.removeItem('tournamentBasicInfo');
+            localStorage.removeItem('tournamentFormat');
+            localStorage.removeItem('tournamentRegistration');
+
+            // Navigate to tournaments page with success message
+            navigate("/events", { 
+                replace: true, 
+                state: { message: `Tournament "${tournamentData.name}" created successfully!` }
+            });
         } catch (err) {
             console.error("Error creating tournament:", err);
-            setError("Tournament creation failed. Please try again.");
+            setError(`Tournament creation failed: ${err.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -306,7 +423,7 @@ const CreateTournamentRegistration = () => {
                         disabled={isLoading}
                         className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                     >
-                        {isLoading ? "Next..." : "Next"}
+                        {isLoading ? "Creating Tournament..." : "Create Tournament"}
                     </button>
                 </form>
             </div>

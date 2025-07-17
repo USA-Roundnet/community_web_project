@@ -2,10 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const CreateTournamentFormat = () => {
-    const [formData, setFormData] = useState({
-        format: "",
-        bracketStyle: "",
-        rules: "",
+    // Initialize form data from localStorage or defaults
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem('tournamentFormat');
+        return saved ? JSON.parse(saved) : {
+            format: "",
+            bracketStyle: "",
+            rules: "",
+        };
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -13,10 +17,13 @@ const CreateTournamentFormat = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        const updatedData = { ...formData, [name]: value };
+        setFormData(updatedData);
+        // Save to localStorage as user types
+        localStorage.setItem('tournamentFormat', JSON.stringify(updatedData));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
@@ -34,7 +41,10 @@ const CreateTournamentFormat = () => {
         }
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            // Save current form data to localStorage
+            localStorage.setItem('tournamentFormat', JSON.stringify(formData));
+            
+            // Navigate to next step
             navigate("/events/create/registration", { replace: true });
         } catch (err) {
             console.error("Error creating tournament:", err);
