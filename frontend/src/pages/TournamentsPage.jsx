@@ -2,16 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 import TabButton from "../components/TabButton";
 import { useNavigate } from "react-router-dom";
 import EventCard from "../components/EventCard";
+import { use } from "react";
 
 const TournamentsPage = () => {
+    const API_BASE_URL = "http://localhost:5000";
+
     const [activeTab, setActiveTab] = useState("upcoming");
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredEvents, setFilteredEvents] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [events, setEvents] = useState([]);
+    const [Loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    let events = useMemo(
+    let placeholderEvents = useMemo(
         () => [
             {
                 date: "2025-11-15",
@@ -139,7 +143,7 @@ const TournamentsPage = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
 
         try {
@@ -149,9 +153,80 @@ const TournamentsPage = () => {
             console.error("Error creating tournament:", err);
             setError("Cannot Create Tournament. Please try again.");
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                console.log(
+                    "Fetching events from:",
+                    `${API_BASE_URL}/api/tournaments`
+                );
+                const response = await fetch(
+                    `${API_BASE_URL}/api/tournaments`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
+                        },
+                        // Adding a timeout to prevent long waits
+                        signal: AbortSignal.timeout(5000), // 5 second timeout
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(
+                        "API response not OK:",
+                        response.status,
+                        errorText
+                    );
+                    throw new Error(
+                        `Failed to fetch events: ${response.status} ${errorText}`
+                    );
+                }
+
+                const data = await response.json();
+                console.log("API returned data:", data);
+
+                // Check if the API returned an empty array or error message
+                if (!Array.isArray(data) || data.length === 0) {
+                    console.warn(
+                        "API returned empty or invalid data, using fallback"
+                    );
+                    setEvents(placeholderEvents);
+                    return;
+                }
+
+                // Transform data format if needed
+                const formattedEvents = data.map((tournament) => ({
+                    date: tournament.start_date || "TBD",
+                    city: tournament.city || "TBD",
+                    eventName: tournament.name || "Tournament Event",
+                    description:
+                        tournament.description ||
+                        "Join us for this exciting tournament!",
+                    teamsRegistered: tournament.teams_registered || 0,
+                    teamLimit: tournament.team_limit || 20,
+                    registrationStatus: tournament.status || "Open",
+                    id: tournament.id,
+                }));
+
+                setEvents(formattedEvents);
+            } catch (err) {
+                console.error("Error fetching tournaments:", err);
+                setError("Using demo data - backend connection failed");
+                // Use dummy data as fallback
+                setEvents(placeholderEvents);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, []);
 
     useEffect(() => {
         let filtered = events;
