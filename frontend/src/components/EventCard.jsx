@@ -51,12 +51,12 @@ const EventCard = (event) => {
             </div>
 
 
-            <div className="flex-1 min-w-0 px-6 flex flex-col justify-center">
+            <div className="flex-1 min-w-0 px-4 sm:px-6 flex flex-col justify-center">
                 <div className="text-gray-500 text-sm">{event.date}</div>
-                <h3 className="text-xl font-semibold mt-1 ">{event.eventName}</h3>
-                <div className="text-gray-600 text-sm mt-1">{event.city}</div>
+                <h3 className="text-lg sm:text-xl font-semibold mt-1 truncate">{event.eventName}</h3>
+                <div className="text-gray-600 text-sm mt-1 truncate">{event.city}</div>
                 {/*<p className="text-gray-600">{event.description}</p>*/}
-                <div className="text-left flex-shrink-0 ">
+                <div className="text-left flex-shrink-0">
                     <div className="text-sm text-gray-500">
                         Teams: {event.teamsRegistered}/{event.teamLimit}
                     </div>

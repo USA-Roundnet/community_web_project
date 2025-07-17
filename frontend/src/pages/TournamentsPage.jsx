@@ -503,20 +503,20 @@ const TournamentsPage = () => {
     return (
         <div className="w-full bg-[#f8f8f8] text-black flex items-center justify-center">
             <div className="min-h-screen w-7/8">
-                <div className="mx-auto px-6 py-8">
-                    <div className="flex justify-between items-center mb-3">
-                        <h1 className="text-2xl font-bold mb-6">
+                <div className="mx-auto px-4 sm:px-6 py-8">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-4">
+                        <h1 className="text-xl sm:text-2xl font-bold mb-6">
                             Discover Events
                         </h1>
                         <button
                             onClick={handleCreate}
-                            className="px-3 py-2 text-blue-900 bg-[#f8f8f8] hover:bg-blue-900 hover:text-[#f8f8f8] hover:cursor-pointer border-blue-900 rounded-md transition-colors duration-300"
+                            className="px-3 py-2 text-blue-900 bg-[#f8f8f8] hover:bg-blue-900 hover:text-[#f8f8f8] hover:cursor-pointer border border-blue-900 rounded-md transition-colors duration-300 w-fit sm:w-auto"
                         >
                             Create a Tournament
                         </button>
                     </div>
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex space-x-4">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
+                        <div className="flex flex-wrap gap-2 sm:gap-4">
                             <TabButton
                                 active={activeTab === "upcoming"}
                                 onClick={() => setActiveTab("upcoming")}
@@ -537,18 +537,18 @@ const TournamentsPage = () => {
                             </TabButton>
                         </div>
 
-                        <div>
+                        <div className="w-full lg:w-auto">
                             <input
                                 type="text"
                                 placeholder="Search events..."
-                                className="px-4 py-2 border rounded-lg w-64"
+                                className="px-4 py-2 border rounded-lg w-full lg:w-64"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {filteredEvents.map((event) => (
                             <EventCard key={event.id} {...event} />
                         ))}
