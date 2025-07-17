@@ -2,8 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
 
-const API_BASE_URL = 'http://localhost:5000';
-
 const CreateTournamentBasicInfo = () => {
     // Initialize form data from localStorage or defaults
     const [formData, setFormData] = useState(() => {
@@ -67,16 +65,16 @@ const CreateTournamentBasicInfo = () => {
     };
 
     return (
-        <div className="h-full w-full flex items-center justify-center text-black ">
-            <div className="w-7/8 h-full flex flex-col gap-2 p-10">
-                <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">Create Tournament</h1>
-                <h2 className="text-xl font-semibold text-blue-800 mb-4 text-center">Basic Info</h2>
+        <div className="min-h-[90vh] w-full flex items-center justify-center text-black">
+            <div className="w-full max-w-4xl flex flex-col gap-2 p-4 sm:p-6 md:p-8 lg:p-10">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">Create Tournament</h1>
+                <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-4 text-center">Basic Info</h2>
                 {error && <div className="text-red-600 text-center font-semibold mb-2">{error}</div>}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Row 1: Tournament Name */}
                     <div>
                         <input
-                            className="w-full p-4 rounded-md text-black border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold"
+                            className="w-full p-3 sm:p-4 rounded-md text-black border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold text-sm sm:text-base"
                             type="text"
                             id="tournamentName"
                             name="tournamentName"
@@ -95,60 +93,32 @@ const CreateTournamentBasicInfo = () => {
                             value={formData.description}
                             onChange={handleChange}
                             placeholder="Description"
-                            className="w-full p-4 rounded-md text-black border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 min-h-[80px] font-medium"
+                            className="w-full p-3 sm:p-4 rounded-md text-black border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 min-h-[80px] font-medium text-sm sm:text-base"
                         />
                     </div>
-
                     {/* Row 3: Date and Time */}
-                    <div className="flex flex-row gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 flex flex-col">
-                            <label htmlFor="date" className="text-blue-900 font-semibold mb-1">Date</label>
+                            <label htmlFor="date" className="text-blue-900 font-semibold mb-1 text-sm sm:text-base">Date</label>
                             <input
                                 type="date"
                                 id="date"
                                 name="date"
                                 value={formData.date}
                                 onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             />
                         </div>
                         <div className="flex-1 flex flex-col">
-                            <label htmlFor="time" className="text-blue-900 font-semibold mb-1">Time</label>
+                            <label htmlFor="time" className="text-blue-900 font-semibold mb-1 text-sm sm:text-base">Time</label>
                             <input
                                 type="time"
                                 id="time"
                                 name="time"
                                 value={formData.time}
                                 onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
-                                placeholder="12:00"
-                            />
-                        </div>
-                    </div>
-                    {/* Row 3: Date and Time */}
-                    <div className="flex flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label htmlFor="date" className="text-blue-900 font-semibold mb-1">Date</label>
-                            <input
-                                type="date"
-                                id="date"
-                                name="date"
-                                value={formData.date}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
-                                required
-                            />
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            <label htmlFor="time" className="text-blue-900 font-semibold mb-1">Time</label>
-                            <input
-                                type="time"
-                                id="time"
-                                name="time"
-                                value={formData.time}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 placeholder="12:00"
                             />
                         </div>
@@ -156,7 +126,7 @@ const CreateTournamentBasicInfo = () => {
 
                     {/* Row 4,5,6: Location */}
                     <div>
-                        <label htmlFor="location" className="text-blue-900 font-semibold mb-2 block">Location</label>
+                        <label htmlFor="location" className="text-blue-900 font-semibold mb-2 block text-sm sm:text-base">Location</label>
                         <div className="flex flex-col gap-3">
                             <input
                                 type="text"
@@ -165,7 +135,7 @@ const CreateTournamentBasicInfo = () => {
                                 value={formData.address1}
                                 onChange={handleChange}
                                 placeholder="Address 1"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             />
                             <input
@@ -175,9 +145,9 @@ const CreateTournamentBasicInfo = () => {
                                 value={formData.address2}
                                 onChange={handleChange}
                                 placeholder="Address 2"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                             />
-                            <div className="flex flex-row gap-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <input
                                     type="text"
                                     id="city"
@@ -185,7 +155,7 @@ const CreateTournamentBasicInfo = () => {
                                     value={formData.city}
                                     onChange={handleChange}
                                     placeholder="City"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                     required
                                 />
                                 <input
@@ -195,11 +165,11 @@ const CreateTournamentBasicInfo = () => {
                                     value={formData.state}
                                     onChange={handleChange}
                                     placeholder="State"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                     required
                                 />
                             </div>
-                            <div className="flex flex-row gap-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
                                 <input
                                     type="text"
                                     id="zipCode"
@@ -207,7 +177,7 @@ const CreateTournamentBasicInfo = () => {
                                     value={formData.zipCode}
                                     onChange={handleChange}
                                     placeholder="Zip"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                     required
                                 />
                                 <input
@@ -217,7 +187,7 @@ const CreateTournamentBasicInfo = () => {
                                     value={formData.country}
                                     onChange={handleChange}
                                     placeholder="Country"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                     required
                                 />
                             </div>
@@ -227,7 +197,7 @@ const CreateTournamentBasicInfo = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="hover:cursor-pointer w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors duration-300"
+                        className="hover:cursor-pointer w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-base sm:text-lg shadow hover:bg-blue-800 transition-colors duration-300"
                     >
                         {isLoading ? "Next..." : "Next"}
                     </button>

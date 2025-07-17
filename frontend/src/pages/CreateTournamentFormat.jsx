@@ -55,12 +55,12 @@ const CreateTournamentFormat = () => {
     };
 
     return (
-        <div className="h-[85vh] w-full flex items-center justify-center text-black">
-            <div className="w-full max-w-2xl flex flex-col gap-4 p-10">
-                <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
+        <div className="min-h-[90vh] w-full flex items-center justify-center text-black">
+            <div className="w-full max-w-4xl flex flex-col gap-4 p-4 sm:p-6 md:p-8 lg:p-10">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
                     Create Tournament
                 </h1>
-                <h2 className="text-xl font-semibold text-blue-800 mb-4 text-center">
+                <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-4 text-center">
                     Format
                 </h2>
                 {error && (
@@ -73,7 +73,7 @@ const CreateTournamentFormat = () => {
                     <div>
                         <label
                             htmlFor="format"
-                            className="text-blue-900 font-semibold mb-1 block"
+                            className="text-blue-900 font-semibold mb-1 block text-sm sm:text-base"
                         >
                             Format
                         </label>
@@ -82,7 +82,7 @@ const CreateTournamentFormat = () => {
                             name="format"
                             value={formData.format}
                             onChange={handleChange}
-                            className="w-full p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold"
+                            className="w-full p-3 sm:p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold text-sm sm:text-base"
                             required
                         >
                             <option value="">Select format</option>
@@ -99,7 +99,7 @@ const CreateTournamentFormat = () => {
                     <div>
                         <label
                             htmlFor="bracketStyle"
-                            className="text-blue-900 font-semibold mb-1 block"
+                            className="text-blue-900 font-semibold mb-1 block text-sm sm:text-base"
                         >
                             Bracket Style
                         </label>
@@ -108,7 +108,7 @@ const CreateTournamentFormat = () => {
                             name="bracketStyle"
                             value={formData.bracketStyle}
                             onChange={handleChange}
-                            className="w-full p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold"
+                            className="w-full p-3 sm:p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold text-sm sm:text-base"
                             required
                         >
                             <option value="">Select Bracket</option>
@@ -121,7 +121,7 @@ const CreateTournamentFormat = () => {
                     <div>
                         <label
                             htmlFor="rules"
-                            className="text-blue-900 font-semibold mb-1 block"
+                            className="text-blue-900 font-semibold mb-1 block text-sm sm:text-base"
                         >
                             Rules
                         </label>
@@ -131,14 +131,14 @@ const CreateTournamentFormat = () => {
                             value={formData.rules}
                             onChange={handleChange}
                             placeholder="Ruleset"
-                            className="w-full p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 min-h-[80px] font-medium"
+                            className="w-full p-3 sm:p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 min-h-[80px] font-medium text-sm sm:text-base"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-base sm:text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {isLoading ? "Next..." : "Next"}
                     </button>

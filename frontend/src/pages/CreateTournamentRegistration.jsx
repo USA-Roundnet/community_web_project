@@ -250,12 +250,12 @@ const CreateTournamentRegistration = () => {
     };
     
     return (
-        <div className="h-full w-full flex items-center justify-center text-black">
-            <div className="w-full max-w-2xl flex flex-col gap-4 p-10">
-                <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
+        <div className="min-h-[90vh] w-full flex items-center justify-center text-black">
+            <div className="w-full max-w-4xl flex flex-col gap-4 p-4 sm:p-6 md:p-8 lg:p-10">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
                     Create Tournament
                 </h1>
-                <h2 className="text-xl font-semibold text-blue-800 mb-4 text-center">
+                <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-4 text-center">
                     Registration Info
                 </h2>
                 {error && (
@@ -265,11 +265,11 @@ const CreateTournamentRegistration = () => {
                 )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Option 1: Registration Deadline & Availability */}
-                    <div className="flex flex-row gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 flex flex-col">
                             <label
                                 htmlFor="deadline"
-                                className="text-blue-900 font-semibold mb-1"
+                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                             >
                                 Registration Deadline
                             </label>
@@ -278,7 +278,7 @@ const CreateTournamentRegistration = () => {
                                 name="deadline"
                                 value={formData.deadline}
                                 onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             >
                                 <option value="">Select deadline</option>
@@ -306,7 +306,7 @@ const CreateTournamentRegistration = () => {
                         <div className="flex-1 flex flex-col">
                             <label
                                 htmlFor="availability"
-                                className="text-blue-900 font-semibold mb-1"
+                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                             >
                                 Tournament Availability
                             </label>
@@ -315,7 +315,7 @@ const CreateTournamentRegistration = () => {
                                 name="availability"
                                 value={formData.availability}
                                 onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             >
                                 <option value="">Select availability</option>
@@ -324,13 +324,12 @@ const CreateTournamentRegistration = () => {
                             </select>
                         </div>
                     </div>
-
                     {/* Divisions for Registration */}
-                    <div className="flex flex-row gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 flex flex-col">
                             <label
                                 htmlFor="divisionsType"
-                                className="text-blue-900 font-semibold mb-1"
+                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                             >
                                 USAR Divisions or Custom Divisions
                             </label>
@@ -339,7 +338,7 @@ const CreateTournamentRegistration = () => {
                                 name="divisionsType"
                                 value={formData.divisionsType}
                                 onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             >
                                 <option value="">Select type</option>
@@ -350,7 +349,7 @@ const CreateTournamentRegistration = () => {
                         <div className="flex-1 flex flex-col">
                             <label
                                 htmlFor="numDivisons"
-                                className="text-blue-900 font-semibold mb-1"
+                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                             >
                                 # of Divisions
                             </label>
@@ -361,49 +360,7 @@ const CreateTournamentRegistration = () => {
                                 value={formData.numDivisons}
                                 onChange={handleChange}
                                 placeholder="# of Divisions"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
-                                required
-                                min={1}
-                            />
-                        </div>
-                    </div>
-                    {/* Divisions for Registration */}
-                    <div className="flex flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="divisionsType"
-                                className="text-blue-900 font-semibold mb-1"
-                            >
-                                USAR Divisions or Custom Divisions
-                            </label>
-                            <select
-                                id="divisionsType"
-                                name="divisionsType"
-                                value={formData.divisionsType}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
-                                required
-                            >
-                                <option value="">Select type</option>
-                                <option value="custom">Custom Divisions</option>
-                                <option value="usar">USAR Divisions</option>
-                            </select>
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="numDivisons"
-                                className="text-blue-900 font-semibold mb-1"
-                            >
-                                # of Divisions
-                            </label>
-                            <input
-                                type="number"
-                                id="numDivisons"
-                                name="numDivisons"
-                                value={formData.numDivisons}
-                                onChange={handleChange}
-                                placeholder="# of Divisions"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                                 min={1}
                             />
@@ -414,16 +371,16 @@ const CreateTournamentRegistration = () => {
                     {formData.divisions.map((division, index) => (
                         <div
                             key={index}
-                            className="bg-blue-50 rounded-lg p-4 border border-blue-100 mb-2"
+                            className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-100 mb-2"
                         >
-                            <h2 className="text-lg font-bold text-blue-900 mb-2">
+                            <h2 className="text-base sm:text-lg font-bold text-blue-900 mb-2">
                                 Division #{index + 1}
                             </h2>
-                            <div className="flex flex-row gap-4">
+                            <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex-1 flex flex-col">
                                     <label
                                         htmlFor={`divisionName-${index}`}
-                                        className="text-blue-900 font-semibold mb-1"
+                                        className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                                     >
                                         Division Name
                                     </label>
@@ -433,16 +390,16 @@ const CreateTournamentRegistration = () => {
                                         name={`divisionName-${index}`}
                                         value={division.divisionName}
                                         onChange={handleChange}
-                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white"
+                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white text-sm sm:text-base"
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="flex flex-row gap-4 mt-2">
+                            <div className="flex flex-col sm:flex-row gap-4 mt-2">
                                 <div className="flex-1 flex flex-col">
                                     <label
                                         htmlFor={`playersPerTeam-${index}`}
-                                        className="text-blue-900 font-semibold mb-1"
+                                        className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                                     >
                                         Players per Team
                                     </label>
@@ -452,7 +409,7 @@ const CreateTournamentRegistration = () => {
                                         name={`playersPerTeam-${index}`}
                                         value={division.playersPerTeam}
                                         onChange={handleChange}
-                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white"
+                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white text-sm sm:text-base"
                                         required
                                         min={1}
                                     />
@@ -460,7 +417,7 @@ const CreateTournamentRegistration = () => {
                                 <div className="flex-1 flex flex-col">
                                     <label
                                         htmlFor={`maxTeams-${index}`}
-                                        className="text-blue-900 font-semibold mb-1"
+                                        className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                                     >
                                         Max # of Teams
                                     </label>
@@ -470,7 +427,7 @@ const CreateTournamentRegistration = () => {
                                         name={`maxTeams-${index}`}
                                         value={division.maxTeams}
                                         onChange={handleChange}
-                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white"
+                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white text-sm sm:text-base"
                                         required
                                         min={1}
                                     />
@@ -482,7 +439,7 @@ const CreateTournamentRegistration = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-base sm:text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {isLoading ? "Creating Tournament..." : "Create Tournament"}
                     </button>
