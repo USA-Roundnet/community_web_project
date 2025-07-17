@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import TabButton from "../components/TabButton";
 import { useNavigate } from "react-router-dom";
 import EventCard from "../components/EventCard";
-import { use } from "react";
 
 const TournamentsPage = () => {
     const API_BASE_URL = "http://localhost:5000";
