@@ -71,6 +71,25 @@ const CreateTournamentRegistration = () => {
 
     //     return updatedData;
     //   });
+    // const handleChange = (e) => {
+    //   const { name, value } = e.target;
+
+    //   setFormData((prev) => {
+    //     let updatedData = {
+    //       ...prev,
+    //       [name]: name === 'numDivisons' ? parseInt(value) : value
+    //     };
+
+    //     // Handle updating divisions array only when numDivisons changes
+    //     if (name === 'numDivisons') {
+    //       const num = parseInt(value) || 1;
+    //       updatedData.divisions = Array.from({ length: num }, (_, i) =>
+    //         prev.divisions[i] || { divisionName: '', playersPerTeam: '', maxTeams: '' }
+    //       );
+    //     }
+
+    //     return updatedData;
+    //   });
 
     //   if (formData.divisionsType == "usar") {
     //     // Use formData.divisionsType == "usar" && "html"
@@ -305,7 +324,124 @@ const CreateTournamentRegistration = () => {
                             </select>
                         </div>
                     </div>
+    return (
+        <div className="h-full w-full flex items-center justify-center text-black">
+            <div className="w-full max-w-2xl flex flex-col gap-4 p-10">
+                <h1 className="text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
+                    Create Tournament
+                </h1>
+                <h2 className="text-xl font-semibold text-blue-800 mb-4 text-center">
+                    Registration Info
+                </h2>
+                {error && (
+                    <div className="text-red-600 text-center font-semibold mb-2">
+                        {error}
+                    </div>
+                )}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Option 1: Registration Deadline & Availability */}
+                    <div className="flex flex-row gap-4">
+                        <div className="flex-1 flex flex-col">
+                            <label
+                                htmlFor="deadline"
+                                className="text-blue-900 font-semibold mb-1"
+                            >
+                                Registration Deadline
+                            </label>
+                            <select
+                                id="deadline"
+                                name="deadline"
+                                value={formData.deadline}
+                                onChange={handleChange}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                required
+                            >
+                                <option value="">Select deadline</option>
+                                <option value="1day">
+                                    1 Day before tournament
+                                </option>
+                                <option value="2day">
+                                    2 Days before tournament
+                                </option>
+                                <option value="1week">
+                                    1 Week before tournament
+                                </option>
+                                <option value="2week">
+                                    2 Weeks before tournament
+                                </option>
+                                <option value="1month">
+                                    1 Month before tournament
+                                </option>
+                                <option value="2month">
+                                    2 Months before tournament
+                                </option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                            <label
+                                htmlFor="availability"
+                                className="text-blue-900 font-semibold mb-1"
+                            >
+                                Tournament Availability
+                            </label>
+                            <select
+                                id="availability"
+                                name="availability"
+                                value={formData.availability}
+                                onChange={handleChange}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                required
+                            >
+                                <option value="">Select availability</option>
+                                <option value="public">Public</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                    </div>
 
+                    {/* Divisions for Registration */}
+                    <div className="flex flex-row gap-4">
+                        <div className="flex-1 flex flex-col">
+                            <label
+                                htmlFor="divisionsType"
+                                className="text-blue-900 font-semibold mb-1"
+                            >
+                                USAR Divisions or Custom Divisions
+                            </label>
+                            <select
+                                id="divisionsType"
+                                name="divisionsType"
+                                value={formData.divisionsType}
+                                onChange={handleChange}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                required
+                            >
+                                <option value="">Select type</option>
+                                <option value="custom">Custom Divisions</option>
+                                <option value="usar">USAR Divisions</option>
+                            </select>
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                            <label
+                                htmlFor="numDivisons"
+                                className="text-blue-900 font-semibold mb-1"
+                            >
+                                # of Divisions
+                            </label>
+                            <input
+                                type="number"
+                                id="numDivisons"
+                                name="numDivisons"
+                                value={formData.numDivisons}
+                                onChange={handleChange}
+                                placeholder="# of Divisions"
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                required
+                                min={1}
+                            />
+                        </div>
+                    </div>
                     {/* Divisions for Registration */}
                     <div className="flex flex-row gap-4">
                         <div className="flex-1 flex flex-col">
@@ -432,3 +568,4 @@ const CreateTournamentRegistration = () => {
 };
 
 export default CreateTournamentRegistration;
+

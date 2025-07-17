@@ -126,6 +126,33 @@ const CreateTournamentBasicInfo = () => {
                             />
                         </div>
                     </div>
+                    {/* Row 3: Date and Time */}
+                    <div className="flex flex-row gap-4">
+                        <div className="flex-1 flex flex-col">
+                            <label htmlFor="date" className="text-blue-900 font-semibold mb-1">Date</label>
+                            <input
+                                type="date"
+                                id="date"
+                                name="date"
+                                value={formData.date}
+                                onChange={handleChange}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                required
+                            />
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                            <label htmlFor="time" className="text-blue-900 font-semibold mb-1">Time</label>
+                            <input
+                                type="time"
+                                id="time"
+                                name="time"
+                                value={formData.time}
+                                onChange={handleChange}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50"
+                                placeholder="12:00"
+                            />
+                        </div>
+                    </div>
 
                     {/* Row 4,5,6: Location */}
                     <div>
