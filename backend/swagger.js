@@ -9,6 +9,204 @@ module.exports = {
   basePath: "/api",
   schemes: ["http"],
   paths: {
+    "/auth/register": {
+      post: {
+        summary: "Register a new user",
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                first_name: { type: "string", example: "John" },
+                last_name: { type: "string", example: "Doe" },
+                username: { type: "string", example: "johndoe" },
+                email: { type: "string", example: "john.doe@example.com" },
+                password: { type: "string", example: "password123" },
+                gender: { type: "string", enum: ["male", "female", "other"], example: "male" },
+                city: { type: "string", example: "New York" },
+                state_province: { type: "string", example: "NY" },
+                zip_code: { type: "string", example: "10001" },
+                country: { type: "string", example: "USA" },
+                phone_number: { type: "string", example: "123-456-7890" },
+                date_of_birth: { type: "string", format: "date", example: "1990-01-01" },
+                profile_picture_url: { type: "string", example: "https://example.com/profile.jpg" },
+              },
+              required: [
+                "first_name", "last_name", "username", "email", "password",
+                "gender", "city", "state_province", "zip_code", "country", 
+                "phone_number", "date_of_birth"
+              ]
+            },
+          },
+        ],
+        responses: {
+          201: { 
+            description: "User registered successfully",
+            schema: {
+              type: "object",
+              properties: {
+                id: { type: "integer", example: 1 },
+                username: { type: "string", example: "johndoe" },
+                email: { type: "string", example: "john.doe@example.com" },
+              }
+            }
+          },
+          500: { 
+            description: "Registration failed",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Failed to register user" },
+                details: { type: "string", example: "Error details" }
+              }
+            }
+          }
+        },
+      },
+    },
+    "/auth/login": {
+      post: {
+        summary: "Log in a user",
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                email: { type: "string", example: "john.doe@example.com" },
+                password: { type: "string", example: "password123" },
+              },
+              required: ["email", "password"]
+            },
+          },
+        ],
+        responses: {
+          200: { 
+            description: "Login successful",
+            schema: {
+              type: "object",
+              properties: {
+                token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+              }
+            }
+          },
+          401: { 
+            description: "Invalid credentials",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Invalid email or password" }
+              }
+            }
+          },
+          500: { 
+            description: "Login failed",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Failed to log in" },
+                details: { type: "string", example: "Error details" }
+              }
+            }
+          }
+        },
+      },
+    },
+    "/auth/forgot-password": {
+      post: {
+        summary: "Request a password reset link",
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                email: { type: "string", example: "john.doe@example.com" },
+              },
+              required: ["email"]
+            },
+          },
+        ],
+        responses: {
+          200: { 
+            description: "Password reset link sent",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "If your email exists in our system, a password reset link has been sent" }
+              }
+            }
+          },
+          500: { 
+            description: "Request failed",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Failed to process request" },
+                details: { type: "string", example: "Error details" }
+              }
+            }
+          }
+        },
+      },
+    },
+    "/auth/reset-password": {
+      post: {
+        summary: "Reset password using a token",
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                token: { type: "string", example: "random-token-string" },
+                password: { type: "string", example: "newpassword123" },
+              },
+              required: ["token", "password"]
+            },
+          },
+        ],
+        responses: {
+          200: { 
+            description: "Password reset successful",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Password has been reset successfully" }
+              }
+            }
+          },
+          400: { 
+            description: "Invalid or expired token",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Invalid or expired password reset token" }
+              }
+            }
+          },
+          500: { 
+            description: "Reset failed",
+            schema: {
+              type: "object",
+              properties: {
+                message: { type: "string", example: "Failed to reset password" },
+                details: { type: "string", example: "Error details" }
+              }
+            }
+          }
+        },
+      },
+    },
     "/users": {
       get: {
         summary: "Get all users",
