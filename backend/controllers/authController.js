@@ -1,25 +1,33 @@
 const authService = require("../services/authService");
+const { UserNotFoundError, InvalidCredentialsError, InvalidTokenError, DuplicateError, ValidationError } = require("../utils/customErrors");
 
-// Register a new user
 const registerUser = async (req, res) => {
   try {
     const newUser = await authService.registerUser(req.body);
     res.status(201).json(newUser);
   } catch (error) {
     console.error("Error in registerUser:", error.message); // Log the error
-    res
-      .status(500)
-      .json({ message: "Failed to register user", details: error.message });
+    
+    if (error instanceof ValidationError) {
+      res.status(400).json({ message: error.message });
+    } else if (error instanceof DuplicateError) {
+      res.status(409).json({ message: error.message });
+    } else {
+      res
+        .status(500)
+        .json({ message: "Failed to register user", details: error.message });
+    }
   }
 };
 
-// Log in a user
 const loginUser = async (req, res) => {
   try {
     const token = await authService.loginUser(req.body);
     res.status(200).json({ token });
   } catch (error) {
-    if (error.message === "Invalid email or password") {
+    if (error instanceof ValidationError) {
+      res.status(400).json({ message: error.message });
+    } else if (error instanceof InvalidCredentialsError) {
       res.status(401).json({ message: error.message });
     } else {
       res
@@ -29,7 +37,6 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Forgot password - request password reset
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -42,8 +49,12 @@ const forgotPassword = async (req, res) => {
   } catch (error) {
     console.error("Error in forgotPassword:", error.message);
     
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    
     // Don't expose whether the email exists for security reasons
-    if (error.message === "User with this email does not exist") {
+    if (error instanceof UserNotFoundError) {
       // Return success anyway to prevent email enumeration
       return res.status(200).json({ message: "If your email exists in our system, a password reset link has been sent" });
     }
@@ -52,7 +63,6 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// Reset password with token
 const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -66,7 +76,11 @@ const resetPassword = async (req, res) => {
   } catch (error) {
     console.error("Error in resetPassword:", error.message);
     
-    if (error.message === "Invalid or expired password reset token") {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    
+    if (error instanceof InvalidTokenError) {
       return res.status(400).json({ message: error.message });
     }
     
