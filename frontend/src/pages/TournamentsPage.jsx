@@ -7,7 +7,6 @@ const TournamentsPage = () => {
         setError(null);
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
             navigate("/tournaments/create/", { replace: true });
         } catch (err) {
             setError("Cannot Create Tournament. Please try again.");
@@ -25,7 +24,7 @@ const TournamentsPage = () => {
             </section>
 
             <button
-                onclick={handleCreate}
+                onClick={handleCreate}
                 id="createButton"
                 className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded"
             >

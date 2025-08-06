@@ -28,7 +28,6 @@ const Navbar = () => {
     return (
         <nav className="h-[11vh] w-full bg-[#f8f8f8] text-black p-4 flex justify-around items-center shadow-md relative top-0 z-50">
             <div className="h-[11vh] w-7/8 flex justify-between items-center">
-                {/* Logo */}
                 <div className="flex items-center">
                     <img
                         src={logo}
@@ -39,7 +38,6 @@ const Navbar = () => {
                         <h1 className="text-xl font-bold px-2">Rally Point</h1>
                     </Link>
                 </div>
-                {/* Hamburger menu icon (mobile) */}
                 <div className="md:hidden flex items-center">
                     <button
                         className="text-3xl text-blue-900 focus:outline-none hover:cursor-pointer"
@@ -49,7 +47,6 @@ const Navbar = () => {
                         {menuOpen ? <FiX /> : <FiMenu />}
                     </button>
                 </div>
-                {/* Nav links (desktop) */}
                 <div className="hidden md:flex space-x-8 font-semibold items-center">
                     <Link to="/" className={isActive("/")}>
                         Home
@@ -71,7 +68,6 @@ const Navbar = () => {
                     </Link>
                 </div>
             </div>
-            {/* Mobile menu */}
             <div
                 className={`md:hidden fixed top-0 right-0 w-3/4 max-w-xs h-full bg-[#f8f8f8] shadow-lg z-50 transform transition-transform duration-300 ${
                     menuOpen ? "translate-x-0" : "translate-x-full"

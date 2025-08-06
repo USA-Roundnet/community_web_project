@@ -5,8 +5,7 @@ import logo from "../assets/rallypoint-logo.png";
 const API_BASE_URL = "http://localhost:5000";
 
 const LoginPage = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [form, setForm] = useState({ email: "", password: "" });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -20,7 +19,7 @@ const LoginPage = () => {
             const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email: form.email, password: form.password }),
                 credentials: "include",
             });
             if (!response.ok) {
@@ -62,8 +61,11 @@ const LoginPage = () => {
                         className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
                         type="email"
                         id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={form.email}
+                        onChange={(e) => setForm({
+                            ...form,
+                            email: e.target.value
+                        })}
                         placeholder="Email"
                         required
                     />
@@ -71,8 +73,11 @@ const LoginPage = () => {
                         className="w-full p-4 rounded-md bg-gray-200 text-black border border-gray-400 focus:ring-2 focus:ring-black focus:outline-none"
                         type="password"
                         id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        value={form.password}
+                        onChange={(e) => setForm({
+                            ...form,
+                            password: e.target.value
+                        })}
                         placeholder="Password"
                         required
                     />
@@ -89,7 +94,7 @@ const LoginPage = () => {
                     <button
                         className="w-full p-4 rounded-md bg-black text-white font-semibold"
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || !form.email || !form.password}
                     >
                         {isLoading ? "Logging in..." : "Login"}
                     </button>
@@ -110,13 +115,16 @@ const LoginPage = () => {
                     <hr />
                 </div>
 
-                <div className="w-[60%] h-[10%] flex flex-col justify-evenly items-center">
-                    <button
-                        className="w-full p-4 rounded-md bg-black text-white font-semibold"
-                        disabled={isLoading}
-                    >
-                        Login with Google
-                    </button>
+                <div className="w-[60%] h-[15%] flex flex-col justify-evenly items-center">
+                    <p className="text-[#fff] text-lg mb-2">Other ways to login</p>
+                    <div className="w-full max-w-md">
+                        <button
+                            className="w-full p-4 rounded-md bg-black text-white font-semibold"
+                            disabled={isLoading}
+                        >
+                            Login with Google
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
