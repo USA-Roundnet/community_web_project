@@ -14,7 +14,6 @@ const HomePage = () => {
     const [events, setEvents] = useState([]);
 
     useEffect(() => {
-        // Fallback data for when the API is unavailable
         const fallbackEvents = [
             {
                 date: "2023-11-15",
@@ -89,8 +88,6 @@ const HomePage = () => {
                             Accept: "application/json",
                             "Content-Type": "application/json",
                         },
-                        // Adding a timeout to prevent long waits
-                        signal: AbortSignal.timeout(5000), // 5 second timeout
                     }
                 );
 
@@ -107,9 +104,7 @@ const HomePage = () => {
                 }
 
                 const data = await response.json();
-                console.log("API returned data:", data);
 
-                // Check if the API returned an empty array or error message
                 if (!Array.isArray(data) || data.length === 0) {
                     console.warn(
                         "API returned empty or invalid data, using fallback"
@@ -118,7 +113,6 @@ const HomePage = () => {
                     return;
                 }
 
-                // Transform data format if needed
                 const formattedEvents = data.map((tournament) => ({
                     date: tournament.start_date || "TBD",
                     city: tournament.city || "TBD",
@@ -154,15 +148,14 @@ const HomePage = () => {
                         Welcome to Rally Point!
                     </h2>
                     <p className="text-lg mb-4 px-4 sm:px-0">
-                        Connecting the roundnet community — discover events,
-                        resources, and more.
+                        Connect to the community, discover events, get out and play!
                     </p>
                     <div className="w-[90%] sm:w-2/3 md:w-1/2 lg:w-1/3 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
                         <Link
                             to="/about"
                             className="w-full sm:w-auto px-6 py-3 text-center text-[#f8f8f8] bg-blue-900 hover:bg-blue-800 rounded-md transition-colors duration-300"
                         >
-                            Explore Roundnet
+                            About Roundnet
                         </Link>
                         <Link
                             to="/events"
@@ -217,7 +210,7 @@ const HomePage = () => {
                         Upcoming Events
                     </h1>
                     <p className="text-base sm:text-lg w-full mb-6 sm:mb-10 text-left text-gray-700 mt-2">
-                        Join us for exciting roundnet events near you!
+                        Find events near you!
                     </p>
                     <Grid cards={events.slice(0, 6)} />
                     <div className="w-full flex justify-center md:justify-start">
