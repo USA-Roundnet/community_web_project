@@ -1,4 +1,5 @@
 import EventCard from "./EventCard";
+import PropTypes from 'prop-types';
 
 const Grid = ({ cards }) => {
     return (
@@ -20,5 +21,18 @@ const Grid = ({ cards }) => {
         </section>
     );
 };
+
+Grid.propTypes = {
+    cards: PropTypes.arrayOf(PropTypes.shape({
+        date: PropTypes.string.isRequired,
+        city: PropTypes.string.isRequired,
+        eventName: PropTypes.string.isRequired,
+        description: PropTypes.string.isRequired,
+        teamsRegistered: PropTypes.number.isRequired,
+        teamLimit: PropTypes.number.isRequired,
+        registrationStatus: PropTypes.string.isRequired,
+    })).isRequired
+};
+
 
 export default Grid;
