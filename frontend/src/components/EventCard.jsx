@@ -53,11 +53,10 @@ const EventCard = (event) => {
                 <div className="text-gray-500 text-sm">{event.date}</div>
                 <h3 className="text-lg sm:text-xl font-semibold mt-1 truncate">{event.eventName}</h3>
                 <div className="text-gray-600 text-sm mt-1 truncate">{event.city}</div>
-                {/*<p className="text-gray-600">{event.description}</p>*/}
                 <div className="text-left flex-shrink-0">
 
                     <div className="text-sm text-gray-500">
-                        Teams: {event.teamsRegistered}/{event.teamLimit}
+                        {event.teamLimit ? `Teams: ${event.teamsRegistered}/${event.teamLimit}` : `Teams: ${event.teamsRegistered}`}
                     </div>
                     <div
                         className={`${getRegistrationColor()} text-sm font-medium`}
