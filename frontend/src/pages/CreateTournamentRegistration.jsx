@@ -8,7 +8,6 @@ const CreateTournamentRegistration = () => {
     const [formData, setFormData] = useState(() => {
         const saved = localStorage.getItem('tournamentRegistration');
         return saved ? JSON.parse(saved) : {
-            deadline: "",
             availability: "",
             divisionsType: "",
             numDivisons: 1,
@@ -100,7 +99,7 @@ const CreateTournamentRegistration = () => {
         setIsLoading(true);
         setError(null);
 
-        if (!formData.deadline || !formData.availability) {
+        if (!formData.availability) {
             setError("All fields are required.");
             setIsLoading(false);
             return;
@@ -110,32 +109,9 @@ const CreateTournamentRegistration = () => {
             const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
             const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
             
-            // Calculate registration deadline based on tournament date
             const tournamentDate = new Date(basicInfo.date);
-            let registrationDeadline = new Date(tournamentDate);
-            
-            switch (formData.deadline) {
-                case '1day':
-                    registrationDeadline.setDate(tournamentDate.getDate() - 1);
-                    break;
-                case '2day':
-                    registrationDeadline.setDate(tournamentDate.getDate() - 2);
-                    break;
-                case '1week':
-                    registrationDeadline.setDate(tournamentDate.getDate() - 7);
-                    break;
-                case '2week':
-                    registrationDeadline.setDate(tournamentDate.getDate() - 14);
-                    break;
-                case '1month':
-                    registrationDeadline.setMonth(tournamentDate.getMonth() - 1);
-                    break;
-                case '2month':
-                    registrationDeadline.setMonth(tournamentDate.getMonth() - 2);
-                    break;
-                default:
-                    registrationDeadline = tournamentDate;
-            }
+            const registrationDeadline = new Date(tournamentDate);
+            registrationDeadline.setDate(tournamentDate.getDate() - 2);
 
             let startDateTime = basicInfo.date;
             if (basicInfo.time) {
@@ -204,43 +180,6 @@ const CreateTournamentRegistration = () => {
                 )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="deadline"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                Registration Deadline
-                            </label>
-                            <select
-                                id="deadline"
-                                name="deadline"
-                                value={formData.deadline}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            >
-                                <option value="">Select deadline</option>
-                                <option value="1day">
-                                    1 Day before tournament
-                                </option>
-                                <option value="2day">
-                                    2 Days before tournament
-                                </option>
-                                <option value="1week">
-                                    1 Week before tournament
-                                </option>
-                                <option value="2week">
-                                    2 Weeks before tournament
-                                </option>
-                                <option value="1month">
-                                    1 Month before tournament
-                                </option>
-                                <option value="2month">
-                                    2 Months before tournament
-                                </option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
                         <div className="flex-1 flex flex-col">
                             <label
                                 htmlFor="availability"
