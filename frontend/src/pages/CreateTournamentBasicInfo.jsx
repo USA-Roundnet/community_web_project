@@ -40,16 +40,25 @@ const CreateTournamentBasicInfo = () => {
         setIsLoading(true);
         setError(null);
 
-        if (
-            !formData.tournamentName ||
-            !formData.date ||
-            !formData.address1 ||
-            !formData.city ||
-            !formData.state ||
-            !formData.zipCode ||
-            !formData.country
-        ) {
-            setError("All fields are required.");
+        const requiredFields = [
+            { field: "tournamentName", label: "Tournament Name" },
+            { field: "date", label: "Date" },
+            { field: "address1", label: "Address" },
+            { field: "city", label: "City" },
+            { field: "state", label: "State" },
+            { field: "zipCode", label: "Zip Code" },
+            { field: "country", label: "Country" },
+        ];
+
+        const missingFields = requiredFields
+            .filter(({ field }) => !formData[field])
+            .map(({ label }) => label);
+
+        if (missingFields.length > 0) {
+            const fieldsList = missingFields.join(", ");
+            setError(
+                `Please fill in the following required fields: ${fieldsList}`
+            );
             setIsLoading(false);
             return;
         }
