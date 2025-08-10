@@ -84,7 +84,6 @@ const CreateTournamentFormat = () => {
                             <option value="traditional">
                                 Traditional (Pool play + Bracket)
                             </option>
-                            {/*<option value="swiss">Swiss</option>*/}
                             <option value="custom">Custom</option>
                             <option value="other">Other</option>
                         </select>
