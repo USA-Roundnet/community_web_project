@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS Division (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(225) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    FOREIGN KEY (creator_id) REFERENCES User(id) ON DELETE
 );
 -- TournamentDivision Table
 CREATE TABLE IF NOT EXISTS TournamentDivision (
