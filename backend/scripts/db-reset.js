@@ -1,24 +1,39 @@
 // scripts/db-reset.js
 // Rollback ALL -> migrate latest -> (optional) seed
+const readline = require('readline');
 const db = require('../knex-config');
 
-(async () => {
-  try {
-    console.log('Rolling back ALL migrations...');
-    await db.migrate.rollback({ all: true });
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-    console.log('Applying latest migrations...');
-    await db.migrate.latest();
+rl.question(
+  '⚠️ This will RESET your database (all data will be lost). Type "yes" to continue: ',
+  async (answer) => {
+    rl.close();
+    if (answer.trim().toLowerCase() !== 'yes') {
+      console.log('❌ Aborted by user.');
+      process.exit(0);
+    }
 
-    console.log('Running seeds...');
-    await db.seed.run();
+    try {
+      console.log('Rolling back ALL migrations...');
+      await db.migrate.rollback({ all: true });
 
-    console.log('✅ DB reset complete');
-    process.exit(0);
-  } catch (e) {
-    console.error('❌ DB reset failed\n', e);
-    process.exit(1);
-  } finally {
-    try { await db.destroy(); } catch {}
+      console.log('Applying latest migrations...');
+      await db.migrate.latest();
+
+      console.log('Running seeds...');
+      await db.seed.run();
+
+      console.log('✅ DB reset complete');
+      process.exit(0);
+    } catch (e) {
+      console.error('❌ DB reset failed\n', e);
+      process.exit(1);
+    } finally {
+      try { await db.destroy(); } catch {}
+    }
   }
-})();
+);
