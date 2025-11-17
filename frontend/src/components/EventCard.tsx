@@ -1,6 +1,18 @@
 import { useNavigate } from "react-router-dom";
 
-const EventCard = (event) => {
+interface EventCardProps {
+    date: string;
+    city: string;
+    eventName: string;
+    description: string;
+    teamsRegistered: number;
+    teamLimit: number;
+    registrationStatus: string;
+    id?: number;
+    image?: string;
+}
+
+const EventCard = (event: EventCardProps) => {
     const navigate = useNavigate();
     const handleClick = () => {
         navigate(`/events/${event.id}`, {
@@ -44,8 +56,7 @@ const EventCard = (event) => {
                     <img
                         src={event.image || "/default-event-image.jpg"}
                         alt={event.eventName}
-                        className="h-full w-auto transform -rotate-90"
-                        style={{ maxWidth: 'none' }}
+                        className="h-full w-auto transform -rotate-90 max-w-none"
                     />
                 </div>
             </div>
