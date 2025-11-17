@@ -1,17 +1,24 @@
 import Hero from "../components/Hero";
 import Grid from "../components/Grid";
-import what from "/roundnet.png";
 import { Link } from "react-router-dom";
-import usar from "/usar-logo.png";
-import spikeball from "/spikeball-logo.webp";
-import premier from "/premier-logo.png";
 import { useEffect, useState } from "react";
+
+interface Event {
+    date: string;
+    city: string;
+    eventName: string;
+    description: string;
+    teamsRegistered: number;
+    teamLimit: number;
+    registrationStatus: string;
+    id?: number;
+}
 
 const HomePage = () => {
     const API_BASE_URL = "http://localhost:5000";
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [events, setEvents] = useState([]);
+    const [error, setError] = useState("");
+    const [events, setEvents] = useState<Event[]>([]);
 
     useEffect(() => {
         const fallbackEvents = [
@@ -177,7 +184,7 @@ const HomePage = () => {
                     <div className="flex flex-col md:flex-row items-center md:justify-between gap-6 md:gap-0">
                         <img
                             className="w-full md:w-1/2 rounded-md mb-6 md:mb-0"
-                            src={what}
+                            src="/roundnet.png"
                             alt="who we are"
                         />
                         <div className="w-full md:w-7/16 h-auto md:h-[80%] flex flex-col items-start justify-between gap-4 md:gap-0 md:ml-8">
@@ -230,17 +237,17 @@ const HomePage = () => {
                     </h1>
                     <div className="flex flex-col sm:flex-row items-center justify-evenly gap-8 sm:gap-0 w-full md:w-2/3">
                         <img
-                            src={usar}
+                            src="/usar-logo.png"
                             alt="usar logo"
                             className="h-16 sm:h-[10vh]"
                         />
                         <img
-                            src={spikeball}
+                            src="/spikeball-logo.webp"
                             alt="spikeball logo"
                             className="h-16 sm:h-[10vh]"
                         />
                         <img
-                            src={premier}
+                            src="/premier-logo.png"
                             alt="premier logo"
                             className="h-16 sm:h-[10vh]"
                         />
