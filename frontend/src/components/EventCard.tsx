@@ -12,38 +12,38 @@ interface EventCardProps {
     image?: string;
 }
 
+const getRegistrationText = (registrationStatus: string) => {
+    switch (registrationStatus?.toLowerCase()) {
+        case "open":
+            return "Registration Open";
+        case "closing":
+            return "Registration Closes Soon";
+        case "closed":
+            return "Registration Closed";
+        default:
+            return "";
+    }
+};
+
+const getRegistrationColor = (registrationStatus: string) => {
+    switch (registrationStatus?.toLowerCase()) {
+        case "open":
+            return "text-green-500";
+        case "closing":
+            return "text-yellow-500";
+        case "closed":
+            return "text-red-500";
+        default:
+            return "text-gray-500";
+    }
+};
+
 const EventCard = (event: EventCardProps) => {
     const navigate = useNavigate();
     const handleClick = () => {
         navigate(`/events/${event.id}`, {
             state: { event },
         });
-    };
-
-    const getRegistrationText = () => {
-        switch (event.registrationStatus?.toLowerCase()) {
-            case "open":
-                return "Registration Open";
-            case "closing":
-                return "Registration Closes Soon";
-            case "closed":
-                return "Registration Closed";
-            default:
-                return "";
-        }
-    };
-
-    const getRegistrationColor = () => {
-        switch (event.registrationStatus?.toLowerCase()) {
-            case "open":
-                return "text-green-500";
-            case "closing":
-                return "text-yellow-500";
-            case "closed":
-                return "text-red-500";
-            default:
-                return "text-gray-500";
-        }
     };
 
     return (
@@ -70,9 +70,9 @@ const EventCard = (event: EventCardProps) => {
                         {event.teamLimit ? `Teams: ${event.teamsRegistered}/${event.teamLimit}` : `Teams: ${event.teamsRegistered}`}
                     </div>
                     <div
-                        className={`${getRegistrationColor()} text-sm font-medium`}
+                        className={`${getRegistrationColor(event.registrationStatus)} text-sm font-medium`}
                     >
-                        {getRegistrationText()}
+                        {getRegistrationText(event.registrationStatus)}
                     </div>
                 </div>
             </div>

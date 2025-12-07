@@ -1,23 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TabButton from "../components/TabButton";
 import { useNavigate } from "react-router-dom";
 import EventCard from "../components/EventCard";
-import { placeholderEvents, Event } from "../utils/placeholderEvents";
-
-
-const API_BASE_URL = "http://localhost:5000";
+import { placeholderEvents } from "../utils/placeholderEvents";
+import { API_BASE_URL } from "../config";
 
 const TournamentsPage = () => {
 
     const [activeTab, setActiveTab] = useState("upcoming");
     const [searchQuery, setSearchQuery] = useState("");
-    const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-    const [events, setEvents] = useState<Event[]>([]);
+    const [filteredEvents, setFilteredEvents] = useState([]);
+    const [events, setEvents] = useState([]);
     const [Loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    const handleCreate = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleCreate = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
