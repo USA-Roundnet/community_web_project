@@ -7,7 +7,9 @@
     "start": "node server.js",
     "test": "jest --runInBand",
     "migrate": "knex migrate:latest",
-    "rollback": "knex migrate:rollback"
+    "rollback": "knex migrate:rollback",
+    "db:reset": "node scripts/db-reset.js",
+    "db:reset:sql": "node scripts/db-reset-sql.js"
   },
   "author": "",
   "license": "ISC",
