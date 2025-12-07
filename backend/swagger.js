@@ -8,6 +8,16 @@ module.exports = {
   host: "localhost:5000",
   basePath: "/api",
   schemes: ["http"],
+  securityDefinitions: {
+    bearerAuth: {
+      type: "apiKey",
+      name: "Authorization",
+      in: "header",
+      description: "Paste: Bearer <JWT>",
+    },
+  },
+  security: [{ bearerAuth: [] }],
+
   paths: {
     "/auth/register": {
       post: {
@@ -18,55 +28,33 @@ module.exports = {
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                first_name: { type: "string", example: "John" },
-                last_name: { type: "string", example: "Doe" },
-                username: { type: "string", example: "johndoe" },
-                email: { type: "string", example: "john.doe@example.com" },
-                password: { type: "string", example: "password123" },
-                gender: { type: "string", enum: ["male", "female", "other"], example: "male" },
-                city: { type: "string", example: "New York" },
-                state_province: { type: "string", example: "NY" },
-                zip_code: { type: "string", example: "10001" },
-                country: { type: "string", example: "USA" },
-                phone_number: { type: "string", example: "123-456-7890" },
-                date_of_birth: { type: "string", format: "date", example: "1990-01-01" },
-                profile_picture_url: { type: "string", example: "https://example.com/profile.jpg" },
-              },
-              required: [
-                "first_name", "last_name", "username", "email", "password",
-                "gender", "city", "state_province", "zip_code", "country", 
-                "phone_number", "date_of_birth"
-              ]
+              $ref: "#/definitions/UserCreateRequest",
             },
           },
         ],
         responses: {
-          201: { 
+          201: {
             description: "User registered successfully",
             schema: {
-              type: "object",
-              properties: {
-                id: { type: "integer", example: 1 },
-                username: { type: "string", example: "johndoe" },
-                email: { type: "string", example: "john.doe@example.com" },
-              }
-            }
+              $ref: "#/definitions/UserResponse",
+            },
           },
-          500: { 
+          409: {
+            description: "Email or username already exists",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+          500: {
             description: "Registration failed",
             schema: {
-              type: "object",
-              properties: {
-                message: { type: "string", example: "Failed to register user" },
-                details: { type: "string", example: "Error details" }
-              }
-            }
-          }
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
     },
+
     "/auth/login": {
       post: {
         summary: "Log in a user",
@@ -78,45 +66,49 @@ module.exports = {
             schema: {
               type: "object",
               properties: {
-                email: { type: "string", example: "john.doe@example.com" },
-                password: { type: "string", example: "password123" },
+                email: {
+                  type: "string",
+                  example: "john.doe@example.com",
+                },
+                password: {
+                  type: "string",
+                  example: "password123",
+                },
               },
-              required: ["email", "password"]
+              required: ["email", "password"],
             },
           },
         ],
         responses: {
-          200: { 
+          200: {
             description: "Login successful",
             schema: {
               type: "object",
               properties: {
-                token: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
-              }
-            }
+                // adjust if you end up using cookies/sessions instead of JWT
+                token: {
+                  type: "string",
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                },
+              },
+            },
           },
-          401: { 
+          401: {
             description: "Invalid credentials",
             schema: {
-              type: "object",
-              properties: {
-                message: { type: "string", example: "Invalid email or password" }
-              }
-            }
+              $ref: "#/definitions/ErrorResponse",
+            },
           },
-          500: { 
+          500: {
             description: "Login failed",
             schema: {
-              type: "object",
-              properties: {
-                message: { type: "string", example: "Failed to log in" },
-                details: { type: "string", example: "Error details" }
-              }
-            }
-          }
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
     },
+
     "/auth/forgot-password": {
       post: {
         summary: "Request a password reset link",
@@ -128,35 +120,39 @@ module.exports = {
             schema: {
               type: "object",
               properties: {
-                email: { type: "string", example: "john.doe@example.com" },
+                email: {
+                  type: "string",
+                  example: "john.doe@example.com",
+                },
               },
-              required: ["email"]
+              required: ["email"],
             },
           },
         ],
         responses: {
-          200: { 
+          200: {
             description: "Password reset link sent",
             schema: {
               type: "object",
               properties: {
-                message: { type: "string", example: "If your email exists in our system, a password reset link has been sent" }
-              }
-            }
+                message: {
+                  type: "string",
+                  example:
+                    "If your email exists in our system, a password reset link has been sent",
+                },
+              },
+            },
           },
-          500: { 
+          500: {
             description: "Request failed",
             schema: {
-              type: "object",
-              properties: {
-                message: { type: "string", example: "Failed to process request" },
-                details: { type: "string", example: "Error details" }
-              }
-            }
-          }
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
     },
+
     "/auth/reset-password": {
       post: {
         summary: "Reset password using a token",
@@ -168,77 +164,59 @@ module.exports = {
             schema: {
               type: "object",
               properties: {
-                token: { type: "string", example: "random-token-string" },
-                password: { type: "string", example: "newpassword123" },
+                token: {
+                  type: "string",
+                  example: "random-token-string",
+                },
+                password: {
+                  type: "string",
+                  example: "newpassword123",
+                },
               },
-              required: ["token", "password"]
+              required: ["token", "password"],
             },
           },
         ],
         responses: {
-          200: { 
+          200: {
             description: "Password reset successful",
             schema: {
               type: "object",
               properties: {
-                message: { type: "string", example: "Password has been reset successfully" }
-              }
-            }
+                message: {
+                  type: "string",
+                  example: "Password has been reset successfully",
+                },
+              },
+            },
           },
-          400: { 
+          400: {
             description: "Invalid or expired token",
             schema: {
-              type: "object",
-              properties: {
-                message: { type: "string", example: "Invalid or expired password reset token" }
-              }
-            }
+              $ref: "#/definitions/ErrorResponse",
+            },
           },
-          500: { 
+          500: {
             description: "Reset failed",
             schema: {
-              type: "object",
-              properties: {
-                message: { type: "string", example: "Failed to reset password" },
-                details: { type: "string", example: "Error details" }
-              }
-            }
-          }
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
     },
+
     "/users": {
       get: {
         summary: "Get all users",
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "Successful response",
             schema: {
               type: "array",
               items: {
-                type: "object",
-                properties: {
-                  id: { type: "integer", example: 1 },
-                  first_name: { type: "string", example: "Johny" },
-                  last_name: { type: "string", example: "Doe" },
-                  username: { type: "string", example: "johndoe"},
-                  gender: { type: "enum", example: "male" },
-                  email: { type: "string", example: "john.doe@example.com" },
-                  city: { type: "string", example: "City"},
-                  state_province: { type: "string", example: "State"},
-                  zip_code: { type: "string", example: "Zip"},
-                  country: { type: "string", example: "Country"},
-                  phone_number: { type: "string", example: "9999999999"},
-                  date_of_birth: { type: "date", example: "2000-01-01"},
-                  profile_picture_url: { type: "string", example: "https://example.com/john.jpg"},
-                  password: { type: "string", exmaple: "password"},
-                  auth_provider: { type: "enum", example:"local" },
-                  google_id: { type: "string", example: "googleid"},
-                  created_at: { type: "timestamp", example: "2000-02-02 00:00:00"},
-                  elo: { type: "integer", example: 1000},
-                  rank: { type: "integer", example: 80},
-                  status: { type: "enum", example: "bronze"},
-                },
+                $ref: "#/definitions/UserResponse",
               },
             },
           },
@@ -246,101 +224,118 @@ module.exports = {
       },
       post: {
         summary: "Create a new user",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "body",
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                id: { type: "integer", example: 1 },
-                  first_name: { type: "string", example: "Johny" },
-                  last_name: { type: "string", example: "Doe" },
-                  username: { type: "string", example: "johndoe"},
-                  gender: { type: "enum", example: "male" },
-                  email: { type: "string", example: "john.doe@example.com" },
-                  city: { type: "string", example: "City"},
-                  state_province: { type: "string", example: "State"},
-                  zip_code: { type: "string", example: "Zip"},
-                  country: { type: "string", example: "Country"},
-                  phone_number: { type: "string", example: "9999999999"},
-                  date_of_birth: { type: "date", example: "2000-01-01"},
-                  profile_picture_url: { type: "string", example: "https://example.com/john.jpg"},
-                  password: { type: "string", exmaple: "password"},
-                  auth_provider: { type: "enum", example:"local" },
-                  google_id: { type: "string", example: "googleid"},
-                  created_at: { type: "timestamp", example: "2000-02-02 00:00:00"},
-                  elo: { type: "integer", example: 1000},
-                  rank: { type: "integer", example: 80},
-                  status: { type: "enum", example: "bronze"},
-              },
+              $ref: "#/definitions/UserCreateRequest",
             },
           },
         ],
         responses: {
-          201: { description: "User created successfully" },
+          201: {
+            description: "User created successfully",
+            schema: {
+              $ref: "#/definitions/UserResponse",
+            },
+          },
+          409: {
+            description: "Email or username already exists",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
     },
+
     "/users/{id}": {
       get: {
         summary: "Get user by ID",
-        parameters: [{ in: "path", name: "id", required: true, type: "integer" }],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
         responses: {
-          200: { description: "Successful response" },
-          404: { description: "User not found" },
+          200: {
+            description: "Successful response",
+            schema: {
+              $ref: "#/definitions/UserResponse",
+            },
+          },
+          404: {
+            description: "User not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
       put: {
         summary: "Update a user by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
-          { in: "path", name: "id", required: true, type: "integer" },
-          { 
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
             in: "body",
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                id: { type: "integer", example: 1 },
-                  first_name: { type: "string", example: "Johny" },
-                  last_name: { type: "string", example: "Doe" },
-                  username: { type: "string", example: "johndoe"},
-                  gender: { type: "enum", example: "male" },
-                  email: { type: "string", example: "john.doe@example.com" },
-                  city: { type: "string", example: "City"},
-                  state_province: { type: "string", example: "State"},
-                  zip_code: { type: "string", example: "Zip"},
-                  country: { type: "string", example: "Country"},
-                  phone_number: { type: "string", example: "9999999999"},
-                  date_of_birth: { type: "date", example: "2000-01-01"},
-                  profile_picture_url: { type: "string", example: "https://example.com/john.jpg"},
-                  password: { type: "string", exmaple: "password"},
-                  auth_provider: { type: "enum", example:"local" },
-                  google_id: { type: "string", example: "googleid"},
-                  created_at: { type: "timestamp", example: "2000-02-02 00:00:00"},
-                  elo: { type: "integer", example: 1000},
-                  rank: { type: "integer", example: 80},
-                  status: { type: "enum", example: "bronze"},
-              },
+              // reuse create request for now; can create UserUpdateRequest later
+              $ref: "#/definitions/UserCreateRequest",
             },
           },
         ],
         responses: {
-          200: { description: "User updated successfully" },
-          404: { description: "User not found" },
+          200: {
+            description: "User updated successfully",
+            schema: {
+              $ref: "#/definitions/UserResponse",
+            },
+          },
+          404: {
+            description: "User not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
       delete: {
         summary: "Delete a user by ID",
-        parameters: [{ in: "path", name: "id", required: true, type: "integer" }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
         responses: {
           200: { description: "User deleted successfully" },
-          404: { description: "User not found" },
+          404: {
+            description: "User not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
         },
       },
     },
+
     "/organizations": {
       get: {
         summary: "Get all organizations",
@@ -350,12 +345,7 @@ module.exports = {
             schema: {
               type: "array",
               items: {
-                type: "object",
-                properties: {
-                  id: { type: "integer", example: 1 },
-                  name: { type: "string", example: "Org Name" },
-                  email: { type: "string", example: "org@example.com" },
-                },
+                $ref: "#/definitions/OrganizationResponse",
               },
             },
           },
@@ -369,11 +359,7 @@ module.exports = {
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                name: { type: "string", example: "Org Name" },
-                email: { type: "string", example: "org@example.com" },
-              },
+              $ref: "#/definitions/OrganizationCreateRequest",
             },
           },
         ],
@@ -382,29 +368,43 @@ module.exports = {
         },
       },
     },
+
     "/organizations/{id}": {
       get: {
         summary: "Get organization by ID",
-        parameters: [{ in: "path", name: "id", required: true, type: "integer" }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
         responses: {
-          200: { description: "Successful response" },
+          200: {
+            description: "Successful response",
+            schema: {
+              $ref: "#/definitions/OrganizationResponse",
+            },
+          },
           404: { description: "Organization not found" },
         },
       },
       put: {
         summary: "Update an organization by ID",
         parameters: [
-          { in: "path", name: "id", required: true, type: "integer" },
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
           {
             in: "body",
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                name: { type: "string", example: "Updated Org" },
-                email: { type: "string", example: "updatedorg@example.com" },
-              },
+              $ref: "#/definitions/OrganizationCreateRequest",
             },
           },
         ],
@@ -415,13 +415,21 @@ module.exports = {
       },
       delete: {
         summary: "Delete an organization by ID",
-        parameters: [{ in: "path", name: "id", required: true, type: "integer" }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
         responses: {
           200: { description: "Organization deleted successfully" },
           404: { description: "Organization not found" },
         },
       },
     },
+
     "/tournaments": {
       get: {
         summary: "Get all tournaments",
@@ -431,12 +439,7 @@ module.exports = {
             schema: {
               type: "array",
               items: {
-                type: "object",
-                properties: {
-                  id: { type: "integer", example: 1 },
-                  name: { type: "string", example: "Tournament Name" },
-                  status: { type: "string", example: "upcoming" },
-                },
+                $ref: "#/definitions/TournamentResponse",
               },
             },
           },
@@ -450,42 +453,57 @@ module.exports = {
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                name: { type: "string", example: "Tournament Name" },
-                status: { type: "string", example: "upcoming" },
-              },
+              $ref: "#/definitions/TournamentCreateRequest",
             },
           },
         ],
         responses: {
-          201: { description: "Tournament created successfully" },
+          201: {
+            description: "Tournament created successfully",
+            schema: {
+              $ref: "#/definitions/TournamentResponse",
+            },
+          },
         },
       },
     },
+
     "/tournaments/{id}": {
       get: {
         summary: "Get tournament by ID",
-        parameters: [{ in: "path", name: "id", required: true, type: "integer" }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
         responses: {
-          200: { description: "Successful response" },
+          200: {
+            description: "Successful response",
+            schema: {
+              $ref: "#/definitions/TournamentResponse",
+            },
+          },
           404: { description: "Tournament not found" },
         },
       },
       put: {
         summary: "Update a tournament by ID",
         parameters: [
-          { in: "path", name: "id", required: true, type: "integer" },
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
           {
             in: "body",
             name: "body",
             required: true,
             schema: {
-              type: "object",
-              properties: {
-                name: { type: "string", example: "Updated Tournament" },
-                status: { type: "string", example: "in_progress" },
-              },
+              $ref: "#/definitions/TournamentCreateRequest",
             },
           },
         ],
@@ -496,10 +514,278 @@ module.exports = {
       },
       delete: {
         summary: "Delete a tournament by ID",
-        parameters: [{ in: "path", name: "id", required: true, type: "integer" }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
         responses: {
           200: { description: "Tournament deleted successfully" },
           404: { description: "Tournament not found" },
+        },
+      },
+    },
+  },
+
+  definitions: {
+    // -------- USERS --------
+    UserCreateRequest: {
+      type: "object",
+      properties: {
+        first_name: { type: "string", example: "John" },
+        last_name: { type: "string", example: "Doe" },
+        username: { type: "string", example: "johndoe" },
+        email: {
+          type: "string",
+          example: "john.doe@example.com",
+        },
+        password: { type: "string", example: "password123" },
+        gender: {
+          type: "string",
+          enum: ["male", "female", "other"],
+          example: "male",
+        },
+        city: { type: "string", example: "New York" },
+        state_province: { type: "string", example: "NY" },
+        zip_code: { type: "string", example: "10001" },
+        country: { type: "string", example: "USA" },
+        phone_number: {
+          type: "string",
+          example: "123-456-7890",
+        },
+        date_of_birth: {
+          type: "string",
+          format: "date",
+          example: "1990-01-01",
+        },
+        profile_picture_url: {
+          type: "string",
+          example: "https://example.com/profile.jpg",
+        },
+        auth_provider: {
+          type: "string",
+          enum: ["local", "google"],
+          example: "local",
+        },
+        google_id: {
+          type: "string",
+          example: "google-oauth-id",
+        },
+      },
+      required: [
+        "first_name",
+        "last_name",
+        "username",
+        "email",
+        "password",
+        "gender",
+        "city",
+        "state_province",
+        "zip_code",
+        "country",
+        "phone_number",
+        "date_of_birth",
+      ],
+    },
+
+    UserResponse: {
+      type: "object",
+      properties: {
+        id: { type: "integer", example: 1 },
+        first_name: { type: "string", example: "John" },
+        last_name: { type: "string", example: "Doe" },
+        username: { type: "string", example: "johndoe" },
+        gender: {
+          type: "string",
+          enum: ["male", "female", "other"],
+          example: "male",
+        },
+        email: {
+          type: "string",
+          example: "john@example.com",
+        },
+        city: { type: "string", example: "City 1" },
+        state_province: { type: "string", example: "State 1" },
+        zip_code: { type: "string", example: "12345" },
+        country: { type: "string", example: "Country 1" },
+        phone_number: {
+          type: "string",
+          example: "123-456-7890",
+        },
+        date_of_birth: {
+          type: "string",
+          format: "date",
+          example: "1990-01-01",
+        },
+        profile_picture_url: {
+          type: "string",
+          example: "https://example.com/john.jpg",
+        },
+        auth_provider: {
+          type: "string",
+          enum: ["local", "google"],
+          example: "local",
+        },
+        google_id: {
+          type: "string",
+          example: "google-oauth-id",
+        },
+        created_at: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-01T12:00:00Z",
+        },
+        elo: { type: "integer", example: 1000 },
+        rank: { type: "integer", example: 80 },
+        status: { type: "string", example: "bronze" },
+      },
+      // intentionally no password field
+    },
+
+    // -------- ORGANIZATIONS --------
+    OrganizationCreateRequest: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "Org Name" },
+        email: { type: "string", example: "org@example.com" },
+      },
+      required: ["name"],
+    },
+
+    OrganizationResponse: {
+      type: "object",
+      properties: {
+        id: { type: "integer", example: 1 },
+        name: { type: "string", example: "Org Name" },
+        email: { type: "string", example: "org@example.com" },
+      },
+    },
+
+    // -------- TOURNAMENTS --------
+    TournamentCreateRequest: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "Tournament Name" },
+        city: { type: "string", example: "Boston" },
+        state_province: { type: "string", example: "MA" },
+        zip_code: { type: "string", example: "02108" },
+        country: { type: "string", example: "USA" },
+        timezone: {
+          type: "string",
+          example: "America/New_York",
+        },
+        status: {
+          type: "string",
+          enum: ["upcoming", "in_progress", "completed"],
+          example: "upcoming",
+        },
+        format: {
+          type: "string",
+          enum: ["asl", "college", "classic"],
+          example: "classic",
+        },
+        phone_number: {
+          type: "string",
+          example: "555-555-5555",
+        },
+        email: {
+          type: "string",
+          example: "td@example.com",
+        },
+        start_date: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-15T09:00:00Z",
+        },
+        end_date: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-15T18:00:00Z",
+        },
+        max_teams: { type: "integer", example: 64 },
+        registration_deadline: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-10T23:59:59Z",
+        },
+      },
+      required: [
+        "name",
+        "city",
+        "state_province",
+        "country",
+        "timezone",
+        "status",
+        "format",
+        "start_date",
+        "end_date",
+      ],
+    },
+
+    TournamentResponse: {
+      type: "object",
+      properties: {
+        id: { type: "integer", example: 1 },
+        name: { type: "string", example: "Tournament Name" },
+        city: { type: "string", example: "Boston" },
+        state_province: { type: "string", example: "MA" },
+        zip_code: { type: "string", example: "02108" },
+        country: { type: "string", example: "USA" },
+        timezone: {
+          type: "string",
+          example: "America/New_York",
+        },
+        status: {
+          type: "string",
+          enum: ["upcoming", "in_progress", "completed"],
+          example: "upcoming",
+        },
+        format: {
+          type: "string",
+          enum: ["asl", "college", "classic"],
+          example: "classic",
+        },
+        phone_number: {
+          type: "string",
+          example: "555-555-5555",
+        },
+        email: {
+          type: "string",
+          example: "td@example.com",
+        },
+        start_date: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-15T09:00:00Z",
+        },
+        end_date: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-15T18:00:00Z",
+        },
+        max_teams: { type: "integer", example: 64 },
+        registration_deadline: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-10T23:59:59Z",
+        },
+      },
+    },
+
+    // -------- ERRORS --------
+    ErrorResponse: {
+      type: "object",
+      properties: {
+        message: {
+          type: "string",
+          example: "Error message",
+        },
+        details: {
+          type: "string",
+          example: "Additional error details",
         },
       },
     },
