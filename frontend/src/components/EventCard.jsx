@@ -1,5 +1,3 @@
-import React from "react";
-
 const EventCard = ({
     date,
     city,
@@ -9,32 +7,6 @@ const EventCard = ({
     teamLimit,
     registrationStatus,
 }) => {
-    const getRegistrationText = () => {
-        switch (registrationStatus) {
-            case "open":
-                return "Registration Open";
-            case "closing":
-                return "Registration Closes Soon";
-            case "closed":
-                return "Registration Closed";
-            default:
-                return "";
-        }
-    };
-
-    const getRegistrationColor = () => {
-        switch (registrationStatus) {
-            case "open":
-                return "text-green-500";
-            case "closing":
-                return "text-yellow-500";
-            case "closed":
-                return "text-red-500";
-            default:
-                return "text-gray-500";
-        }
-    };
-
     return (
         <div className="flex items-center w-full h-[20vh] bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer">
             <div className="flex items-center p-4">
@@ -46,21 +18,46 @@ const EventCard = ({
                     <div className="text-gray-500 text-sm">{date}</div>
                     <h3 className="text-xl font-semibold mt-1 ">{eventName}</h3>
                     <div className="text-gray-600 text-sm mt-1">{city}</div>
-                    {/*<p className="text-gray-600">{description}</p>*/}
                     <div className="text-left flex-shrink-0 ">
                         <div className="text-sm text-gray-500">
                             Teams: {teamsRegistered}/{teamLimit}
                         </div>
                         <div
-                            className={`${getRegistrationColor()} text-sm font-medium`}
+                            className={`${getRegistrationColor(registrationStatus)} text-sm font-medium`}
                         >
-                            {getRegistrationText()}
+                            {getRegistrationText(registrationStatus)}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     );
+};
+
+const getRegistrationText = (registrationStatus) => {
+    switch (registrationStatus) {
+        case "open":
+            return "Registration Open";
+        case "closing":
+            return "Registration Closes Soon";
+        case "closed":
+            return "Registration Closed";
+        default:
+            return "";
+    }
+};
+
+const getRegistrationColor = (registrationStatus) => {
+    switch (registrationStatus) {
+        case "open":
+            return "text-green-500";
+        case "closing":
+            return "text-yellow-500";
+        case "closed":
+            return "text-red-500";
+        default:
+            return "text-gray-500";
+    }
 };
 
 export default EventCard;
