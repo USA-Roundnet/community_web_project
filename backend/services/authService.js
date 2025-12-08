@@ -1,22 +1,16 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("../knex-config");
-const crypto = require("crypto");
+const crypto = require("crypto-random-string");
 const { sendEmail } = require("../utils/emailUtils");
 const { validateUserData } = require("../utils/validation");
-const {
-  UserNotFoundError,
-  InvalidCredentialsError,
+const { 
+  UserNotFoundError, 
+  InvalidCredentialsError, 
   InvalidTokenError,
   DuplicateError,
-  ValidationError,
+  ValidationError 
 } = require("../utils/customErrors");
-
-function generateRandomToken(length = 32) {
-  // Node 16+ supports 'base64url'
-  // length here = number of random bytes, not characters.
-  return crypto.randomBytes(length).toString("base64url");
-}
 
 // Register a new user
 const registerUser = async (userData) => {
@@ -76,14 +70,10 @@ const registerUser = async (userData) => {
     };
   } catch (error) {
     // Handle duplicate key errors from database constraints
-    if (
-      error.code === "ER_DUP_ENTRY" ||
-      error.code === "SQLITE_CONSTRAINT" ||
-      error.constraint
-    ) {
-      if (error.message.toLowerCase().includes("email")) {
+    if (error.code === 'ER_DUP_ENTRY' || error.code === 'SQLITE_CONSTRAINT' || error.constraint) {
+      if (error.message.toLowerCase().includes('email')) {
         throw new DuplicateError("A user with this email already exists");
-      } else if (error.message.toLowerCase().includes("username")) {
+      } else if (error.message.toLowerCase().includes('username')) {
         throw new DuplicateError("A user with this username already exists");
       } else {
         throw new DuplicateError("A user with these details already exists");
@@ -121,7 +111,7 @@ const forgotPassword = async (email) => {
   if (!email || !email.trim()) {
     throw new ValidationError("Email is required");
   }
-
+  
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!validEmail.test(email.trim())) {
     throw new ValidationError("Invalid email format");
@@ -136,17 +126,19 @@ const forgotPassword = async (email) => {
   }
 
   // Generate a secure random token
-  const token = generateRandomToken(32);
+  const token = crypto({ length: 32, type: "url-safe" });
 
   // Set token expiration (1 hour from now)
   const expires = new Date();
   expires.setHours(expires.getHours() + 1);
 
   // Save token and expiration to database
-  await db("User").where({ email: email.trim() }).update({
-    reset_password_token: token,
-    reset_password_expires: expires,
-  });
+  await db("User")
+    .where({ email: email.trim() })
+    .update({
+      reset_password_token: token,
+      reset_password_expires: expires,
+    });
 
   // Construct reset URL
   const resetUrl = `${
@@ -175,7 +167,7 @@ const resetPassword = async (token, newPassword) => {
   if (!token || !token.trim()) {
     throw new ValidationError("Reset token is required");
   }
-
+  
   if (!newPassword || newPassword.length < 6) {
     throw new ValidationError("Password must be at least 6 characters long");
   }
@@ -194,11 +186,13 @@ const resetPassword = async (token, newPassword) => {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   // Update the user's password and clear the reset token fields
-  await db("User").where({ id: user.id }).update({
-    password: hashedPassword,
-    reset_password_token: null,
-    reset_password_expires: null,
-  });
+  await db("User")
+    .where({ id: user.id })
+    .update({
+      password: hashedPassword,
+      reset_password_token: null,
+      reset_password_expires: null,
+    });
 
   return { message: "Password has been reset successfully" };
 };
