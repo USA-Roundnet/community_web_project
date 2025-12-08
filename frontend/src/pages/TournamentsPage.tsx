@@ -17,13 +17,23 @@ const TournamentsPage = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError(null);
 
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            setError("Please log in to create a tournament.");
+            navigate("/login", {
+                replace: true,
+                state: { from: "/events/create/" },
+            });
+            return;
+        }
+
+        setLoading(true);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 300));
             navigate("/events/create/", { replace: true });
-        } catch{
+        } catch {
             setError("Cannot Create Tournament. Please try again.");
         } finally {
             setLoading(false);

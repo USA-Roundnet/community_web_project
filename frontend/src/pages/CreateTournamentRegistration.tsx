@@ -106,6 +106,14 @@ const CreateTournamentRegistration = () => {
         setIsLoading(true);
         setError(null);
 
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            setError("You must be logged in to create a tournament.");
+            setIsLoading(false);
+            navigate("/login", { replace: true, state: { from: "/events/create/registration" } });
+            return;
+        }
+
         if (!formData.availability) {
             setError("All fields are required.");
             setIsLoading(false);
