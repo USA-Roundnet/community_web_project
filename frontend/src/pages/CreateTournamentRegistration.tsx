@@ -36,13 +36,20 @@ const CreateTournamentRegistration = () => {
         const token = localStorage.getItem('authToken');
         if (token && config.headers) {
             (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+        } else {
+            console.warn("No auth token found when attempting API call", { endpoint });
         }
 
         const response = await fetch(url, config);
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            const message =
+                errorData?.message ||
+                (response.status === 401
+                    ? "Unauthorized. Please log in and try again."
+                    : `HTTP error! status: ${response.status}`);
+            throw new Error(message);
         }
 
         return await response.json();
@@ -109,24 +116,26 @@ const CreateTournamentRegistration = () => {
             const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
             const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
             
+            const formatSqlDateTime = (d: Date) =>
+                d.toISOString().slice(0, 19).replace("T", " ");
+
             const tournamentDate = new Date(basicInfo.date);
             const registrationDeadline = new Date(tournamentDate);
             registrationDeadline.setDate(tournamentDate.getDate() - 2);
 
-            let startDateTime = basicInfo.date;
+            let startDateTime: string;
+            let endDateTime: string;
             if (basicInfo.time) {
-                startDateTime = `${basicInfo.date}T${basicInfo.time}:00`;
-            } else {
-                startDateTime = `${basicInfo.date}T09:00:00`; 
-            }
+                const start = new Date(`${basicInfo.date}T${basicInfo.time}:00`);
+                startDateTime = formatSqlDateTime(start);
 
-            let endDateTime = basicInfo.date;
-            if (basicInfo.time) {
-                const startTime = new Date(`${basicInfo.date}T${basicInfo.time}:00`);
-                const endTime = new Date(startTime.getTime() + 8 * 60 * 60 * 1000); 
-                endDateTime = endTime.toISOString().slice(0, 19); // Format: YYYY-MM-DDTHH:mm:ss
+                const end = new Date(start.getTime() + 8 * 60 * 60 * 1000);
+                endDateTime = formatSqlDateTime(end);
             } else {
-                endDateTime = `${basicInfo.date}T18:00:00`;
+                const start = new Date(`${basicInfo.date}T09:00:00`);
+                const end = new Date(`${basicInfo.date}T18:00:00`);
+                startDateTime = formatSqlDateTime(start);
+                endDateTime = formatSqlDateTime(end);
             }
 
             const tournamentData = {
@@ -140,8 +149,7 @@ const CreateTournamentRegistration = () => {
                 format: format.format === 'traditional' ? 'classic' : 'classic',
                 start_date: startDateTime,
                 end_date: endDateTime,
-                registration_deadline: registrationDeadline.toISOString(),
-                director_id: 1,
+                registration_deadline: formatSqlDateTime(registrationDeadline),
             };
 
             await makeApiCall('/api/tournaments/', {
@@ -157,8 +165,8 @@ const CreateTournamentRegistration = () => {
                 replace: true, 
                 state: { message: `Tournament "${tournamentData.name}" created successfully!` }
             });
-        } catch  {
-            setError("Tournament creation failed. Please try again.");
+        } catch (err: any) {
+            setError(err?.message || "Tournament creation failed. Please try again.");
         } finally {
             setIsLoading(false);
         }

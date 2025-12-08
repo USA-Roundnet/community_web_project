@@ -14,7 +14,11 @@ const getTournamentById = asyncHandler(async (req, res) => {
 });
 
 const createTournament = asyncHandler(async (req, res) => {
-  const newTournament = await tournamentService.createTournament(req.body);
+  const directorId = req.user?.id;
+  const newTournament = await tournamentService.createTournament({
+    ...req.body,
+    director_id: directorId,
+  });
   res.status(201).json(newTournament);
 });
 
