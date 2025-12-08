@@ -206,6 +206,31 @@ describe("User Controller API Tests", () => {
   });
 
   describe("Tests auth creation and handling", () => {
+    test("Access protected route as non-admin returns 403", async () => {
+      const response = await request(app)
+        .get("/api/users")
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+      expect(response.status).toBe(403);
+      expect(response.body.message).toBe("Forbidden");
+      expect(response.body.code).toBe("ForbiddenError");
+    });
+
+    test("Access protected route as admin succeeds", async () => {
+      // promote the user to admin and log in again to get a token with role
+      await knex("User").where({ id: testUserObject.id }).update({ role: "admin" });
+      const adminToken = await loginUser(
+        testUserObject.email,
+        testUserObject.password
+      );
+
+      const response = await request(app)
+        .get("/api/users")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+    });
+
     test("Verify two JWTs created at different timestamps are not the same", async () => {
       // Log in twice with a delay
       const token1 = await loginUser(
@@ -239,6 +264,7 @@ describe("User Controller API Tests", () => {
         .set("Authorization", `Bearer ${testUserObject.token}`);
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("User not found");
+      expect(response.body.code).toBe("NotFoundError");
     });
   });
 });

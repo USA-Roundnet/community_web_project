@@ -98,5 +98,6 @@ describe("Organization Controller API Tests", () => {
       .get(`/api/organizations/${testOrganizationId}`)
       .set("Authorization", `Bearer ${testUserAuthToken}`);
     expect(checkRes.statusCode).toBe(404);
+    expect(checkRes.body.code).toBe("NotFoundError");
   });
 });

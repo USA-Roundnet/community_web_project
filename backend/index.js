@@ -129,9 +129,7 @@ const startServer = () => {
   if (!server) {
     if (process.env.NODE_ENV === "test") {
       // In test environment, create server on random port
-      server = app.listen(0, () => {
-        console.log(`Test server created on port ${server.address().port}`);
-      });
+      server = app.listen(0);
     } else {
       // In dev/prod, use configured port
       const PORT = process.env.PORT || 5000;

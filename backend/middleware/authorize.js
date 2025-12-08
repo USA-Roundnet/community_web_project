@@ -1,10 +1,12 @@
+const { UnauthorizedError, ForbiddenError } = require("../utils/customErrors");
+
 // Restricts access to users whose role matches one of the allowed roles.
 const authorize = (...roles) => (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return next(new UnauthorizedError("Unauthorized"));
   }
   if (!roles.includes(req.user.role)) {
-    return res.status(403).json({ message: "Forbidden" });
+    return next(new ForbiddenError("Forbidden"));
   }
   next();
 };

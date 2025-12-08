@@ -71,3 +71,11 @@ run these lines in your IDE terminal
 cd backend
 npm install
 ```
+
+## Backend quick notes
+
+- Seeds create a basic user and an admin. Default credentials (from `backend/seeds/S005_user_seed.js`):
+  - User: `basicuser@example.com` / `basicpass123`
+  - Admin: `adminuser@example.com` / `adminpass123`
+- `User` table now includes a `role` column (default `user`); JWTs include this role and `authorize` middleware checks it.
+- Run seeds before tests: `cd backend && npx knex seed:run`. Run tests: `npm test`.
