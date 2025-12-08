@@ -4,6 +4,7 @@ USE community_web_project;
 -- User Table
 CREATE TABLE IF NOT EXISTS User (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    role VARCHAR(50) NOT NULL DEFAULT 'user',
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     username VARCHAR(255) UNIQUE NOT NULL,
@@ -19,6 +20,8 @@ CREATE TABLE IF NOT EXISTS User (
     password TEXT,
     auth_provider ENUM('local', 'google'),
     google_id VARCHAR(255),
+    elo INT,
+    rank INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- Organization Table
@@ -53,7 +56,6 @@ CREATE TABLE IF NOT EXISTS Tournament (
     registration_deadline DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 CREATE TABLE IF NOT EXISTS TeamType (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50),
@@ -62,7 +64,6 @@ CREATE TABLE IF NOT EXISTS TeamType (
     max_coaches INT,
     description TEXT
 );
-
 -- Team Table
 CREATE TABLE IF NOT EXISTS Team (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -71,7 +72,8 @@ CREATE TABLE IF NOT EXISTS Team (
     public BOOLEAN DEFAULT TRUE,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (team_type_id) REFERENCES TeamType(id) ON DELETE SET NULL
+    FOREIGN KEY (team_type_id) REFERENCES TeamType(id) ON DELETE
+    SET NULL
 );
 -- Division Table
 CREATE TABLE IF NOT EXISTS Division (
@@ -120,7 +122,8 @@ CREATE TABLE IF NOT EXISTS Series (
     FOREIGN KEY (tournament_id) REFERENCES Tournament(id) ON DELETE CASCADE,
     FOREIGN KEY (registration1_id) REFERENCES Registration(id) ON DELETE CASCADE,
     FOREIGN KEY (registration2_id) REFERENCES Registration(id) ON DELETE CASCADE,
-    FOREIGN KEY (winner_id) REFERENCES Registration(id) ON DELETE SET NULL
+    FOREIGN KEY (winner_id) REFERENCES Registration(id) ON DELETE
+    SET NULL
 );
 -- UserTeam Table
 CREATE TABLE IF NOT EXISTS UserTeam (
@@ -133,7 +136,6 @@ CREATE TABLE IF NOT EXISTS UserTeam (
     FOREIGN KEY (user_id) REFERENCES User(id) ON DELETE CASCADE,
     FOREIGN KEY (team_id) REFERENCES Team(id) ON DELETE CASCADE
 );
-
 -- UserOrganization Table
 CREATE TABLE IF NOT EXISTS UserOrganization (
     id INT AUTO_INCREMENT PRIMARY KEY,
