@@ -3,6 +3,7 @@ exports.up = async function (knex) {
   if (!exists) {
     await knex.schema.createTable("Division", (table) => {
       table.increments("id").primary();
+      table.integer("creator_id").unsigned();
       table.string("name", 255).notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now());
     });
