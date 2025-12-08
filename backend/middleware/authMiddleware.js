@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("../knex-config");
+const { UnauthorizedError } = require("../utils/customErrors");
 
 const verifyToken = async (req, res, next) => {
   try {
@@ -7,7 +8,7 @@ const verifyToken = async (req, res, next) => {
     const [scheme, token] = auth.split(" ");
 
     if (scheme !== "Bearer" || !token) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
     let decoded;
@@ -15,15 +16,15 @@ const verifyToken = async (req, res, next) => {
       decoded = jwt.verify(token, process.env.JWT_SECRET, {
         algorithms: ["HS256"],
       });
-      req.user = { id: decoded.id, role: decoded.role };
+      req.user = { id: decoded.id, role: decoded.role || "user" };
     } catch (e) {
       // token bad or expired
-      return res.status(401).json({ message: "Unauthorized" });
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
     const user = await db("User").where({ id: decoded.id }).first();
     if (!user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
     req.user = { id: user.id, email: user.email, role: user.role || "user" };
