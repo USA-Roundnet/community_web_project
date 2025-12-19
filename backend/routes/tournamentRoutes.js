@@ -54,6 +54,12 @@ router.delete(
   asyncHandler(tournamentController.deleteTournament)
 );
 
+router.post(
+  "/divisions",
+  verifyToken,
+  asyncHandler(tournamentController.createTournamentDivision)
+);
+
 // Register a user (and their team) for a specific division in a tournament
 router.post(
   "/:id/register",

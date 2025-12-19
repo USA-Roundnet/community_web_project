@@ -9,6 +9,7 @@ const getTeamById = async (id) => {
 };
 
 const createTeam = async (teamData) => {
+  console.log("Creating team with data:", teamData);
   const [insertedId] = await knex("Team").insert({
     name: teamData.name,
     team_type_id: teamData.team_type_id,

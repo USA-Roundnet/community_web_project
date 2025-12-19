@@ -81,9 +81,10 @@ const registerUser = async (userData) => {
       error.code === "SQLITE_CONSTRAINT" ||
       error.constraint
     ) {
-      if (error.message.toLowerCase().includes("email")) {
+      console.log(error.message);
+      if (error.message.toLowerCase().includes("user.user_email_unique")) {
         throw new DuplicateError("A user with this email already exists");
-      } else if (error.message.toLowerCase().includes("username")) {
+      } else if (error.message.toLowerCase().includes("user.user_username_unique")) {
         throw new DuplicateError("A user with this username already exists");
       } else {
         throw new DuplicateError("A user with these details already exists");

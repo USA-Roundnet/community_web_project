@@ -1,3 +1,7 @@
+const { del, max, schema } = require("./knex-config");
+const { put } = require("./routes/teamRoutes");
+const { createTournamentDivision, createTournament } = require("./services/tournamentService");
+
 module.exports = {
   swagger: "2.0",
   info: {
@@ -528,6 +532,240 @@ module.exports = {
         },
       },
     },
+    "/tournaments/divisions": {
+      post: {
+        summary: "Create a new tournament division",
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/createTournamentDivision",
+            },
+          },
+        ],
+        responses: {
+          201: { description: "Tournament division created successfully" },
+        },
+      },
+    },
+
+    "/tournaments/{id}/register": {
+      post: {
+        summary: "Register a team for a tournament",
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/createTournamentRegistration",
+            },
+          },
+        ],
+        responses: {
+          200: { description: "Team registered successfully" },
+          400: { description: "Registration failed" },
+        },
+      },
+    }, 
+
+    "/tournaments/{id}/unregister": {
+      delete: {
+        summary: "Unregister a team from a tournament",
+        parameters: [
+          {
+            in: "path", 
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/createTournamentUnregistration",
+            },
+          },
+        ],
+        responses: {
+          200: { description: "Team unregistered successfully" },
+          400: { description: "Unregistration failed" },
+        },
+      },
+    },
+
+    "/teams": {
+      post: {
+        summary: "Create a new team", 
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/TeamCreateRequest",
+            },
+          },
+        ],
+        responses: {
+          201: { description: "Team created successfully" },  
+        },
+      },
+      get: {  
+        summary: "Get all teams",
+        parameters: [],
+        responses: {    
+          200: { description: "Successful response" },
+        },
+      },
+    }, 
+    "/teams/{id}": {
+      get: {
+        summary: "Get team by ID",  
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: { description: "Successful response" },
+          404: { description: "Team not found" },
+        },
+      },
+      put: {
+        summary: "Update a team by ID", 
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/TeamUpdateRequest",
+            },
+          },
+        ],
+        responses: {
+          200: { description: "Team updated successfully" },
+          404: { description: "Team not found" },
+        },
+      },
+      delete: {
+        summary: "Delete a team by ID", 
+        parameters: [
+          {
+            in: "path",
+            name: "id",   
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: { description: "Team deleted successfully" },
+          404: { description: "Team not found" },
+        },
+    },
+  },
+  "/userTeams": {
+      get: {
+        summary: "Get all user-team associations",
+        responses: {
+          200: {
+            description: "Successful response", 
+          },
+        },
+      },
+      post: {
+        summary: "Create a new user-team association",
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/UserTeamCreateRequest",
+            },
+          },
+        ],
+        responses: {
+          201: { description: "User-Team association created successfully" },
+        },
+      },
+    },
+    "/userTeams/{id}": {
+      get: {
+        summary: "Get user-team association by ID",
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: { 
+          200: { description: "Successful response" },
+          404: { description: "User-Team association not found" },
+        },
+      },
+      put: {
+        summary: "Update a user-team association by ID",
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/UserTeamUpdateRequest",
+            },
+          },
+        ],
+        responses: {
+          200: { description: "User-Team association updated successfully" },
+          404: { description: "User-Team association not found" },
+        },
+      },
+      delete: {
+        summary: "Delete a user-team association by ID",
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: { description: "User-Team association deleted successfully" },
+          404: { description: "User-Team association not found" },
+        },
+      },
+    },
+    
+
   },
 
   definitions: {
@@ -773,6 +1011,88 @@ module.exports = {
           example: "2025-01-10T23:59:59Z",
         },
       },
+    },
+
+    createTournamentDivision: {
+      type: "object",
+      properties: {
+        division_id: { type: "integer", example: 1 },
+        tournament_id: { type: "integer", example: 2 },
+        max_teams: { type: "integer", example: 16 },
+        registration_fee: { type: "integer", example: 100 },
+      },
+      required: ["division_id", "tournament_id", "max_teams", "registration_fee"],
+    },
+
+    createTournamentRegistration: {
+      type: "object",
+      properties: {
+        tournament_id: { type: "integer", example: 1 },
+        user_id: { type: "integer", example: 2 },
+        team_id: { type: "integer", example: 3 },
+        tournament_division_id: { type: "integer", example: 4 },
+      },
+      required: ["tournament_id", "user_id", "team_id", "tournament_division_id"],
+    },
+
+    createTournamentUnregistration: {
+      type: "object",
+      properties: {
+        tournament_id: { type: "integer", example: 1 },
+        user_id: { type: "integer", example: 2 },
+        team_id: { type: "integer", example: 3 },
+        tournament_division_id: { type: "integer", example: 4 },
+      },
+      required: ["tournament_id", "user_id", "team_id", "tournament_division_id"],
+    },
+        
+
+    // -------- TEAMS --------
+    TeamCreateRequest: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "Team Name" },
+        team_type_id: { type: "integer", example: 12 },
+        public: { type: "boolean", example: true },
+        description: {
+          type: "string", example: "A brief description of the team",
+        },
+      },
+      required: ["name", "team_type_id", "public", "description"],
+    },
+    
+    TeamUpdateRequest: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "Updated Team Name" },
+        team_type_id: { type: "integer", example: 15 },
+        public: { type: "boolean", example: false },
+        description: {
+          type: "string", example: "An updated brief description of the team",
+        },
+      },
+      required: ["name", "team_type_id", "public", "description"],
+    },
+
+    // -------- USER-TEAM ASSOCIATIONS --------
+    UserTeamCreateRequest: {
+      type: "object",
+      properties: {
+        user_id: { type: "integer", example: 1 },
+        team_id: { type: "integer", example: 2 },
+        status: { type: "enum", enum: ["invited", "accepted", "declined"], example: "invited" },
+      },
+      required: ["user_id", "team_id", "status"],
+    },
+
+    UserTeamUpdateRequest: {
+      type: "object",
+      properties: {
+        user_id: { type: "integer", example: 1 },
+        team_id: { type: "integer", example: 2 },
+        status: { type: "enum", enum: ["invited", "accepted", "declined"], example: "accepted" },
+      },
+      required: ["user_id", "team_id", "status"],
     },
 
     // -------- ERRORS --------

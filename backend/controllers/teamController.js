@@ -14,6 +14,7 @@ const getTeamById = asyncHandler(async (req, res) => {
 });
 
 const createTeam = asyncHandler(async (req, res) => {
+  console.log("Team creation requested with:", req.body);
   const newTeam = await teamService.createTeam(req.body);
   res.status(201).json(newTeam);
 });

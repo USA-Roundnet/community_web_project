@@ -9,4 +9,5 @@ router.get("/:id", verifyToken, organizationController.getOrganizationById);
 router.put("/:id", verifyToken, organizationController.updateOrganization);
 router.delete("/:id", verifyToken, organizationController.deleteOrganization);
 
+
 module.exports = router;

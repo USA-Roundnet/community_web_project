@@ -39,8 +39,15 @@ const getTournamentTeams = asyncHandler(async (req, res) => {
   res.status(200).json(teams);
 });
 
+const createTournamentDivision = asyncHandler(async (req, res) => {
+  console.log("Creating tournament division with data:", req.body);
+  const newDivision = await tournamentService.createTournamentDivision(req.body);
+  res.status(201).json(newDivision);
+});
+
 // Register a user (and their team) for a specific division in a tournament
 const registerForTournament = asyncHandler(async (req, res) => {
+  console.log("Registering for tournament with data:", req.body);
   const { team_id, tournament_division_id } = req.body;
   if (!team_id || !tournament_division_id) {
     throw new BadRequestError("team_id and tournament_division_id are required");
@@ -93,6 +100,7 @@ module.exports = {
   updateTournament,
   deleteTournament,
   getTournamentTeams,
+  createTournamentDivision,
   registerForTournament,
   unregisterFromTournament,
 };

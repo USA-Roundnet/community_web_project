@@ -80,6 +80,17 @@ const getTournamentTeams = async (tournament_id) => {
   return teams;
 };
 
+const createTournamentDivision = async (divisionData) => {
+  const [insertedId] = await knex("TournamentDivision").insert({
+    division_id: divisionData.division_id,
+    tournament_id: divisionData.tournament_id,
+    max_teams: divisionData.max_teams,
+    registration_fee: divisionData.registration_fee,
+  });
+  return await knex("TournamentDivision").where({ id: insertedId }).first();
+}
+
+
 // Register a user (and their team) for a specific division in a tournament
 const registerForTournament = async (
   tournament_id,
@@ -219,6 +230,7 @@ module.exports = {
   updateTournament,
   deleteTournament,
   getTournamentTeams,
+  createTournamentDivision,
   registerForTournament,
   unregisterFromTournament,
 };
