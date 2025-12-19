@@ -57,6 +57,8 @@ router.delete(
 router.post(
   "/divisions",
   verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
   asyncHandler(tournamentController.createTournamentDivision)
 );
 
@@ -71,6 +73,7 @@ router.post(
 router.delete(
   "/:id/unregister",
   verifyToken,
+  checkTournamentExists,
   asyncHandler(tournamentController.unregisterFromTournament)
 );
 

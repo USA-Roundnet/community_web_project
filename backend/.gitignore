@@ -2,3 +2,4 @@ node_modules/
 *.tmp
 *.swp
 .env
+community_web_project.session.sql

@@ -1,7 +1,3 @@
-const { del, max, schema } = require("./knex-config");
-const { put } = require("./routes/teamRoutes");
-const { createTournamentDivision, createTournament } = require("./services/tournamentService");
-
 module.exports = {
   swagger: "2.0",
   info: {
@@ -320,6 +316,7 @@ module.exports = {
       },
       delete: {
         summary: "Delete a user by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -343,6 +340,7 @@ module.exports = {
     "/organizations": {
       get: {
         summary: "Get all organizations",
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "Successful response",
@@ -357,6 +355,7 @@ module.exports = {
       },
       post: {
         summary: "Create a new organization",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "body",
@@ -376,6 +375,7 @@ module.exports = {
     "/organizations/{id}": {
       get: {
         summary: "Get organization by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -396,6 +396,7 @@ module.exports = {
       },
       put: {
         summary: "Update an organization by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -419,6 +420,7 @@ module.exports = {
       },
       delete: {
         summary: "Delete an organization by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -437,6 +439,7 @@ module.exports = {
     "/tournaments": {
       get: {
         summary: "Get all tournaments",
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "Successful response",
@@ -451,6 +454,7 @@ module.exports = {
       },
       post: {
         summary: "Create a new tournament",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "body",
@@ -475,6 +479,7 @@ module.exports = {
     "/tournaments/{id}": {
       get: {
         summary: "Get tournament by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -495,6 +500,7 @@ module.exports = {
       },
       put: {
         summary: "Update a tournament by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -518,6 +524,7 @@ module.exports = {
       },
       delete: {
         summary: "Delete a tournament by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -535,6 +542,7 @@ module.exports = {
     "/tournaments/divisions": {
       post: {
         summary: "Create a new tournament division",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "body",
@@ -554,6 +562,7 @@ module.exports = {
     "/tournaments/{id}/register": {
       post: {
         summary: "Register a team for a tournament",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -580,6 +589,7 @@ module.exports = {
     "/tournaments/{id}/unregister": {
       delete: {
         summary: "Unregister a team from a tournament",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path", 
@@ -605,7 +615,8 @@ module.exports = {
 
     "/teams": {
       post: {
-        summary: "Create a new team", 
+        summary: "Create a new team",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "body",
@@ -630,7 +641,8 @@ module.exports = {
     }, 
     "/teams/{id}": {
       get: {
-        summary: "Get team by ID",  
+        summary: "Get team by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -645,7 +657,8 @@ module.exports = {
         },
       },
       put: {
-        summary: "Update a team by ID", 
+        summary: "Update a team by ID",
+        security: [{ bearerAuth: [] }], 
         parameters: [
           {
             in: "path",
@@ -668,7 +681,8 @@ module.exports = {
         },
       },
       delete: {
-        summary: "Delete a team by ID", 
+        summary: "Delete a team by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -686,6 +700,7 @@ module.exports = {
   "/userTeams": {
       get: {
         summary: "Get all user-team associations",
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "Successful response", 
@@ -712,6 +727,7 @@ module.exports = {
     "/userTeams/{id}": {
       get: {
         summary: "Get user-team association by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -727,6 +743,7 @@ module.exports = {
       },
       put: {
         summary: "Update a user-team association by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -750,6 +767,7 @@ module.exports = {
       },
       delete: {
         summary: "Delete a user-team association by ID",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             in: "path",
@@ -1080,7 +1098,7 @@ module.exports = {
       properties: {
         user_id: { type: "integer", example: 1 },
         team_id: { type: "integer", example: 2 },
-        status: { type: "enum", enum: ["invited", "accepted", "declined"], example: "invited" },
+        status: { type: "string", enum: ["invited", "accepted", "declined"], example: "invited" },
       },
       required: ["user_id", "team_id", "status"],
     },
@@ -1090,7 +1108,7 @@ module.exports = {
       properties: {
         user_id: { type: "integer", example: 1 },
         team_id: { type: "integer", example: 2 },
-        status: { type: "enum", enum: ["invited", "accepted", "declined"], example: "accepted" },
+        status: { type: "string", enum: ["invited", "accepted", "declined"], example: "accepted" },
       },
       required: ["user_id", "team_id", "status"],
     },
