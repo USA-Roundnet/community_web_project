@@ -4,6 +4,7 @@ exports.up = async function (knex) {
     await knex.schema.createTable("User", (table) => {
       // add elo, rank, and status
       table.increments("id").primary();
+      table.string("role", 50).notNullable().defaultTo("user");
       table.string("first_name", 255).notNullable();
       table.string("last_name", 255).notNullable();
       table.string("username", 255).unique().notNullable();

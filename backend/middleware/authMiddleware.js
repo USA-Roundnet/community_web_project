@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("../knex-config");
+const { UnauthorizedError } = require("../utils/customErrors");
 
 const verifyToken = async (req, res, next) => {
   try {
@@ -15,7 +16,7 @@ const verifyToken = async (req, res, next) => {
       decoded = jwt.verify(token, process.env.JWT_SECRET, {
         algorithms: ["HS256"],
       });
-      req.user = { id: decoded.id, role: decoded.role };
+      req.user = { id: decoded.id, role: decoded.role || "user" };
     } catch (e) {
       // token bad or expired
       return res.status(401).json({ message: "Unauthorized2" });

@@ -167,6 +167,7 @@ describe("Tournament Controller API Tests", () => {
       .get(`/api/tournaments/${deleteTestTournamentId}`)
       .set("Authorization", `Bearer ${testUserObject.token}`);
     expect(checkRes.statusCode).toBe(404);
+    expect(checkRes.body.code).toBe("NotFoundError");
   });
 
   test("POST /api/tournaments/:id/register should register a team for a tournament", async () => {
@@ -315,6 +316,7 @@ describe("Tournament Controller API Tests", () => {
 
     expect(res.statusCode).toBe(404);
     expect(res.body.message).toBe("Tournament not found");
+    expect(res.body.code).toBe("NotFoundError");
   });
 
   test("POST /api/tournaments/:id/register should return 404 for a non-existent tournament", async () => {
@@ -328,5 +330,6 @@ describe("Tournament Controller API Tests", () => {
 
     expect(res.statusCode).toBe(404);
     expect(res.body.message).toBe("Tournament not found");
+    expect(res.body.code).toBe("NotFoundError");
   });
 });
