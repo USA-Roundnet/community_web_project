@@ -12,6 +12,8 @@ describe("Tournament Controller API Tests", () => {
   let tournamentDivisionId;
   let deleteTestTournamentId;
 
+  let secondTournamentId;
+
   let server;
 
   beforeAll(async () => {
@@ -332,4 +334,79 @@ describe("Tournament Controller API Tests", () => {
     expect(res.body.message).toBe("Tournament not found");
     expect(res.body.code).toBe("NotFoundError");
   });
+
+  test("POST /api/tournaments/divsions should return 400 for missing required fields", async () => {
+    const res = await request(app)
+      .post("/api/tournaments/divisions")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        division_id: 1,
+        max_teams: 16,
+        registration_fee: 75,
+      });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe("Missing required fields");
+    expect(res.body.code).toBe("BadRequestError");
+  });
+
+  test("POST /api/tournaments/divisions should return 404 for invalid tournament_id", async () => {
+    const res = await request(app)
+      .post("/api/tournaments/divisions")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        division_id: 1,
+        tournament_id: 999999,
+        max_teams: 16,
+        registration_fee: 75,
+      });
+    expect(res.statusCode).toBe(404);
+    expect(res.body.message).toBe("Tournament not found");
+    expect(res.body.code).toBe("NotFoundError");
+  });
+
+  test("POST /api/tournaments/divisions should return 404 for non-director user", async () => {
+    // Setup a second user who is not the director
+    const secondUser = await setupTestUser();
+    const res = await request(app)
+      .post("/api/tournaments/divisions")
+      .set("Authorization", `Bearer ${secondUser.token}`)
+      .send({
+        division_id: 1,
+        tournament_id: testTournamentId,
+        max_teams: 16,
+        registration_fee: 75,
+      });
+    expect(res.statusCode).toBe(403);
+    expect(res.body.message).toBe("You are not authorized to manage this tournament");
+    expect(res.body.code).toBe("ForbiddenError");
+  });
+
+  test("POST /api/tournaments/divisions should return 404 for invalid division_id", async () => {
+    const res = await request(app)
+      .post("/api/tournaments/divisions")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        division_id: 999999,
+        tournament_id: testTournamentId,
+        max_teams: 16,
+        registration_fee: 75,
+      });
+    expect(res.statusCode).toBe(404);
+    expect(res.body.message).toBe("Division not found");
+    expect(res.body.code).toBe("NotFoundError");
+  });
+
+  test("POST /api/tournaments/divisions should create a tournament division", async () => {
+    const res = await request(app)
+      .post("/api/tournaments/divisions")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        division_id: 1,
+        tournament_id: testTournamentId,
+        max_teams: 16,
+        registration_fee: 75,
+      });
+    expect(res.statusCode).toBe(201);
+  });
+
 });

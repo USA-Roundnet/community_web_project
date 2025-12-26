@@ -18,6 +18,34 @@ const validateTournamentInput = (req, res, next) => {
   next();
 };
 
+const validateDivisionInput = asyncHandler(async(req, res, next) => {
+
+  const { division_id, tournament_id, max_teams, registration_fee } = req.body;
+  
+  if (!division_id || !tournament_id || !max_teams || !registration_fee) {
+    return next(new BadRequestError("Missing required fields"));
+  }
+
+  const division = await db("Division").where({ id: division_id }).first();
+  if (!division) {
+    return next(new NotFoundError("Division not found"));
+  }
+
+  const tournament = await db("Tournament").where({ id: tournament_id }).first();
+  if (!tournament) {
+    throw new NotFoundError("Tournament not found");
+  }
+  const userId = req.user.id; // Assuming `req.user` is populated by `verifyToken`
+  const tournamentDir = await db("Tournament")
+    .where({ id: tournament_id, director_id: userId })
+    .first();
+  if (!tournamentDir) {
+    throw new ForbiddenError("You are not authorized to manage this tournament");
+  }
+
+  next();
+});
+
 // Middleware to check if a tournament exists
 const checkTournamentExists = asyncHandler(async (req, res, next) => {
   const tournamentId = req.params.id;
@@ -51,4 +79,5 @@ module.exports = {
   validateTournamentInput,
   checkTournamentExists,
   checkTournamentDirector,
+  validateDivisionInput,
 };

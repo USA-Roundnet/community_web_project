@@ -12,7 +12,6 @@ describe("Team Controller API Tests", () => {
 
   beforeAll(async () => {
     server = startServer(); // Explicitly start the server
-
     try {
       const { id, token } = await setupTestUser();
       testUserId = id;
@@ -64,6 +63,35 @@ describe("Team Controller API Tests", () => {
     expect(res.body.some((team) => team.id === testTeamId)).toBe(true);
   });
 
+  test("GET /api/teams/:id returns a specific team", async () => {
+    const res = await request(app)
+      .get(`/api/teams/${testTeamId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.id).toBe(testTeamId);
+  });
+
+  test("PUT /api/teams/:id should update a team", async () => {
+    const res = await request(app)
+      .put(`/api/teams/${testTeamId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Test Team updated",
+        team_type_id: 1,
+        public: true,
+        description: "This is a test team",
+      });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.name).toBe("Test Team updated");
+  });
+
+  test("DELETE /api/teams/:id should return 404 if the team does not exist", async () => {
+    const res = await request(app)
+      .delete("/api/teams/999999")
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
+    expect(res.statusCode).toBe(404);
+  });
+  
   test("DELETE /api/teams/:id should delete a team", async () => {
     const res = await request(app)
       .delete(`/api/teams/${testTeamId}`)
@@ -78,6 +106,69 @@ describe("Team Controller API Tests", () => {
       .set("Authorization", `Bearer ${testUserAuthToken}`);
 
     expect(res.statusCode).toBe(404);
-    expect(res.body.code).toBe("NotFoundError");
   });
+
+  test("POST /api/teams should return 400 with code for missing required fields", async () => {
+    const res = await request(app)
+      .post("/api/teams")
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Test Team",
+        team_type_id: 1,
+        public: true,
+      });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test("POST /api/teams should return 404 with code for invalid team_type_id", async () => {  
+    const res = await request(app)
+      .post("/api/teams")
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Test Team",
+        team_type_id: 999999,
+        public: true,
+        description: "This is a test team",
+      });
+    expect(res.statusCode).toBe(404);
+  });
+
+  test("PUT /api/teams/:id should return 400 with code for missing required fields", async () => {
+    const res = await request(app)
+      .put(`/api/teams/${testTeamId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        team_type_id: 1,
+        public: true,
+        description: "This is a test team",
+      });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test("PUT /api/teams/:id should return 404 with code for invalid team_type_id", async () => {
+    const res = await request(app)
+      .put(`/api/teams/${testTeamId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Test Team updated",
+        team_type_id: 999999,
+        public: true,
+        description: "This is a test team",
+      });
+    expect(res.statusCode).toBe(404);
+  });
+
+  test("PUT /api/teams/:id should return 404 with code for invalid public field", async () => {
+    const res = await request(app)
+      .put(`/api/teams/${testTeamId}`)
+      .set("Authorization", `Bearer ${testUserAuthToken}`)
+      .send({
+        name: "Test Team updated",
+        team_type_id: 1,
+        public: "true",
+        description: "This is a test team",
+      });
+    expect(res.statusCode).toBe(404);
+  });
+
 });

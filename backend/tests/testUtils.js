@@ -92,12 +92,15 @@ const setupTestTournament = async (authToken, tournamentData = null) => {
 const setupTestTeam = async (authToken, teamData = null) => {
   const defaultTeamData = {
     name: "Test Team",
-    city: "Test City",
-    state: "Test State",
-    country: "Test Country",
-    zip_code: "12345",
-    timezone: "EST",
-    status: "Active",
+    // city: "Test City",
+    // state: "Test State",
+    // country: "Test Country",
+    // zip_code: "12345",
+    // timezone: "EST",
+    // status: "Active",
+    team_type_id: 1,
+    public: true,
+    description: "This is a test team",
   };
 
   const finalTeamData = teamData || defaultTeamData;

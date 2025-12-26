@@ -7,6 +7,7 @@ const {
   validateTournamentInput,
   checkTournamentExists,
   checkTournamentDirector,
+  validateDivisionInput,
 } = require("../middleware/tournamentMiddleware");
 
 // Fetch all tournaments
@@ -57,8 +58,7 @@ router.delete(
 router.post(
   "/divisions",
   verifyToken,
-  checkTournamentExists,
-  checkTournamentDirector,
+  validateDivisionInput,
   asyncHandler(tournamentController.createTournamentDivision)
 );
 
