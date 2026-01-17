@@ -1,25 +1,36 @@
 const jwt = require("jsonwebtoken");
 const db = require("../knex-config");
+const { UnauthorizedError } = require("../utils/customErrors");
 
 const verifyToken = async (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await db("User").where({ id: decoded.id }).first();
+    const auth = req.headers.authorization || "";
+    const [scheme, token] = auth.split(" ");
 
-    if (!user) {
-      return res.status(403).json({ message: "Forbidden" });
+    if (scheme !== "Bearer" || !token) {
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
-    req.user = user; // Attach user info to the request object
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET, {
+        algorithms: ["HS256"],
+      });
+      req.user = { id: decoded.id, role: decoded.role || "user" };
+    } catch (e) {
+      // token bad or expired
+      return next(new UnauthorizedError("Unauthorized"));
+    }
+
+    const user = await db("User").where({ id: decoded.id }).first();
+    if (!user) {
+      return next(new UnauthorizedError("Unauthorized"));
+    }
+
+    req.user = { id: user.id, email: user.email, role: user.role || "user" };
     next();
   } catch (err) {
-    return res.status(403).json({ message: "Invalid token" });
+    next(err); // central error handler -> 500
   }
 };
 

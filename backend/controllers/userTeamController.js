@@ -1,61 +1,39 @@
-const userTeamService = require('../services/userTeamService');
+const userTeamService = require("../services/userTeamService");
+const asyncHandler = require("../middleware/asyncHandler");
+const { NotFoundError } = require("../utils/customErrors");
 
-const getAllUserTeams = async (req, res) => {
-  try {
-    const userTeams = await userTeamService.getAllUserTeams();
-    res.status(200).json(userTeams);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch user-team records', details: error.message });
-  }
-};
+const getAllUserTeams = asyncHandler(async (req, res) => {
+  const userTeams = await userTeamService.getAllUserTeams();
+  res.status(200).json(userTeams);
+});
 
-const getUserTeamById = async (req, res) => {
-  try {
-    const userTeam = await userTeamService.getUserTeamById(req.params.id);
-    if (userTeam) {
-      res.status(200).json(userTeam);
-    } else {
-      res.status(404).json({ message: 'UserTeam record not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch user-team record', details: error.message });
-  }
-};
+const getUserTeamById = asyncHandler(async (req, res) => {
+  const userTeam = await userTeamService.getUserTeamById(req.params.id);
+  if (!userTeam) throw new NotFoundError("UserTeam record not found");
+  res.status(200).json(userTeam);
+});
 
-const createUserTeam = async (req, res) => {
-  try {
-    const newUserTeam = await userTeamService.createUserTeam(req.body);
-    res.status(201).json(newUserTeam);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to create user-team record', details: error.message });
-  }
-};
+const createUserTeam = asyncHandler(async (req, res) => {
+  const newUserTeam = await userTeamService.createUserTeam(req.body);
+  res.status(201).json(newUserTeam);
+});
 
-const updateUserTeam = async (req, res) => {
-  try {
-    const updatedUserTeam = await userTeamService.updateUserTeam(req.params.id, req.body);
-    if (updatedUserTeam) {
-      res.status(200).json(updatedUserTeam);
-    } else {
-      res.status(404).json({ message: 'UserTeam record not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to update user-team record', details: error.message });
-  }
-};
+const updateUserTeam = asyncHandler(async (req, res) => {
+  const updatedUserTeam = await userTeamService.updateUserTeam(
+    req.params.id,
+    req.body
+  );
+  if (!updatedUserTeam) throw new NotFoundError("UserTeam record not found");
+  res.status(200).json(updatedUserTeam);
+});
 
-const deleteUserTeam = async (req, res) => {
-  try {
-    const deleted = await userTeamService.deleteUserTeam(req.params.id);
-    if (deleted) {
-      res.status(200).json({ message: 'UserTeam record deleted successfully' });
-    } else {
-      res.status(404).json({ message: 'UserTeam record not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to delete user-team record', details: error.message });
-  }
-};
+const deleteUserTeam = asyncHandler(async (req, res) => {
+  const deleted = await userTeamService.deleteUserTeam(req.params.id);
+  if (!deleted) throw new NotFoundError("UserTeam record not found");
+  res
+    .status(200)
+    .json({ message: "UserTeam record deleted successfully" });
+});
 
 module.exports = {
   getAllUserTeams,

@@ -71,4 +71,13 @@ describe("Team Controller API Tests", () => {
 
     expect(res.statusCode).toBe(200);
   });
+
+  test("GET /api/teams/:id returns 404 with code for missing team", async () => {
+    const res = await request(app)
+      .get("/api/teams/999999")
+      .set("Authorization", `Bearer ${testUserAuthToken}`);
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body.code).toBe("NotFoundError");
+  });
 });

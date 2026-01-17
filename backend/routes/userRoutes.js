@@ -1,12 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../middleware/authMiddleware");
+const { authorize } = require("../middleware/authorize");
 const userController = require("../controllers/userController");
 const asyncHandler = require("../utils/asyncHandler");
 const validateUserInput = require("../middleware/userMiddleware");
 
 // Protect all routes except user creation
-router.get("/", verifyToken, asyncHandler(userController.getAllUsers));
+router.get(
+  "/",
+  verifyToken,
+  authorize("admin"),
+  asyncHandler(userController.getAllUsers)
+);
 
 router.get("/:id", verifyToken, asyncHandler(userController.getUserById));
 

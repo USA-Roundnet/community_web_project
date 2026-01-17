@@ -1,101 +1,57 @@
 const userService = require("../services/userService");
+const asyncHandler = require("../middleware/asyncHandler");
+const { NotFoundError, DuplicateError } = require("../utils/customErrors");
 
 // Get all users
-const getAllUsers = async (req, res) => {
-  try {
-    const users = await userService.getAllUsers();
-    res.status(200).json(users);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to fetch users", details: error.message });
-  }
-};
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await userService.getAllUsers();
+  res.status(200).json(users);
+});
 
 // Get user by ID
-const getUserById = async (req, res) => {
-  try {
-    const user = await userService.getUserById(req.params.id);
-    if (user) {
-      res.status(200).json(user);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to fetch user", details: error.message });
-  }
-};
+const getUserById = asyncHandler(async (req, res) => {
+  const user = await userService.getUserById(req.params.id);
+  if (!user) throw new NotFoundError("User not found");
+  res.status(200).json(user);
+});
 
 // Create a new user
-const createUser = async (req, res, next) => {
+const createUser = asyncHandler(async (req, res) => {
   try {
     const newUser = await userService.createUser(req.body);
     res.status(201).json(newUser);
   } catch (error) {
     if (error.message === "Email or username already exists.") {
-      // Do not log expected errors
-      return res.status(409).json({ message: error.message });
+      throw new DuplicateError(error.message);
     }
-    // Log unexpected errors
-    console.error("Unexpected error in createUser controller:", error.message);
-    next(error); // Pass the error to the global error handler
+    throw error;
   }
-};
+});
 
 // Update a user by ID
-const updateUser = async (req, res) => {
-  try {
-    const updatedUser = await userService.updateUser(req.params.id, req.body);
-    if (updatedUser) {
-      res.status(200).json(updatedUser);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to update user", details: error.message });
-  }
-};
+const updateUser = asyncHandler(async (req, res) => {
+  const updatedUser = await userService.updateUser(req.params.id, req.body);
+  if (!updatedUser) throw new NotFoundError("User not found");
+  res.status(200).json(updatedUser);
+});
 
 // Delete a user by ID
-const deleteUser = async (req, res) => {
-  try {
-    const deletedUser = await userService.deleteUser(req.params.id);
-    if (deletedUser) {
-      res.status(200).json({ message: "User deleted successfully" });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to delete user", details: error.message });
+const deleteUser = asyncHandler(async (req, res) => {
+  const deletedUser = await userService.deleteUser(req.params.id);
+  if (!deletedUser) throw new NotFoundError("User not found");
+  res.status(200).json({ message: "User deleted successfully" });
+});
+
+const getUserTournaments = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  const tournaments = await userService.getUserTournaments(userId);
+
+  if (!tournaments || tournaments.length === 0) {
+    throw new NotFoundError("No tournaments found for this user");
   }
-};
 
-const getUserTournaments = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    // console.log("Fetching tournaments for user:", userId);
-
-    const tournaments = await userService.getUserTournaments(userId);
-    // console.log("Tournaments found:", tournaments);
-
-    if (!tournaments || tournaments.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No tournaments found for this user" });
-    }
-
-    res.status(200).json(tournaments);
-  } catch (error) {
-    console.error("Error fetching user tournaments:", error.message);
-    res.status(500).json({ message: "Failed to fetch user tournaments" });
-  }
-};
+  res.status(200).json(tournaments);
+});
 
 module.exports = {
   getAllUsers,

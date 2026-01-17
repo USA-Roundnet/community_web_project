@@ -1,61 +1,34 @@
-const userOrganizationService = require('../services/userOrganizationService');
+const userOrganizationService = require("../services/userOrganizationService");
+const asyncHandler = require("../middleware/asyncHandler");
+const { NotFoundError } = require("../utils/customErrors");
 
-const getAllUserOrganizations = async (req, res) => {
-  try {
-    const userOrganizations = await userOrganizationService.getAllUserOrganizations();
-    res.status(200).json(userOrganizations);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch user-organization records', details: error.message });
-  }
-};
+const getAllUserOrganizations = asyncHandler(async (req, res) => {
+  const userOrganizations = await userOrganizationService.getAllUserOrganizations();
+  res.status(200).json(userOrganizations);
+});
 
-const getUserOrganizationById = async (req, res) => {
-  try {
-    const userOrganization = await userOrganizationService.getUserOrganizationById(req.params.id);
-    if (userOrganization) {
-      res.status(200).json(userOrganization);
-    } else {
-      res.status(404).json({ message: 'UserOrganization record not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch user-organization record', details: error.message });
-  }
-};
+const getUserOrganizationById = asyncHandler(async (req, res) => {
+  const userOrganization = await userOrganizationService.getUserOrganizationById(req.params.id);
+  if (!userOrganization) throw new NotFoundError("UserOrganization record not found");
+  res.status(200).json(userOrganization);
+});
 
-const createUserOrganization = async (req, res) => {
-  try {
-    const newUserOrganization = await userOrganizationService.createUserOrganization(req.body);
-    res.status(201).json(newUserOrganization);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to create user-organization record', details: error.message });
-  }
-};
+const createUserOrganization = asyncHandler(async (req, res) => {
+  const newUserOrganization = await userOrganizationService.createUserOrganization(req.body);
+  res.status(201).json(newUserOrganization);
+});
 
-const updateUserOrganization = async (req, res) => {
-  try {
-    const updatedUserOrganization = await userOrganizationService.updateUserOrganization(req.params.id, req.body);
-    if (updatedUserOrganization) {
-      res.status(200).json(updatedUserOrganization);
-    } else {
-      res.status(404).json({ message: 'UserOrganization record not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to update user-organization record', details: error.message });
-  }
-};
+const updateUserOrganization = asyncHandler(async (req, res) => {
+  const updatedUserOrganization = await userOrganizationService.updateUserOrganization(req.params.id, req.body);
+  if (!updatedUserOrganization) throw new NotFoundError("UserOrganization record not found");
+  res.status(200).json(updatedUserOrganization);
+});
 
-const deleteUserOrganization = async (req, res) => {
-  try {
-    const deleted = await userOrganizationService.deleteUserOrganization(req.params.id);
-    if (deleted) {
-      res.status(200).json({ message: 'UserOrganization record deleted successfully' });
-    } else {
-      res.status(404).json({ message: 'UserOrganization record not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to delete user-organization record', details: error.message });
-  }
-};
+const deleteUserOrganization = asyncHandler(async (req, res) => {
+  const deleted = await userOrganizationService.deleteUserOrganization(req.params.id);
+  if (!deleted) throw new NotFoundError("UserOrganization record not found");
+  res.status(200).json({ message: "UserOrganization record deleted successfully" });
+});
 
 module.exports = {
   getAllUserOrganizations,
