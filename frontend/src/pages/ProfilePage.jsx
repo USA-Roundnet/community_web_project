@@ -35,10 +35,13 @@ const ProfilePage = () => {
                     return;
                 }
 
+                const token = localStorage.getItem("token");
                 const response = await fetch(
                     `${API_BASE_URL}/api/users/${userId}`,
                     {
-                        credentials: "include",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
                     }
                 );
 
@@ -110,12 +113,15 @@ const ProfilePage = () => {
 
         try {
             const userId = localStorage.getItem("userId");
+            const token = localStorage.getItem("token");
             const response = await fetch(
                 `${API_BASE_URL}/api/users/${userId}`,
                 {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
                     body: JSON.stringify(editForm),
                 }
             );

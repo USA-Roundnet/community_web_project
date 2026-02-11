@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
 const GEOAPIFY_API_KEY = "3cfdf04a71db4f31a3bf17a9d206d45e";
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../config";
 
 const RegistrationPage = () => {
     const [formData, setFormData] = useState({

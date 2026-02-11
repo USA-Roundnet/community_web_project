@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../config";
 
 function ResetPasswordPage() {
     const [password, setPassword] = useState("");

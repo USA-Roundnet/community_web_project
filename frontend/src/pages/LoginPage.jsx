@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../config";
 
 const LoginPage = () => {
     const [form, setForm] = useState({ email: "", password: "" });
@@ -29,6 +29,17 @@ const LoginPage = () => {
                         "Login failed. Please check your credentials."
                 );
             }
+            const data = await response.json();
+            // Store auth state
+            localStorage.setItem("loggedIn", "true");
+            localStorage.setItem("token", data.token);
+            // Decode user ID from JWT payload
+            try {
+                const payload = JSON.parse(atob(data.token.split(".")[1]));
+                localStorage.setItem("userId", payload.id);
+            } catch {
+                // token decode failed, continue anyway
+            }
             navigate("/", { replace: true });
         } catch (err) {
             setError(err.message);
@@ -52,7 +63,7 @@ const LoginPage = () => {
                 <h2 className="text-[#fff] text-3xl h-[10%] font-bold">
                     Login
                 </h2>
-                {error && <div>{error}</div>}
+                {error && <div className="w-full max-w-md mb-3 p-3 bg-red-500/20 border border-red-400 text-red-200 rounded-md text-sm text-center">{error}</div>}
                 <form
                     className="flex flex-col h-[30%] justify-around w-full max-w-md"
                     onSubmit={handleSubmit}
