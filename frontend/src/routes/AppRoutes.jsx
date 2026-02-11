@@ -11,6 +11,7 @@ import CreateTournamentRegistration from "../pages/CreateTournamentRegistration"
 // import RankingsPage from '../pages/RankingsPage';
 import NotFoundPage from "../pages/NotFoundPage";
 import AboutPage from "../pages/AboutPage";
+import ProfilePage from "../pages/ProfilePage";
 import Layout from "../components/Outlet";
 import ForgotPage from "../pages/ForgotPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
@@ -25,6 +26,7 @@ const AppRoutes = () => {
                 <Route path="/events/create/format" element={<CreateTournamentFormat />} />
                 <Route path="/events/create/registration" element={<CreateTournamentRegistration />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />
