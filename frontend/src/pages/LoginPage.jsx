@@ -29,6 +29,10 @@ const LoginPage = () => {
                         "Login failed. Please check your credentials."
                 );
             }
+            const data = await response.json();
+            if (data?.token) {
+                localStorage.setItem("authToken", data.token);
+            }
             navigate("/", { replace: true });
         } catch (err) {
             setError(err.message);

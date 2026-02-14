@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
 
@@ -24,6 +24,17 @@ const CreateTournamentBasicInfo = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            setError("Please log in to create a tournament.");
+            navigate("/login", {
+                replace: true,
+                state: { from: "/events/create" },
+            });
+        }
+    }, [navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
