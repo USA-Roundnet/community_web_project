@@ -1,18 +1,30 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 import { FiMenu, FiX } from "react-icons/fi";
 
 const Navbar = () => {
-    const location = useLocation();
-    const [loggedIn, setLoggedIn] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-    // Simulate logged-in state for demonstration purposes
-    useEffect(() => {
-        const isAuthenticated = localStorage.getItem("loggedIn") === "true";
-        setLoggedIn(isAuthenticated);
-    }, []);
+  // Simulate logged-in state for demonstration purposes
+  useEffect(() => {
+    const hasToken = Boolean(localStorage.getItem("authToken"));
+    setLoggedIn(hasToken);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    // Clear any in-progress wizard data too
+    localStorage.removeItem("tournamentBasicInfo");
+    localStorage.removeItem("tournamentFormat");
+    localStorage.removeItem("tournamentRegistration");
+    setLoggedIn(false);
+    setMenuOpen(false);
+    navigate("/", { replace: true });
+  };
 
     const isActive = (path) => {
         return location.pathname === path
@@ -60,14 +72,22 @@ const Navbar = () => {
                     <Link to="/rankings" className={isActive("/rankings")}>
                         Rankings
                     </Link>
-                    <Link
-                        className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 ml-2"
-                        to={loggedIn ? "/profile" : "/login"}
-                    >
-                        {loggedIn ? "Account" : "Login"}
-                    </Link>
-                </div>
-            </div>
+          <Link
+            className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 ml-2"
+            to={loggedIn ? "/profile" : "/login"}
+          >
+            {loggedIn ? "Account" : "Login"}
+          </Link>
+          {loggedIn && (
+            <button
+              onClick={handleLogout}
+              className="hover:cursor-pointer px-4 py-2 text-blue-900 border border-blue-900 hover:bg-blue-900 hover:text-[#f8f8f8] rounded-md transition-colors duration-300"
+            >
+              Logout
+            </button>
+          )}
+        </div>
+      </div>
             <div
                 className={`md:hidden fixed top-0 right-0 w-3/4 max-w-xs h-full bg-[#f8f8f8] shadow-lg z-50 transform transition-transform duration-300 ${
                     menuOpen ? "translate-x-0" : "translate-x-full"
@@ -105,17 +125,25 @@ const Navbar = () => {
                     >
                         Rankings
                     </Link>
-                    <Link
-                        className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 mt-2"
-                        to={loggedIn ? "/profile" : "/login"}
-                        onClick={() => setMenuOpen(false)}
-                    >
-                        {loggedIn ? "Account" : "Login"}
-                    </Link>
-                </div>
-            </div>
-        </nav>
-    );
+          <Link
+            className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 mt-2"
+            to={loggedIn ? "/profile" : "/login"}
+            onClick={() => setMenuOpen(false)}
+          >
+            {loggedIn ? "Account" : "Login"}
+          </Link>
+          {loggedIn && (
+            <button
+              onClick={handleLogout}
+              className="hover:cursor-pointer px-4 py-2 text-blue-900 border border-blue-900 hover:bg-blue-900 hover:text-[#f8f8f8] rounded-md transition-colors duration-300"
+            >
+              Logout
+            </button>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;
