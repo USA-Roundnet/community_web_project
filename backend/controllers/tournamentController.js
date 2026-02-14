@@ -16,13 +16,6 @@ const getTournamentById = asyncHandler(async (req, res) => {
 const createTournament = asyncHandler(async (req, res) => {
   const directorId = req.user?.id;
   const payload = { ...req.body, director_id: directorId };
-  console.info("Creating tournament", {
-    directorId,
-    hasAuthUser: Boolean(req.user),
-    name: payload.name,
-    start_date: payload.start_date,
-    end_date: payload.end_date,
-  });
   const newTournament = await tournamentService.createTournament(payload);
   res.status(201).json(newTournament);
 });
