@@ -4,16 +4,27 @@ import logo from "../assets/rallypoint-logo.png";
 import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
 
 const Navbar = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [loggedIn, setLoggedIn] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-    // Check auth state on mount and route changes
-    useEffect(() => {
-        const isAuthenticated = localStorage.getItem("loggedIn") === "true";
-        setLoggedIn(isAuthenticated);
-    }, [location.pathname]);
+  // Simulate logged-in state for demonstration purposes
+  useEffect(() => {
+    const hasToken = Boolean(localStorage.getItem("authToken"));
+    setLoggedIn(hasToken);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    // Clear any in-progress wizard data too
+    localStorage.removeItem("tournamentBasicInfo");
+    localStorage.removeItem("tournamentFormat");
+    localStorage.removeItem("tournamentRegistration");
+    setLoggedIn(false);
+    setMenuOpen(false);
+    navigate("/", { replace: true });
+  };
 
     const isActive = (path) => {
         return location.pathname === path

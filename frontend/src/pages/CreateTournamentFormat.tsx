@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const CreateTournamentFormat = () => {
@@ -15,6 +15,17 @@ const CreateTournamentFormat = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            setError("Please log in to continue.");
+            navigate("/login", {
+                replace: true,
+                state: { from: "/events/create/format" },
+            });
+        }
+    }, [navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
