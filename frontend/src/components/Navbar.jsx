@@ -9,39 +9,29 @@ const Navbar = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Simulate logged-in state for demonstration purposes
-  useEffect(() => {
-    const hasToken = Boolean(localStorage.getItem("authToken"));
-    setLoggedIn(hasToken);
-  }, [location.pathname]);
+    // Check auth state on route change
+    useEffect(() => {
+        const hasToken = Boolean(localStorage.getItem("authToken"));
+        setLoggedIn(hasToken);
+        setMenuOpen(false);
+    }, [location.pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    // Clear any in-progress wizard data too
-    localStorage.removeItem("tournamentBasicInfo");
-    localStorage.removeItem("tournamentFormat");
-    localStorage.removeItem("tournamentRegistration");
-    setLoggedIn(false);
-    setMenuOpen(false);
-    navigate("/", { replace: true });
-  };
+    const handleLogout = () => {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("loggedIn");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("tournamentBasicInfo");
+        localStorage.removeItem("tournamentFormat");
+        localStorage.removeItem("tournamentRegistration");
+        setLoggedIn(false);
+        setMenuOpen(false);
+        navigate("/", { replace: true });
+    };
 
     const isActive = (path) => {
         return location.pathname === path
             ? "text-black hover:text-blue-900"
             : "text-blue-900";
-    };
-
-    // Close menu on route change
-    useEffect(() => {
-        setMenuOpen(false);
-    }, [location.pathname]);
-
-    const handleLogout = () => {
-        localStorage.removeItem("loggedIn");
-        setLoggedIn(false);
-        setMenuOpen(false);
-        navigate("/");
     };
 
     return (

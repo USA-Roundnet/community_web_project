@@ -35,7 +35,7 @@ const ProfilePage = () => {
                     return;
                 }
 
-                const token = localStorage.getItem("token");
+                const token = localStorage.getItem("authToken");
                 const response = await fetch(
                     `${API_BASE_URL}/api/users/${userId}`,
                     {
@@ -113,7 +113,7 @@ const ProfilePage = () => {
 
         try {
             const userId = localStorage.getItem("userId");
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem("authToken");
             const response = await fetch(
                 `${API_BASE_URL}/api/users/${userId}`,
                 {

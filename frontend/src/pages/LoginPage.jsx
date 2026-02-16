@@ -32,7 +32,7 @@ const LoginPage = () => {
             const data = await response.json();
             // Store auth state
             localStorage.setItem("loggedIn", "true");
-            localStorage.setItem("token", data.token);
+            localStorage.setItem("authToken", data.token);
             // Decode user ID from JWT payload
             try {
                 const payload = JSON.parse(atob(data.token.split(".")[1]));
