@@ -1,5 +1,5 @@
 // src/routes/AppRoutes.jsx
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useParams } from "react-router-dom";
 
 import LoginPage from "../pages/LoginPage";
 import RegistrationPage from "../pages/RegistrationPage";
@@ -15,6 +15,7 @@ import TournamentEventPage from "../pages/TournamentEventPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import AboutPage from "../pages/AboutPage";
 import ProfilePage from "../pages/ProfilePage";
+import TeamPage from "../pages/TeamPage";
 import Layout from "../components/Outlet";
 import ForgotPage from "../pages/ForgotPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
@@ -33,6 +34,7 @@ const AppRoutes = () => {
                 <Route path="/events/:id/edit" element={<EditTournamentPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/teams/:teamId" element={<TeamPage />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />

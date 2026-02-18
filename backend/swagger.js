@@ -336,6 +336,130 @@ module.exports = {
       },
     },
 
+    "/teams": {
+      get: {
+        summary: "Get all teams",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "Successful response",
+            schema: {
+              type: "array",
+              items: {
+                $ref: "#/definitions/TeamResponse",
+              },
+            },
+          },
+        },
+      },
+      post: {
+        summary: "Create a new team",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/TeamCreateRequest",
+            },
+          },
+        ],
+        responses: {
+          201: {
+            description: "Team created successfully",
+            schema: {
+              $ref: "#/definitions/TeamResponse",
+            },
+          },
+        },
+      },
+    },
+
+    "/teams/{id}": {
+      get: {
+        summary: "Get team by ID",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successful response",
+            schema: {
+              $ref: "#/definitions/TeamResponse",
+            },
+          },
+          404: {
+            description: "Team not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+        },
+      },
+      put: {
+        summary: "Update a team by ID",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              // reuse create request for now; can create TeamUpdateRequest later
+              $ref: "#/definitions/TeamCreateRequest",
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "Team updated successfully",
+            schema: {
+              $ref: "#/definitions/TeamResponse",
+            },
+          },
+          404: {
+            description: "Team not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+        },
+      },
+      delete: {
+        summary: "Delete a team by ID",
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: { description: "Team deleted successfully" },
+          404: {
+            description: "Team not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+        },
+      },
+    },
+
     "/organizations": {
       get: {
         summary: "Get all organizations",
@@ -643,6 +767,44 @@ module.exports = {
         status: { type: "string", example: "bronze" },
       },
       // intentionally no password field
+    },
+
+    // -------- TEAMS --------
+    TeamCreateRequest: {
+      type: "object",
+      properties: {
+        name: { type: "string", example: "Team 1" },
+        team_type_id: { type: "integer", example: "2" },
+        public: { type: "bool", example: false },
+        description: { type: "string", example: "This is a team"},
+        created_at: {
+          type: "string",
+          format: "date-time",
+          example: "2026-01-31T12:00:00Z",
+        },
+      },
+      required: [
+        "name",
+        "team_type_id",
+        "public",
+        "created_at",
+      ],
+    },
+
+    TeamResponse: {
+      type: "object",
+      properties: {
+        id: { type: "integer", example: 1 },
+        team_type_id: { type: "integer", example: 2 },
+        name: { type: "string", example: "Team 1" },
+        public: { type: "bool", example: false },
+        description: { type: "string", example: "This is a team"},
+        created_at: {
+          type: "string",
+          format: "date-time",
+          example: "2025-01-31T12:00:00Z",
+        },
+      },
     },
 
     // -------- ORGANIZATIONS --------
