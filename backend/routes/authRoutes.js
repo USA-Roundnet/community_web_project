@@ -5,6 +5,8 @@ const router = express.Router();
 
 router.post("/register", authController.registerUser);
 router.post("/login", authController.loginUser);
+router.get("/google", authController.startGoogleAuth);
+router.get("/google/callback", authController.handleGoogleCallback);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 

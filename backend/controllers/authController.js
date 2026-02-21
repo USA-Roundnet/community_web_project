@@ -16,6 +16,30 @@ const loginUser = asyncHandler(async (req, res) => {
   res.status(200).json({ token });
 });
 
+const startGoogleAuth = asyncHandler(async (req, res) => {
+  const authUrl = authService.buildGoogleAuthUrl(req.query?.state);
+  res.redirect(authUrl);
+});
+
+const handleGoogleCallback = asyncHandler(async (req, res) => {
+  const { code } = req.query;
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  try {
+    const { token } = await authService.authenticateWithGoogleCode(code);
+    const redirectUrl = new URL("/login", frontendUrl);
+    redirectUrl.searchParams.set("token", token);
+    res.redirect(redirectUrl.toString());
+  } catch (error) {
+    const redirectUrl = new URL("/login", frontendUrl);
+    redirectUrl.searchParams.set(
+      "error",
+      error?.message || "Google authentication failed"
+    );
+    res.redirect(redirectUrl.toString());
+  }
+});
+
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) throw new ValidationError("Email is required");
@@ -56,6 +80,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  startGoogleAuth,
+  handleGoogleCallback,
   forgotPassword,
   resetPassword
 };

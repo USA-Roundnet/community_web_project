@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
@@ -9,6 +9,33 @@ const LoginPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    const storeSessionFromToken = (token) => {
+        localStorage.setItem("loggedIn", "true");
+        localStorage.setItem("authToken", token);
+        try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            localStorage.setItem("userId", payload.id);
+        } catch {
+            // token decode failed, continue anyway
+        }
+    };
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tokenFromCallback = params.get("token");
+        const oauthError = params.get("error");
+
+        if (tokenFromCallback) {
+            storeSessionFromToken(tokenFromCallback);
+            navigate("/", { replace: true });
+            return;
+        }
+
+        if (oauthError) {
+            setError(oauthError);
+        }
+    }, [navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,22 +57,17 @@ const LoginPage = () => {
                 );
             }
             const data = await response.json();
-            // Store auth state
-            localStorage.setItem("loggedIn", "true");
-            localStorage.setItem("authToken", data.token);
-            // Decode user ID from JWT payload
-            try {
-                const payload = JSON.parse(atob(data.token.split(".")[1]));
-                localStorage.setItem("userId", payload.id);
-            } catch {
-                // token decode failed, continue anyway
-            }
+            storeSessionFromToken(data.token);
             navigate("/", { replace: true });
         } catch (err) {
             setError(err.message);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleGoogleLogin = () => {
+        window.location.assign(`${API_BASE_URL}/api/auth/google`);
     };
 
     return (
@@ -131,9 +153,11 @@ const LoginPage = () => {
                     <div className="w-full max-w-md">
                         <button
                             className="w-full p-4 rounded-md bg-black text-white font-semibold"
+                            type="button"
                             disabled={isLoading}
+                            onClick={handleGoogleLogin}
                         >
-                            Login with Google
+                            Log in with Google
                         </button>
                     </div>
                 </div>
