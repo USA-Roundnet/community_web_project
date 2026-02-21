@@ -10,6 +10,14 @@ const LoginPage = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
+    const parseJsonSafely = async (response) => {
+        try {
+            return await response.json();
+        } catch {
+            return null;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -23,13 +31,16 @@ const LoginPage = () => {
                 credentials: "include",
             });
             if (!response.ok) {
-                const data = await response.json();
+                const data = await parseJsonSafely(response);
                 throw new Error(
                     data.message ||
-                        "Login failed. Please check your credentials."
+                        `Login failed (${response.status}). Check backend API port/config.`
                 );
             }
-            const data = await response.json();
+            const data = await parseJsonSafely(response);
+            if (!data?.token) {
+                throw new Error("Login failed: invalid server response.");
+            }
             // Store auth state
             localStorage.setItem("loggedIn", "true");
             localStorage.setItem("authToken", data.token);

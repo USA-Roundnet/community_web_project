@@ -23,6 +23,14 @@ const CreateTournamentRegistration = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
+    const parseJsonSafely = async (response: Response) => {
+        try {
+            return await response.json();
+        } catch {
+            return null;
+        }
+    };
+
     const makeApiCall = async (endpoint: string, options: RequestInit = {}) => {
         const url = `${API_BASE_URL}${endpoint}`;
         const config: RequestInit = {
@@ -42,16 +50,16 @@ const CreateTournamentRegistration = () => {
         const response = await fetch(url, config);
         
         if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await parseJsonSafely(response);
             const message =
                 errorData?.message ||
                 (response.status === 401
                     ? "Unauthorized. Please log in and try again."
-                    : `HTTP error! status: ${response.status}`);
+                    : `API request failed (${response.status}). Check backend API port/config.`);
             throw new Error(message);
         }
 
-        return await response.json();
+        return await parseJsonSafely(response);
     };
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
