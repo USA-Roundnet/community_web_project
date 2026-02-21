@@ -22,6 +22,11 @@ then navigate to http://localhost:5173 in your browser
 Create Tournament and Registration address autocomplete use Geoapify.
 You can override the default project key with your own key via `VITE_GEOAPIFY_API_KEY`.
 
+## API proxy port (shared defaults)
+
+Frontend proxy defaults to `http://localhost:5000` for `/api/*`, matching backend default.
+If your local backend runs on a different port, set `VITE_API_PROXY_TARGET` in `.env` or `.env.local`.
+
 To set the key locally:
 
 ```bash
