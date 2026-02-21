@@ -17,6 +17,11 @@ npm run dev
 
 then navigate to http://localhost:5173 in your browser
 
+## API proxy port (shared defaults)
+
+Frontend proxy defaults to `http://localhost:5000` for `/api/*`, matching backend default.
+If your local backend runs on a different port, set `VITE_API_PROXY_TARGET` in `.env` or `.env.local`.
+
 ## If you need to start fresh
 
 ```bash
