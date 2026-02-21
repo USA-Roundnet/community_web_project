@@ -2,8 +2,6 @@ const request = require("supertest");
 const { app, startServer, stopServer } = require("../index");
 const knex = require("../knex-config.js");
 const { setupTestUser } = require("./testUtils.js");
-const { serve } = require("swagger-ui-express");
-const { format } = require("morgan");
 
 describe("Tournament Controller API Tests", () => {
   let testUserObject;
@@ -37,7 +35,8 @@ describe("Tournament Controller API Tests", () => {
       const joinTeam = await knex("UserTeam").insert({
         user_id: testUserObject.id,
         team_id: testTeamId,
-        status: "Accepted",
+        role: "player",
+        status: "accepted",
         created_at: new Date(),
       });
 
@@ -105,19 +104,78 @@ describe("Tournament Controller API Tests", () => {
       .set("Authorization", `Bearer ${testUserObject.token}`)
       .send({
         name: "Test Tournament",
+        city: "Round Rock",
+        state_province: "TX",
+        zip_code: "78664",
+        country: "USA",
         timezone: "America/New_York",
         status: "upcoming",
         format: "college",
         start_date: "2023-01-01",
         end_date: "2023-01-02",
-        director_id: testUserObject.id,
+        max_teams: 24,
+        director_id: 999999,
       });
 
     deleteTestTournamentId = res.body.id;
 
     expect(res.statusCode).toBe(201);
     expect(res.body).toHaveProperty("id");
+    expect(res.body.director_id).toBe(testUserObject.id);
     // console.log("Tournament created successfully:", res.body);
+  });
+
+  test("POST /api/tournaments should fail when required fields are missing", async () => {
+    const res = await request(app)
+      .post("/api/tournaments")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        name: "Incomplete Tournament",
+        format: "college",
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toContain("Missing required fields");
+  });
+
+  test("POST /api/tournaments should reject invalid max_teams", async () => {
+    const res = await request(app)
+      .post("/api/tournaments")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        name: "Invalid Max Tournament",
+        city: "Austin",
+        state_province: "TX",
+        zip_code: "78701",
+        country: "USA",
+        format: "classic",
+        start_date: "2026-01-01",
+        end_date: "2026-01-02",
+        max_teams: 0,
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe("max_teams must be a positive integer");
+  });
+
+  test("POST /api/tournaments should reject end_date before start_date", async () => {
+    const res = await request(app)
+      .post("/api/tournaments")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        name: "Invalid Dates Tournament",
+        city: "Austin",
+        state_province: "TX",
+        zip_code: "78701",
+        country: "USA",
+        format: "classic",
+        start_date: "2026-01-05",
+        end_date: "2026-01-02",
+        max_teams: 12,
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe("end_date must be on or after start_date");
   });
 
   test("GET /api/tournaments should return all tournaments", async () => {

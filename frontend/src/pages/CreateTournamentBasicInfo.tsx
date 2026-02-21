@@ -10,8 +10,10 @@ const CreateTournamentBasicInfo = () => {
             : {
                   tournamentName: "",
                   description: "",
-                  date: "",
+                  startDate: "",
+                  endDate: "",
                   time: "",
+                  maxTeams: "",
                   address1: "",
                   address2: "",
                   city: "",
@@ -53,7 +55,9 @@ const CreateTournamentBasicInfo = () => {
 
         const requiredFields = [
             { field: "tournamentName", label: "Tournament Name" },
-            { field: "date", label: "Date" },
+            { field: "startDate", label: "Start Date" },
+            { field: "endDate", label: "End Date" },
+            { field: "maxTeams", label: "Max Teams" },
             { field: "address1", label: "Address" },
             { field: "city", label: "City" },
             { field: "state", label: "State" },
@@ -129,16 +133,16 @@ const CreateTournamentBasicInfo = () => {
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 flex flex-col">
                             <label
-                                htmlFor="date"
+                                htmlFor="startDate"
                                 className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                             >
-                                Date
+                                Start Date
                             </label>
                             <input
                                 type="date"
-                                id="date"
-                                name="date"
-                                value={formData.date}
+                                id="startDate"
+                                name="startDate"
+                                value={formData.startDate}
                                 onChange={handleChange}
                                 className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
@@ -146,10 +150,29 @@ const CreateTournamentBasicInfo = () => {
                         </div>
                         <div className="flex-1 flex flex-col">
                             <label
+                                htmlFor="endDate"
+                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
+                            >
+                                End Date
+                            </label>
+                            <input
+                                type="date"
+                                id="endDate"
+                                name="endDate"
+                                value={formData.endDate}
+                                onChange={handleChange}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 flex flex-col">
+                            <label
                                 htmlFor="time"
                                 className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
                             >
-                                Time
+                                Start Time (optional)
                             </label>
                             <input
                                 type="time"
@@ -158,7 +181,24 @@ const CreateTournamentBasicInfo = () => {
                                 value={formData.time}
                                 onChange={handleChange}
                                 className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                placeholder="12:00"
+                            />
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                            <label
+                                htmlFor="maxTeams"
+                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
+                            >
+                                Max Teams
+                            </label>
+                            <input
+                                type="number"
+                                id="maxTeams"
+                                name="maxTeams"
+                                value={formData.maxTeams}
+                                onChange={handleChange}
+                                min={1}
+                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
+                                required
                             />
                         </div>
                     </div>
