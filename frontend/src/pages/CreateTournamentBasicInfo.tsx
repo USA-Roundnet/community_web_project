@@ -1,6 +1,44 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
+import { GEOAPIFY_API_KEY } from "../config";
+
+type AddressSuggestion = {
+    label: string;
+    address1: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+};
+
+const AUTOCOMPLETE_LIMIT = 5;
+const AUTOCOMPLETE_DEBOUNCE_MS = 350;
+
+const toGeoapifySuggestions = (features: any[] = []): AddressSuggestion[] =>
+    features.map((feature) => {
+        const props = feature?.properties || {};
+        const address1 =
+            [props.housenumber, props.street].filter(Boolean).join(" ").trim() ||
+            props.address_line1 ||
+            "";
+        const city =
+            props.city || props.town || props.village || props.hamlet || "";
+        const state = props.state || props.state_code || "";
+        const zipCode = props.postcode || "";
+        const country = props.country || "";
+
+        return {
+            label:
+                props.formatted ||
+                [address1, city, state, country].filter(Boolean).join(", "),
+            address1,
+            city,
+            state,
+            zipCode,
+            country,
+        };
+    });
 
 const CreateTournamentBasicInfo = () => {
     const [formData, setFormData] = useState(() => {
@@ -25,7 +63,11 @@ const CreateTournamentBasicInfo = () => {
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [addressQuery, setAddressQuery] = useState(formData.address1 || "");
+    const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+    const [addressLoading, setAddressLoading] = useState(false);
     const navigate = useNavigate();
+    const todayIso = new Date().toISOString().slice(0, 10);
 
     useEffect(() => {
         const token = localStorage.getItem("authToken");
@@ -38,14 +80,80 @@ const CreateTournamentBasicInfo = () => {
         }
     }, [navigate]);
 
+    useEffect(() => {
+        const query = addressQuery.trim();
+        if (query.length < 3 || !GEOAPIFY_API_KEY) {
+            setAddressSuggestions([]);
+            setAddressLoading(false);
+            return;
+        }
+
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(async () => {
+            setAddressLoading(true);
+            try {
+                const geoapifyUrl = new URL(
+                    "https://api.geoapify.com/v1/geocode/autocomplete"
+                );
+                geoapifyUrl.searchParams.set("text", query);
+                geoapifyUrl.searchParams.set("limit", String(AUTOCOMPLETE_LIMIT));
+                geoapifyUrl.searchParams.set("apiKey", GEOAPIFY_API_KEY);
+
+                const response = await fetch(geoapifyUrl.toString(), {
+                    signal: abortController.signal,
+                });
+                if (!response.ok) {
+                    throw new Error("Address lookup failed");
+                }
+
+                const data = await response.json();
+                const suggestions = toGeoapifySuggestions(data?.features);
+
+                setAddressSuggestions(
+                    suggestions.filter((suggestion) => suggestion.label.length > 0)
+                );
+            } catch (fetchError: any) {
+                if (fetchError?.name !== "AbortError") {
+                    setAddressSuggestions([]);
+                }
+            } finally {
+                setAddressLoading(false);
+            }
+        }, AUTOCOMPLETE_DEBOUNCE_MS);
+
+        return () => {
+            clearTimeout(timeoutId);
+            abortController.abort();
+        };
+    }, [addressQuery]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         const updatedData = { ...formData, [name]: value };
         setFormData(updatedData);
+        if (name === "address1") {
+            setAddressQuery(value);
+        }
         localStorage.setItem(
             "tournamentBasicInfo",
             JSON.stringify(updatedData)
         );
+    };
+
+    const handleAddressSuggestionSelect = (suggestion: AddressSuggestion) => {
+        const updatedData = {
+            ...formData,
+            address1: suggestion.address1 || formData.address1,
+            city: suggestion.city || formData.city,
+            state: suggestion.state || formData.state,
+            zipCode: suggestion.zipCode || formData.zipCode,
+            country: suggestion.country || formData.country,
+        };
+
+        setFormData(updatedData);
+        setAddressQuery(updatedData.address1);
+        setAddressSuggestions([]);
+        localStorage.setItem("tournamentBasicInfo", JSON.stringify(updatedData));
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,6 +182,18 @@ const CreateTournamentBasicInfo = () => {
             setError(
                 `Please fill in the following required fields: ${fieldsList}`
             );
+            setIsLoading(false);
+            return;
+        }
+
+        if (formData.startDate < todayIso) {
+            setError("Start Date cannot be before today.");
+            setIsLoading(false);
+            return;
+        }
+
+        if (formData.endDate < formData.startDate) {
+            setError("End Date must be on or after Start Date.");
             setIsLoading(false);
             return;
         }
@@ -144,6 +264,7 @@ const CreateTournamentBasicInfo = () => {
                                 name="startDate"
                                 value={formData.startDate}
                                 onChange={handleChange}
+                                min={todayIso}
                                 className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             />
@@ -161,6 +282,7 @@ const CreateTournamentBasicInfo = () => {
                                 name="endDate"
                                 value={formData.endDate}
                                 onChange={handleChange}
+                                min={formData.startDate || todayIso}
                                 className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             />
@@ -217,10 +339,34 @@ const CreateTournamentBasicInfo = () => {
                                 name="address1"
                                 value={formData.address1}
                                 onChange={handleChange}
-                                placeholder="Address 1"
+                                placeholder="Address 1 (start typing for suggestions)"
                                 className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
                                 required
                             />
+                            {addressLoading && (
+                                <p className="text-sm text-blue-900">Looking up addresses...</p>
+                            )}
+                            {addressSuggestions.length > 0 && (
+                                <div className="rounded-md border border-gray-300 bg-white shadow-sm max-h-56 overflow-y-auto">
+                                    {addressSuggestions.map((suggestion, index) => (
+                                        <button
+                                            key={`${suggestion.label}-${index}`}
+                                            type="button"
+                                            className="hover:cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
+                                            onClick={() =>
+                                                handleAddressSuggestionSelect(suggestion)
+                                            }
+                                        >
+                                            {suggestion.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {!GEOAPIFY_API_KEY && (
+                                <p className="text-xs text-gray-600">
+                                    Set <code>VITE_GEOAPIFY_API_KEY</code> to enable address suggestions.
+                                </p>
+                            )}
                             <input
                                 type="text"
                                 id="address2"

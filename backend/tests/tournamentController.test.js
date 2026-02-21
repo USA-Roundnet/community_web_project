@@ -3,6 +3,12 @@ const { app, startServer, stopServer } = require("../index");
 const knex = require("../knex-config.js");
 const { setupTestUser } = require("./testUtils.js");
 
+const dateWithOffset = (daysFromToday) => {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + daysFromToday);
+  return date.toISOString().slice(0, 10);
+};
+
 describe("Tournament Controller API Tests", () => {
   let testUserObject;
   let testTeamId;
@@ -99,6 +105,9 @@ describe("Tournament Controller API Tests", () => {
   });
 
   test("POST /api/tournaments should create a tournament", async () => {
+    const startDate = dateWithOffset(7);
+    const endDate = dateWithOffset(8);
+
     const res = await request(app)
       .post("/api/tournaments")
       .set("Authorization", `Bearer ${testUserObject.token}`)
@@ -111,8 +120,8 @@ describe("Tournament Controller API Tests", () => {
         timezone: "America/New_York",
         status: "upcoming",
         format: "college",
-        start_date: "2023-01-01",
-        end_date: "2023-01-02",
+        start_date: startDate,
+        end_date: endDate,
         max_teams: 24,
         director_id: 999999,
       });
@@ -139,6 +148,9 @@ describe("Tournament Controller API Tests", () => {
   });
 
   test("POST /api/tournaments should reject invalid max_teams", async () => {
+    const startDate = dateWithOffset(7);
+    const endDate = dateWithOffset(8);
+
     const res = await request(app)
       .post("/api/tournaments")
       .set("Authorization", `Bearer ${testUserObject.token}`)
@@ -149,8 +161,8 @@ describe("Tournament Controller API Tests", () => {
         zip_code: "78701",
         country: "USA",
         format: "classic",
-        start_date: "2026-01-01",
-        end_date: "2026-01-02",
+        start_date: startDate,
+        end_date: endDate,
         max_teams: 0,
       });
 
@@ -159,6 +171,9 @@ describe("Tournament Controller API Tests", () => {
   });
 
   test("POST /api/tournaments should reject end_date before start_date", async () => {
+    const startDate = dateWithOffset(7);
+    const endDate = dateWithOffset(6);
+
     const res = await request(app)
       .post("/api/tournaments")
       .set("Authorization", `Bearer ${testUserObject.token}`)
@@ -169,13 +184,82 @@ describe("Tournament Controller API Tests", () => {
         zip_code: "78701",
         country: "USA",
         format: "classic",
-        start_date: "2026-01-05",
-        end_date: "2026-01-02",
+        start_date: startDate,
+        end_date: endDate,
         max_teams: 12,
       });
 
     expect(res.statusCode).toBe(400);
     expect(res.body.message).toBe("end_date must be on or after start_date");
+  });
+
+  test("POST /api/tournaments should reject start_date before today", async () => {
+    const startDate = dateWithOffset(-1);
+    const endDate = dateWithOffset(1);
+
+    const res = await request(app)
+      .post("/api/tournaments")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        name: "Past Start Tournament",
+        city: "Austin",
+        state_province: "TX",
+        zip_code: "78701",
+        country: "USA",
+        format: "classic",
+        start_date: startDate,
+        end_date: endDate,
+        max_teams: 16,
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toBe("start_date must be today or a future date");
+  });
+
+  test("POST /api/tournaments should reject profanity in tournament text fields", async () => {
+    const startDate = dateWithOffset(7);
+    const endDate = dateWithOffset(8);
+
+    const res = await request(app)
+      .post("/api/tournaments")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        name: "shit tournament",
+        city: "Austin",
+        state_province: "TX",
+        zip_code: "78701",
+        country: "USA",
+        format: "classic",
+        start_date: startDate,
+        end_date: endDate,
+        max_teams: 8,
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toContain("contains disallowed profanity");
+  });
+
+  test("POST /api/tournaments should reject suspicious SQL-like payloads", async () => {
+    const startDate = dateWithOffset(7);
+    const endDate = dateWithOffset(8);
+
+    const res = await request(app)
+      .post("/api/tournaments")
+      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .send({
+        name: "My Event'; DROP TABLE Tournament; --",
+        city: "Austin",
+        state_province: "TX",
+        zip_code: "78701",
+        country: "USA",
+        format: "classic",
+        start_date: startDate,
+        end_date: endDate,
+        max_teams: 8,
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toContain("contains suspicious input");
   });
 
   test("GET /api/tournaments should return all tournaments", async () => {

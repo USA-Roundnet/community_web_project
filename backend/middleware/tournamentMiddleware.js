@@ -5,6 +5,10 @@ const {
   NotFoundError,
   ForbiddenError,
 } = require("../utils/customErrors");
+const {
+  normalizeTextFields,
+  findUnsafeTournamentText,
+} = require("../utils/contentSafety");
 
 const allowedStatuses = new Set(["upcoming", "in_progress", "completed"]);
 const allowedFormats = new Set(["asl", "college", "classic"]);
@@ -23,16 +27,21 @@ const requiredCreateFields = [
 const isBlank = (value) =>
   value === undefined || value === null || `${value}`.trim() === "";
 
-const normalizeTournamentPayload = (payload = {}) => ({
-  ...payload,
-  state_province: payload.state_province ?? payload.state,
-  zip_code: payload.zip_code ?? payload.zipCode,
-  start_date: payload.start_date ?? payload.startDate,
-  end_date: payload.end_date ?? payload.endDate,
-  max_teams: payload.max_teams ?? payload.maxTeams,
-  status: payload.status ?? "upcoming",
-  timezone: payload.timezone ?? "UTC",
-});
+const normalizeTournamentPayload = (payload = {}) => {
+  const normalizedPayload = normalizeTextFields(payload);
+
+  return {
+    ...normalizedPayload,
+    state_province:
+      normalizedPayload.state_province ?? normalizedPayload.state,
+    zip_code: normalizedPayload.zip_code ?? normalizedPayload.zipCode,
+    start_date: normalizedPayload.start_date ?? normalizedPayload.startDate,
+    end_date: normalizedPayload.end_date ?? normalizedPayload.endDate,
+    max_teams: normalizedPayload.max_teams ?? normalizedPayload.maxTeams,
+    status: normalizedPayload.status ?? "upcoming",
+    timezone: normalizedPayload.timezone ?? "UTC",
+  };
+};
 
 // Middleware to validate tournament creation or update input
 const validateTournamentInput = (req, res, next) => {
@@ -60,6 +69,23 @@ const validateTournamentInput = (req, res, next) => {
     return next(new BadRequestError("Invalid status"));
   }
 
+  const unsafeTextResult = findUnsafeTournamentText(req.body);
+  if (unsafeTextResult) {
+    if (unsafeTextResult.reason === "profanity") {
+      return next(
+        new BadRequestError(
+          `The ${unsafeTextResult.field} field contains disallowed profanity`
+        )
+      );
+    }
+
+    return next(
+      new BadRequestError(
+        `The ${unsafeTextResult.field} field contains suspicious input`
+      )
+    );
+  }
+
   const startDateSource = req.body.start_date ?? req.tournament?.start_date;
   const endDateSource = req.body.end_date ?? req.tournament?.end_date;
 
@@ -69,6 +95,17 @@ const validateTournamentInput = (req, res, next) => {
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return next(new BadRequestError("Invalid start_date or end_date"));
     }
+
+    if (isCreate) {
+      const startDateOnly = startDate.toISOString().slice(0, 10);
+      const todayOnly = new Date().toISOString().slice(0, 10);
+      if (startDateOnly < todayOnly) {
+        return next(
+          new BadRequestError("start_date must be today or a future date")
+        );
+      }
+    }
+
     if (endDate < startDate) {
       return next(
         new BadRequestError("end_date must be on or after start_date")

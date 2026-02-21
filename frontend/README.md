@@ -17,6 +17,23 @@ npm run dev
 
 then navigate to http://localhost:5173 in your browser
 
+## Optional address autocomplete API key
+
+Create Tournament and Registration address autocomplete use Geoapify.
+You can override the default project key with your own key via `VITE_GEOAPIFY_API_KEY`.
+
+To set the key locally:
+
+```bash
+cp .env.example .env
+```
+
+Then add:
+
+```bash
+VITE_GEOAPIFY_API_KEY=your_key_here
+```
+
 ## If you need to start fresh
 
 ```bash
