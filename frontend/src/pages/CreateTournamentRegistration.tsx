@@ -131,8 +131,14 @@ const CreateTournamentRegistration = () => {
             const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
             const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
             
-            const formatSqlDateTime = (d: Date) =>
-                d.toISOString().slice(0, 19).replace("T", " ");
+            const formatSqlDateTime = (d: Date) => {
+                const pad = (value: number) => String(value).padStart(2, "0");
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+                    d.getDate()
+                )} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
+                    d.getSeconds()
+                )}`;
+            };
 
             const tournamentStartDate = new Date(basicInfo.startDate);
             const tournamentEndDate = new Date(basicInfo.endDate);

@@ -9,6 +9,8 @@ import CreateTournamentBasicInfo from "../pages/CreateTournamentBasicInfo";
 import CreateTournamentFormat from "../pages/CreateTournamentFormat";
 import CreateTournamentRegistration from "../pages/CreateTournamentRegistration";
 import TournamentManagementPage from "../pages/TournamentManagementPage";
+import EditTournamentPage from "../pages/EditTournamentPage";
+import TournamentEventPage from "../pages/TournamentEventPage";
 // import RankingsPage from '../pages/RankingsPage';
 import NotFoundPage from "../pages/NotFoundPage";
 import AboutPage from "../pages/AboutPage";
@@ -26,7 +28,9 @@ const AppRoutes = () => {
                 <Route path="/events/create" element={<CreateTournamentBasicInfo />} />
                 <Route path="/events/create/format" element={<CreateTournamentFormat />} />
                 <Route path="/events/create/registration" element={<CreateTournamentRegistration />} />
+                <Route path="/events/:id" element={<TournamentEventPage />} />
                 <Route path="/events/:id/manage" element={<TournamentManagementPage />} />
+                <Route path="/events/:id/edit" element={<EditTournamentPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
             </Route>

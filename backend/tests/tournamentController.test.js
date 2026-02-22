@@ -9,12 +9,23 @@ const dateWithOffset = (daysFromToday) => {
   return date.toISOString().slice(0, 10);
 };
 
+const dateTimeWithOffset = (daysFromToday) => {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + daysFromToday);
+  return date.toISOString().slice(0, 19).replace("T", " ");
+};
+
 describe("Tournament Controller API Tests", () => {
   let testUserObject;
   let testTeamId;
   let testTournamentId;
   let tournamentDivisionId;
   let deleteTestTournamentId;
+  let statusTournamentUpcomingId;
+  let statusTournamentInProgressId;
+  let statusTournamentCompletedId;
+  let cascadeDeleteTournamentId;
+  let cascadeDeleteDivisionId;
 
   let server;
 
@@ -38,7 +49,7 @@ describe("Tournament Controller API Tests", () => {
       // console.log("Test team created, id:", testTeamId);
 
       // Have the test user join the team
-      const joinTeam = await knex("UserTeam").insert({
+      await knex("UserTeam").insert({
         user_id: testUserObject.id,
         team_id: testTeamId,
         role: "player",
@@ -46,16 +57,21 @@ describe("Tournament Controller API Tests", () => {
         created_at: new Date(),
       });
 
-      // console.log("Test user joined team, Team id:", testTeamId, "UserTeam id:", joinTeam[0]);
-
       // Create a test tournament
+      const baseStartDate = dateWithOffset(7);
+      const baseEndDate = dateWithOffset(9);
       const tournament = await knex("Tournament").insert({
         name: "Test Tournament",
+        city: "Austin",
+        state_province: "TX",
+        zip_code: "78701",
+        country: "USA",
         timezone: "America/New_York",
         status: "upcoming",
         format: "college",
-        start_date: "2025-05-01",
-        end_date: "2025-05-03",
+        start_date: baseStartDate,
+        end_date: baseEndDate,
+        max_teams: 24,
         director_id: testUserObject.id,
       });
 
@@ -73,10 +89,7 @@ describe("Tournament Controller API Tests", () => {
       // console.log("Inserting into TournamentDivision table, id:", testTournamentId);
 
       // Verify the TournamentDivision exists in the database
-      const divisionTest = await knex("TournamentDivision")
-        .where({ id: tournamentDivisionId })
-        .first();
-      // console.log("TournamentDivision in database:", divisionTest);
+      await knex("TournamentDivision").where({ id: tournamentDivisionId }).first();
     } catch (error) {
       console.error("Error in beforeAll:", error.message);
       throw error;
@@ -95,6 +108,18 @@ describe("Tournament Controller API Tests", () => {
       }
       if (testTournamentId) {
         await knex("Tournament").where({ id: testTournamentId }).del();
+      }
+      if (statusTournamentUpcomingId) {
+        await knex("Tournament").where({ id: statusTournamentUpcomingId }).del();
+      }
+      if (statusTournamentInProgressId) {
+        await knex("Tournament").where({ id: statusTournamentInProgressId }).del();
+      }
+      if (statusTournamentCompletedId) {
+        await knex("Tournament").where({ id: statusTournamentCompletedId }).del();
+      }
+      if (cascadeDeleteTournamentId) {
+        await knex("Tournament").where({ id: cascadeDeleteTournamentId }).del();
       }
     } catch (error) {
       console.error("Error in afterAll:", error.message);
@@ -282,20 +307,184 @@ describe("Tournament Controller API Tests", () => {
   });
 
   test("PUT /api/tournaments/:id should update a tournament", async () => {
+    const updatedStartDate = dateWithOffset(10);
+    const updatedEndDate = dateWithOffset(12);
+
     const res = await request(app)
       .put(`/api/tournaments/${testTournamentId}`)
       .set("Authorization", `Bearer ${testUserObject.token}`)
       .send({
         name: "Updated Tournament Name",
-        status: "upcoming",
+        city: "San Diego",
+        state_province: "CA",
+        zip_code: "92101",
+        country: "USA",
         format: "college",
-        start_date: "2025-05-01",
-        end_date: "2025-05-03",
+        start_date: updatedStartDate,
+        end_date: updatedEndDate,
+        max_teams: 40,
       });
 
     expect(res.statusCode).toBe(200);
     expect(res.body.name).toBe("Updated Tournament Name");
+    expect(res.body.city).toBe("San Diego");
+    expect(res.body.state_province).toBe("CA");
+    expect(res.body.zip_code).toBe("92101");
+    expect(res.body.country).toBe("USA");
+    expect(res.body.format).toBe("college");
+    expect(res.body.max_teams).toBe(40);
+    expect(res.body.status).toBe("upcoming");
   });
+
+  test("GET /api/tournaments/:id should auto-sync and persist tournament status", async () => {
+    const [upcomingId] = await knex("Tournament").insert({
+      name: "Status Upcoming Tournament",
+      city: "Austin",
+      state_province: "TX",
+      zip_code: "78701",
+      country: "USA",
+      timezone: "UTC",
+      status: "completed",
+      format: "classic",
+      start_date: dateTimeWithOffset(4),
+      end_date: dateTimeWithOffset(5),
+      max_teams: 8,
+      director_id: testUserObject.id,
+    });
+    statusTournamentUpcomingId = upcomingId;
+
+    const [inProgressId] = await knex("Tournament").insert({
+      name: "Status In Progress Tournament",
+      city: "Austin",
+      state_province: "TX",
+      zip_code: "78701",
+      country: "USA",
+      timezone: "UTC",
+      status: "upcoming",
+      format: "classic",
+      start_date: dateTimeWithOffset(-1),
+      end_date: dateTimeWithOffset(1),
+      max_teams: 8,
+      director_id: testUserObject.id,
+    });
+    statusTournamentInProgressId = inProgressId;
+
+    const [completedId] = await knex("Tournament").insert({
+      name: "Status Completed Tournament",
+      city: "Austin",
+      state_province: "TX",
+      zip_code: "78701",
+      country: "USA",
+      timezone: "UTC",
+      status: "upcoming",
+      format: "classic",
+      start_date: dateTimeWithOffset(-5),
+      end_date: dateTimeWithOffset(-3),
+      max_teams: 8,
+      director_id: testUserObject.id,
+    });
+    statusTournamentCompletedId = completedId;
+
+    const [upcomingRes, inProgressRes, completedRes] = await Promise.all([
+      request(app)
+        .get(`/api/tournaments/${statusTournamentUpcomingId}`)
+        .set("Authorization", `Bearer ${testUserObject.token}`),
+      request(app)
+        .get(`/api/tournaments/${statusTournamentInProgressId}`)
+        .set("Authorization", `Bearer ${testUserObject.token}`),
+      request(app)
+        .get(`/api/tournaments/${statusTournamentCompletedId}`)
+        .set("Authorization", `Bearer ${testUserObject.token}`),
+    ]);
+
+    expect(upcomingRes.statusCode).toBe(200);
+    expect(upcomingRes.body.status).toBe("upcoming");
+    expect(inProgressRes.statusCode).toBe(200);
+    expect(inProgressRes.body.status).toBe("in_progress");
+    expect(completedRes.statusCode).toBe(200);
+    expect(completedRes.body.status).toBe("completed");
+
+    const persistedUpcoming = await knex("Tournament")
+      .where({ id: statusTournamentUpcomingId })
+      .first();
+    const persistedInProgress = await knex("Tournament")
+      .where({ id: statusTournamentInProgressId })
+      .first();
+    const persistedCompleted = await knex("Tournament")
+      .where({ id: statusTournamentCompletedId })
+      .first();
+
+    expect(persistedUpcoming.status).toBe("upcoming");
+    expect(persistedInProgress.status).toBe("in_progress");
+    expect(persistedCompleted.status).toBe("completed");
+  });
+
+  test("DELETE /api/tournaments/:id should cascade delete divisions and registrations", async () => {
+    const [tournamentId] = await knex("Tournament").insert({
+      name: "Cascade Delete Tournament",
+      city: "Seattle",
+      state_province: "WA",
+      zip_code: "98101",
+      country: "USA",
+      timezone: "UTC",
+      status: "upcoming",
+      format: "classic",
+      start_date: dateTimeWithOffset(8),
+      end_date: dateTimeWithOffset(10),
+      max_teams: 16,
+      director_id: testUserObject.id,
+    });
+    cascadeDeleteTournamentId = tournamentId;
+
+    const [divisionId] = await knex("TournamentDivision").insert({
+      division_id: 1,
+      tournament_id: cascadeDeleteTournamentId,
+      registration_fee: 50,
+      created_at: new Date(),
+    });
+    cascadeDeleteDivisionId = divisionId;
+
+    await knex("Registration").insert({
+      team_id: testTeamId,
+      tournament_division_id: cascadeDeleteDivisionId,
+      status: "registered",
+      payment_status: "unpaid",
+      created_at: new Date(),
+    });
+
+    await knex("TournamentUser").insert({
+      user_id: testUserObject.id,
+      tournament_id: cascadeDeleteTournamentId,
+      created_at: new Date(),
+    });
+
+    const deleteRes = await request(app)
+      .delete(`/api/tournaments/${cascadeDeleteTournamentId}`)
+      .set("Authorization", `Bearer ${testUserObject.token}`);
+
+    expect(deleteRes.statusCode).toBe(200);
+
+    const [tournamentRow, divisionRow, registrationRow, tournamentUserRow] =
+      await Promise.all([
+        knex("Tournament").where({ id: cascadeDeleteTournamentId }).first(),
+        knex("TournamentDivision").where({ id: cascadeDeleteDivisionId }).first(),
+        knex("Registration")
+          .where({ tournament_division_id: cascadeDeleteDivisionId })
+          .first(),
+        knex("TournamentUser")
+          .where({
+            user_id: testUserObject.id,
+            tournament_id: cascadeDeleteTournamentId,
+          })
+          .first(),
+      ]);
+
+    expect(tournamentRow).toBeUndefined();
+    expect(divisionRow).toBeUndefined();
+    expect(registrationRow).toBeUndefined();
+    expect(tournamentUserRow).toBeUndefined();
+  });
+
   // TODO dont delete the tournament in the test and try to run tests on that same tournament
   test("DELETE /api/tournaments/:id should delete a tournament", async () => {
     const res = await request(app)
