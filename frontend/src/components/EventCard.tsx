@@ -14,6 +14,12 @@ interface EventCardProps {
 
 const getRegistrationText = (registrationStatus: string) => {
     switch (registrationStatus?.toLowerCase()) {
+        case "upcoming":
+            return "Status: Upcoming";
+        case "in_progress":
+            return "Status: In Progress";
+        case "completed":
+            return "Status: Completed";
         case "open":
             return "Registration Open";
         case "closing":
@@ -27,6 +33,12 @@ const getRegistrationText = (registrationStatus: string) => {
 
 const getRegistrationColor = (registrationStatus: string) => {
     switch (registrationStatus?.toLowerCase()) {
+        case "upcoming":
+            return "text-blue-600";
+        case "in_progress":
+            return "text-green-600";
+        case "completed":
+            return "text-gray-600";
         case "open":
             return "text-green-500";
         case "closing":

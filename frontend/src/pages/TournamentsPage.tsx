@@ -1,9 +1,57 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import TabButton from "../components/TabButton";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import EventCard from "../components/EventCard";
 import { placeholderEvents } from "../utils/placeholderEvents";
 import { API_BASE_URL } from "../config";
+
+const toSafeDate = (dateValue: string | undefined) => {
+    if (!dateValue) {
+        return null;
+    }
+
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) {
+        return null;
+    }
+
+    return parsedDate;
+};
+
+const getEventPhase = (event: any) => {
+    const normalizedStatus = (event.registrationStatus || "").toLowerCase();
+    if (
+        normalizedStatus === "upcoming" ||
+        normalizedStatus === "open" ||
+        normalizedStatus === "closing"
+    ) {
+        return "upcoming";
+    }
+    if (normalizedStatus === "in_progress") {
+        return "in_progress";
+    }
+    if (normalizedStatus === "completed" || normalizedStatus === "closed") {
+        return "completed";
+    }
+
+    const now = new Date();
+    const startDate = toSafeDate(event.date);
+    const endDate = toSafeDate(event.endDate || event.date);
+
+    if (!startDate || !endDate) {
+        return "upcoming";
+    }
+
+    if (now < startDate) {
+        return "upcoming";
+    }
+
+    if (now > endDate) {
+        return "completed";
+    }
+
+    return "in_progress";
+};
 
 const TournamentsPage = () => {
 
@@ -14,6 +62,7 @@ const TournamentsPage = () => {
     const [Loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -72,14 +121,15 @@ const TournamentsPage = () => {
 
                 const formattedEvents = data.map((tournament) => ({
                     date: tournament.start_date || "TBD",
+                    endDate: tournament.end_date || tournament.start_date || "TBD",
                     city: tournament.city || "TBD",
                     eventName: tournament.name || "Tournament Event",
                     description:
                         tournament.description ||
                         "Join us for this exciting tournament!",
                     teamsRegistered: tournament.teams_registered || 0,
-                    teamLimit: tournament.team_limit || 20,
-                    registrationStatus: tournament.status || "Open",
+                    teamLimit: tournament.max_teams || tournament.team_limit || 20,
+                    registrationStatus: tournament.status || "upcoming",
                     id: tournament.id,
                 }));
 
@@ -107,13 +157,13 @@ const TournamentsPage = () => {
                     event.city.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
-        let today = new Date();
         if (activeTab === "upcoming") {
-            filtered = filtered.filter((event) => new Date(event.date) > today);
+            filtered = filtered.filter((event) => {
+                const phase = getEventPhase(event);
+                return phase === "upcoming" || phase === "in_progress";
+            });
         } else if (activeTab === "past") {
-            filtered = filtered.filter(
-                (event) => new Date(event.date) <= today
-            );
+            filtered = filtered.filter((event) => getEventPhase(event) === "completed");
         }
 
         setFilteredEvents(filtered);
@@ -134,6 +184,11 @@ const TournamentsPage = () => {
                             Create a Tournament
                         </button>
                     </div>
+                    {location.state?.message ? (
+                        <div className="mb-4 rounded-md border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
+                            {location.state.message}
+                        </div>
+                    ) : null}
                     <div className="flex flex-col md:flex-row justify-between items-center mb-6">
                         <div className="flex space-x-4 mb-4 md:mb-0">
                             <TabButton

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
-
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from "../config";
 
 const CreateTournamentRegistration = () => {
     const [formData, setFormData] = useState(() => {
@@ -24,6 +23,14 @@ const CreateTournamentRegistration = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
+    const parseJsonSafely = async (response: Response) => {
+        try {
+            return await response.json();
+        } catch {
+            return null;
+        }
+    };
+
     const makeApiCall = async (endpoint: string, options: RequestInit = {}) => {
         const url = `${API_BASE_URL}${endpoint}`;
         const config: RequestInit = {
@@ -43,16 +50,16 @@ const CreateTournamentRegistration = () => {
         const response = await fetch(url, config);
         
         if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await parseJsonSafely(response);
             const message =
                 errorData?.message ||
                 (response.status === 401
                     ? "Unauthorized. Please log in and try again."
-                    : `HTTP error! status: ${response.status}`);
+                    : `API request failed (${response.status}). Check backend API port/config.`);
             throw new Error(message);
         }
 
-        return await response.json();
+        return await parseJsonSafely(response);
     };
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -124,26 +131,46 @@ const CreateTournamentRegistration = () => {
             const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
             const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
             
-            const formatSqlDateTime = (d: Date) =>
-                d.toISOString().slice(0, 19).replace("T", " ");
+            const formatSqlDateTime = (d: Date) => {
+                const pad = (value: number) => String(value).padStart(2, "0");
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+                    d.getDate()
+                )} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
+                    d.getSeconds()
+                )}`;
+            };
 
-            const tournamentDate = new Date(basicInfo.date);
-            const registrationDeadline = new Date(tournamentDate);
-            registrationDeadline.setDate(tournamentDate.getDate() - 2);
+            const tournamentStartDate = new Date(basicInfo.startDate);
+            const tournamentEndDate = new Date(basicInfo.endDate);
+            const registrationDeadline = new Date(tournamentStartDate);
+            registrationDeadline.setDate(tournamentStartDate.getDate() - 2);
 
             let startDateTime: string;
             let endDateTime: string;
             if (basicInfo.time) {
-                const start = new Date(`${basicInfo.date}T${basicInfo.time}:00`);
+                const start = new Date(`${basicInfo.startDate}T${basicInfo.time}:00`);
                 startDateTime = formatSqlDateTime(start);
 
-                const end = new Date(start.getTime() + 8 * 60 * 60 * 1000);
+                const end = new Date(`${basicInfo.endDate}T${basicInfo.time}:00`);
                 endDateTime = formatSqlDateTime(end);
             } else {
-                const start = new Date(`${basicInfo.date}T09:00:00`);
-                const end = new Date(`${basicInfo.date}T18:00:00`);
+                const start = new Date(`${basicInfo.startDate}T09:00:00`);
+                const end = new Date(`${basicInfo.endDate}T18:00:00`);
                 startDateTime = formatSqlDateTime(start);
                 endDateTime = formatSqlDateTime(end);
+            }
+
+            if (Number.isNaN(tournamentStartDate.getTime()) || Number.isNaN(tournamentEndDate.getTime())) {
+                throw new Error("Please provide valid start and end dates.");
+            }
+
+            if (tournamentEndDate < tournamentStartDate) {
+                throw new Error("End date must be on or after start date.");
+            }
+
+            const maxTeams = Number(basicInfo.maxTeams);
+            if (!Number.isInteger(maxTeams) || maxTeams <= 0) {
+                throw new Error("Please provide a valid positive max teams value.");
             }
 
             const tournamentData = {
@@ -153,14 +180,15 @@ const CreateTournamentRegistration = () => {
                 zip_code: basicInfo.zipCode,
                 country: basicInfo.country,
                 timezone: 'UTC',
-                status: formData.availability === 'public' ? 'upcoming' : 'upcoming',
-                format: format.format === 'traditional' ? 'classic' : 'classic',
+                status: "upcoming",
+                format: format.format || "classic",
                 start_date: startDateTime,
                 end_date: endDateTime,
+                max_teams: maxTeams,
                 registration_deadline: formatSqlDateTime(registrationDeadline),
             };
 
-            await makeApiCall('/api/tournaments/', {
+            const createdTournament = await makeApiCall('/api/tournaments/', {
                 method: 'POST',
                 body: JSON.stringify(tournamentData),
             });
@@ -169,7 +197,7 @@ const CreateTournamentRegistration = () => {
             localStorage.removeItem('tournamentFormat');
             localStorage.removeItem('tournamentRegistration');
 
-            navigate("/events", { 
+            navigate(`/events/${createdTournament.id}/manage`, { 
                 replace: true, 
                 state: { message: `Tournament "${tournamentData.name}" created successfully!` }
             });
@@ -342,4 +370,3 @@ const CreateTournamentRegistration = () => {
 };
 
 export default CreateTournamentRegistration;
-

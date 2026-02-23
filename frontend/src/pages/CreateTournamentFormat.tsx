@@ -45,12 +45,6 @@ const CreateTournamentFormat = () => {
             return;
         }
 
-        if (formData.format !== "traditional") {
-            setError("Only Traditional Format is currently supported.");
-            setIsLoading(false);
-            return;
-        }
-
         try {
             localStorage.setItem("tournamentFormat", JSON.stringify(formData));
             navigate("/events/create/registration", { replace: true });
@@ -92,11 +86,9 @@ const CreateTournamentFormat = () => {
                             required
                         >
                             <option value="">Select format</option>
-                            <option value="traditional">
-                                Traditional (Pool play + Bracket)
-                            </option>
-                            <option value="custom">Custom</option>
-                            <option value="other">Other</option>
+                            <option value="classic">Classic</option>
+                            <option value="college">College</option>
+                            <option value="asl">ASL</option>
                         </select>
                     </div>
 

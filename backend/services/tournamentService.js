@@ -1,53 +1,110 @@
 const knex = require("../knex-config.js");
 const { validateDuplicateRegistration } = require("../utils/validation");
 
+const toIsoDateOnly = (dateValue) => {
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate.toISOString().slice(0, 10);
+};
+
+const deriveTournamentStatus = (startDateValue, endDateValue) => {
+  const todayDateOnly = toIsoDateOnly(new Date());
+  const startDateOnly = toIsoDateOnly(startDateValue);
+  const endDateOnly = toIsoDateOnly(endDateValue);
+
+  if (!todayDateOnly || !startDateOnly || !endDateOnly) {
+    return "upcoming";
+  }
+
+  if (todayDateOnly < startDateOnly) {
+    return "upcoming";
+  }
+
+  if (todayDateOnly > endDateOnly) {
+    return "completed";
+  }
+
+  return "in_progress";
+};
+
+const buildTournamentWritePayload = (tournamentData) => ({
+  name: tournamentData.name,
+  city: tournamentData.city,
+  state_province: tournamentData.state_province,
+  zip_code: tournamentData.zip_code,
+  country: tournamentData.country,
+  timezone: tournamentData.timezone,
+  status: deriveTournamentStatus(tournamentData.start_date, tournamentData.end_date),
+  format: tournamentData.format,
+  phone_number: tournamentData.phone_number,
+  email: tournamentData.email,
+  start_date: tournamentData.start_date,
+  end_date: tournamentData.end_date,
+  max_teams: tournamentData.max_teams,
+  registration_deadline: tournamentData.registration_deadline,
+  director_id: tournamentData.director_id,
+});
+
+const syncTournamentStatus = async (tournament) => {
+  if (!tournament) {
+    return tournament;
+  }
+
+  const calculatedStatus = deriveTournamentStatus(
+    tournament.start_date,
+    tournament.end_date
+  );
+
+  if (tournament.status === calculatedStatus) {
+    return tournament;
+  }
+
+  await knex("Tournament")
+    .where({ id: tournament.id })
+    .update({ status: calculatedStatus });
+
+  return {
+    ...tournament,
+    status: calculatedStatus,
+  };
+};
+
 const getAllTournaments = async () => {
-  return await knex("Tournament").select("*");
+  const tournaments = await knex("Tournament").select("*");
+  return Promise.all(tournaments.map(syncTournamentStatus));
 };
 
 const getTournamentById = async (id) => {
-  return await knex("Tournament").where({ id }).first();
+  const tournament = await knex("Tournament").where({ id }).first();
+  return syncTournamentStatus(tournament);
 };
 
 const createTournament = async (tournamentData) => {
-  const [insertedId] = await knex("Tournament").insert({
-    name: tournamentData.name,
-    city: tournamentData.city,
-    state_province: tournamentData.state_province,
-    zip_code: tournamentData.zip_code,
-    country: tournamentData.country,
-    timezone: tournamentData.timezone,
-    status: tournamentData.status,
-    format: tournamentData.format,
-    phone_number: tournamentData.phone_number,
-    email: tournamentData.email,
-    start_date: tournamentData.start_date,
-    end_date: tournamentData.end_date,
-    max_teams: tournamentData.max_teams,
-    registration_deadline: tournamentData.registration_deadline,
-    director_id: tournamentData.director_id,
-  });
+  const [insertedId] = await knex("Tournament").insert(
+    buildTournamentWritePayload(tournamentData)
+  );
   return getTournamentById(insertedId);
 };
 
 const updateTournament = async (id, tournamentData) => {
-  const rowsAffected = await knex("Tournament").where({ id }).update({
-    name: tournamentData.name,
-    city: tournamentData.city,
-    state_province: tournamentData.state_province,
-    zip_code: tournamentData.zip_code,
-    country: tournamentData.country,
-    timezone: tournamentData.timezone,
-    status: tournamentData.status,
-    format: tournamentData.format,
-    phone_number: tournamentData.phone_number,
-    email: tournamentData.email,
-    start_date: tournamentData.start_date,
-    end_date: tournamentData.end_date,
-    max_teams: tournamentData.max_teams,
-    registration_deadline: tournamentData.registration_deadline,
-    director_id: tournamentData.director_id,
-  });
+  const existingTournament = await knex("Tournament").where({ id }).first();
+  if (!existingTournament) {
+    return null;
+  }
+
+  const mergedTournamentData = {
+    ...existingTournament,
+    ...tournamentData,
+    director_id: existingTournament.director_id,
+  };
+
+  const rowsAffected = await knex("Tournament")
+    .where({ id })
+    .update(buildTournamentWritePayload(mergedTournamentData));
+
   if (rowsAffected) {
     return getTournamentById(id);
   }
