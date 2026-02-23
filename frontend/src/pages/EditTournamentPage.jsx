@@ -1,29 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-
-const toDateInputValue = (dateValue) => {
-    if (!dateValue) {
-        return "";
-    }
-
-    if (typeof dateValue === "string") {
-        const matchedDate = dateValue.match(/^(\d{4}-\d{2}-\d{2})/);
-        if (matchedDate?.[1]) {
-            return matchedDate[1];
-        }
-    }
-
-    const parsedDate = new Date(dateValue);
-    if (Number.isNaN(parsedDate.getTime())) {
-        return "";
-    }
-
-    const localDate = new Date(
-        parsedDate.getTime() - parsedDate.getTimezoneOffset() * 60000
-    );
-    return localDate.toISOString().slice(0, 10);
-};
+import { toDateInputValue } from "../utils/dateTime";
+import { parseJsonSafely } from "../utils/http";
 
 const EditTournamentPage = () => {
     const { id } = useParams();
@@ -123,7 +102,7 @@ const EditTournamentPage = () => {
             });
 
             if (!response.ok) {
-                const errorPayload = await response.json().catch(() => ({}));
+                const errorPayload = await parseJsonSafely(response);
                 throw new Error(
                     errorPayload?.message ||
                         "Unable to update tournament details. Please try again."

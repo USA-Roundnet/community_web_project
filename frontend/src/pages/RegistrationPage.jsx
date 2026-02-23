@@ -47,6 +47,11 @@ const RegistrationPage = () => {
             return;
         }
 
+        if (!GEOAPIFY_API_KEY) {
+            setLocationResults([]);
+            return;
+        }
+
         setLocationLoading(true);
         try {
             const response = await fetch(
@@ -288,6 +293,11 @@ const RegistrationPage = () => {
                                         </li>
                                     ))}
                                 </ul>
+                            )}
+                            {!GEOAPIFY_API_KEY && locationQuery.length >= 3 && (
+                                <div className="absolute left-0 right-0 bg-white text-black p-2 z-10 border border-gray-300 rounded">
+                                    Location suggestions are currently unavailable. Enter location fields manually.
+                                </div>
                             )}
                         </div>
                     </div>
