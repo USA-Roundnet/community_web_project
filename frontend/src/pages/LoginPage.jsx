@@ -3,20 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/rallypoint-logo.png";
 
 import { API_BASE_URL } from "../config";
+import { parseJsonSafely } from "../utils/http";
 
 const LoginPage = () => {
     const [form, setForm] = useState({ email: "", password: "" });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-
-    const parseJsonSafely = async (response) => {
-        try {
-            return await response.json();
-        } catch {
-            return null;
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();

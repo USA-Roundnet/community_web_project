@@ -68,6 +68,7 @@ const CreateTournamentBasicInfo = () => {
     const [addressLoading, setAddressLoading] = useState(false);
     const navigate = useNavigate();
     const todayIso = new Date().toISOString().slice(0, 10);
+    const isAddressAutocompleteEnabled = Boolean(GEOAPIFY_API_KEY);
 
     useEffect(() => {
         const token = localStorage.getItem("authToken");
@@ -82,12 +83,13 @@ const CreateTournamentBasicInfo = () => {
 
     useEffect(() => {
         const query = addressQuery.trim();
-        if (query.length < 3 || !GEOAPIFY_API_KEY) {
+        if (query.length < 3 || !isAddressAutocompleteEnabled) {
             setAddressSuggestions([]);
             setAddressLoading(false);
             return;
         }
 
+        let isActive = true;
         const abortController = new AbortController();
         const timeoutId = setTimeout(async () => {
             setAddressLoading(true);
@@ -113,19 +115,25 @@ const CreateTournamentBasicInfo = () => {
                     suggestions.filter((suggestion) => suggestion.label.length > 0)
                 );
             } catch (fetchError: any) {
+                if (!isActive) {
+                    return;
+                }
                 if (fetchError?.name !== "AbortError") {
                     setAddressSuggestions([]);
                 }
             } finally {
-                setAddressLoading(false);
+                if (isActive) {
+                    setAddressLoading(false);
+                }
             }
         }, AUTOCOMPLETE_DEBOUNCE_MS);
 
         return () => {
+            isActive = false;
             clearTimeout(timeoutId);
             abortController.abort();
         };
-    }, [addressQuery]);
+    }, [addressQuery, isAddressAutocompleteEnabled]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -362,9 +370,9 @@ const CreateTournamentBasicInfo = () => {
                                     ))}
                                 </div>
                             )}
-                            {!GEOAPIFY_API_KEY && (
+                            {!isAddressAutocompleteEnabled && addressQuery.trim().length >= 3 && (
                                 <p className="text-xs text-gray-600">
-                                    Set <code>VITE_GEOAPIFY_API_KEY</code> to enable address suggestions.
+                                    Address suggestions are currently unavailable. You can keep entering your address manually.
                                 </p>
                             )}
                             <input

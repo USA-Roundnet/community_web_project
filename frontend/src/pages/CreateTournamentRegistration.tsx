@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/LoginPage.css";
 import { API_BASE_URL } from "../config";
+import { parseJsonSafely } from "../utils/http";
+import { formatSqlDateTime } from "../utils/dateTime";
 
 const CreateTournamentRegistration = () => {
     const [formData, setFormData] = useState(() => {
@@ -22,14 +24,6 @@ const CreateTournamentRegistration = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
-
-    const parseJsonSafely = async (response: Response) => {
-        try {
-            return await response.json();
-        } catch {
-            return null;
-        }
-    };
 
     const makeApiCall = async (endpoint: string, options: RequestInit = {}) => {
         const url = `${API_BASE_URL}${endpoint}`;
@@ -130,15 +124,6 @@ const CreateTournamentRegistration = () => {
         try {
             const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
             const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
-            
-            const formatSqlDateTime = (d: Date) => {
-                const pad = (value: number) => String(value).padStart(2, "0");
-                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
-                    d.getDate()
-                )} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
-                    d.getSeconds()
-                )}`;
-            };
 
             const tournamentStartDate = new Date(basicInfo.startDate);
             const tournamentEndDate = new Date(basicInfo.endDate);
