@@ -68,4 +68,28 @@ router.delete(
   asyncHandler(tournamentController.unregisterFromTournament)
 );
 
+router.get(
+  "/:id/matches/candidates",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.getTournamentMatchCandidates)
+);
+
+router.get(
+  "/:id/matches",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.getTournamentMatches)
+);
+
+router.post(
+  "/:id/matches",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.createTournamentMatch)
+);
+
 module.exports = router;

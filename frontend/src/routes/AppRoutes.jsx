@@ -10,6 +10,7 @@ import CreateTournamentFormat from "../pages/CreateTournamentFormat";
 import CreateTournamentRegistration from "../pages/CreateTournamentRegistration";
 import TournamentManagementPage from "../pages/TournamentManagementPage";
 import EditTournamentPage from "../pages/EditTournamentPage";
+import TournamentSchedulePage from "../pages/TournamentSchedulePage";
 import TournamentEventPage from "../pages/TournamentEventPage";
 // import RankingsPage from '../pages/RankingsPage';
 import NotFoundPage from "../pages/NotFoundPage";
@@ -31,6 +32,7 @@ const AppRoutes = () => {
                 <Route path="/events/:id" element={<TournamentEventPage />} />
                 <Route path="/events/:id/manage" element={<TournamentManagementPage />} />
                 <Route path="/events/:id/edit" element={<EditTournamentPage />} />
+                <Route path="/events/:id/schedule" element={<TournamentSchedulePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
             </Route>

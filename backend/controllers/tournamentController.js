@@ -88,6 +88,28 @@ const unregisterFromTournament = asyncHandler(async (req, res) => {
   res.status(status).json({ message: result.message });
 });
 
+const getTournamentMatchCandidates = asyncHandler(async (req, res) => {
+  const candidates = await tournamentService.getTournamentMatchCandidates(
+    req.params.id
+  );
+  res.status(200).json(candidates);
+});
+
+const getTournamentMatches = asyncHandler(async (req, res) => {
+  const matches = await tournamentService.getTournamentMatches(req.params.id, {
+    date: req.query.date,
+  });
+  res.status(200).json(matches);
+});
+
+const createTournamentMatch = asyncHandler(async (req, res) => {
+  const match = await tournamentService.createTournamentMatch(
+    req.params.id,
+    req.body
+  );
+  res.status(201).json(match);
+});
+
 module.exports = {
   getAllTournaments,
   getTournamentById,
@@ -97,4 +119,7 @@ module.exports = {
   getTournamentTeams,
   registerForTournament,
   unregisterFromTournament,
+  getTournamentMatchCandidates,
+  getTournamentMatches,
+  createTournamentMatch,
 };
