@@ -1,4 +1,5 @@
 const teamService = require("../services/teamService");
+const userTeamService = require("../services/userTeamService");
 const asyncHandler = require("../middleware/asyncHandler");
 const { NotFoundError } = require("../utils/customErrors");
 
@@ -15,8 +16,11 @@ const getTeamById = asyncHandler(async (req, res) => {
 
 const createTeam = asyncHandler(async (req, res) => {
   const newTeam = await teamService.createTeam(req.body);
-  res.status(201).json(newTeam);
-});
+  req.body.team_id = newTeam.id;
+  req.body.user_id = req.params.id;
+  const newUserTeam = await userTeamService.createUserTeam(req.body);
+  res.status(201).json({newTeam, newUserTeam});
+} );
 
 const updateTeam = asyncHandler(async (req, res) => {
   const updatedTeam = await teamService.updateTeam(req.params.id, req.body);

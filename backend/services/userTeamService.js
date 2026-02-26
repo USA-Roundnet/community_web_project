@@ -8,6 +8,10 @@ const getUserTeamById = async (id) => {
   return await knex("UserTeam").where({ id }).first();
 };
 
+const getUserTeamsByTeamId = async (id) => {
+  return await knex("UserTeam").where({ team_id: id });
+};
+
 const createUserTeam = async (data) => {
   const [insertedId] = await knex("UserTeam").insert({
     user_id: data.user_id,
@@ -37,6 +41,7 @@ const deleteUserTeam = async (id) => {
 module.exports = {
   getAllUserTeams,
   getUserTeamById,
+  getUserTeamsByTeamId,
   createUserTeam,
   updateUserTeam,
   deleteUserTeam,

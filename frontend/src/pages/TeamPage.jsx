@@ -17,6 +17,7 @@ const TeamPage = () => {
         team_type_id: 0,
         public: 0,
         description: "",
+        users: [],
         created_at: "",
     });
 
@@ -44,17 +45,62 @@ const TeamPage = () => {
                 }
 
                 const data = await response.json();
+
+                const userTeamResponse = await fetch(
+                    `${API_BASE_URL}/api/userTeams/teamId/${teamId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                )
+
+                if (!userTeamResponse.ok) {
+                    throw new Error("Failed to load userTeams");
+                }
+
+                const userTeamData = await userTeamResponse.json();
+
+                const users = await Promise.all(
+                    userTeamData.map(async (userTeam) => {
+                        const userResponse = await fetch(
+                            `${API_BASE_URL}/api/users/${userTeam.user_id}`,
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
+                            }
+                        );
+
+                        if (!userResponse.ok) {
+                            throw new Error(`Failed to load user with id ${userTeam.user_id}`);
+                        }
+
+                        const userData = await userResponse.json();
+                        userData.teamRole   = userTeam.role;
+                        userData.teamStatus = userTeam.status;
+                        userData.teamJoined = userTeam.created_at;
+                        return userData;
+                        // console.log(userData);
+                        // users.push(userData.id);
+                    })
+                );
+
+                {console.log(users.length);}
+
                 const teamData = {
                     team_name: data.name || "",
                     team_type_id: data.team_type_id || "",
                     public: data.public || 0,
                     description: data.description || "",
+                    users: users,
                     created_at: data.created_at
                         ? data.created_at.split("T")[0]
                         : "",
                 };
                 setTeam(teamData);
                 setEditForm(teamData);
+
             } catch (err) {
                 setError(err.message);
                 // Use placeholder data when backend is unavailable
@@ -63,6 +109,20 @@ const TeamPage = () => {
                     team_type_id: 2,
                     public: 0,
                     description: "Example team for testing",
+                    users: [{
+                        user_id: 123,
+                        first_name: "John",
+                        last_name: "Smith",
+                        role: "player",
+                        status: "accepted"
+                    },
+                    {
+                        user_id: 246,
+                        first_name: "Jane",
+                        last_name: "Doe",
+                        role: "player",
+                        status: "invited"
+                    }],
                     created_at: "2026-01-31",
                 };
                 setTeam(placeholder);
@@ -118,6 +178,8 @@ const TeamPage = () => {
                 team_name: updated.team_name || editForm.team_name,
                 team_type_id: updated.team_type_id || editForm.team_type_id,
                 public: updated.public,
+                description: updated.description || editForm.description,
+                users: editForm.users,
                 created_at: updated.created_at
                     ? updated.created_at.split("T")[0]
                     : editForm.created_at,
@@ -198,27 +260,6 @@ const TeamPage = () => {
                                 onChange={handleChange}
                                 type="bool"
                             />
-                            {/* <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">
-                                    Public
-                                </label>
-                                {isEditing ? (
-                                    <select
-                                        name="public"
-                                        type="bool"
-                                        value={editForm.public}
-                                        onChange={handleChange}
-                                        className="w-full p-3 rounded-md bg-gray-50 text-black border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:outline-none"
-                                    >
-                                        <option value="yes">Yes</option>
-                                        <option value="no">No</option>
-                                    </select>
-                                ) : (
-                                    <p className="text-gray-800 p-3 bg-gray-50 rounded-md capitalize">
-                                        {editForm.public || "—"}
-                                    </p>
-                                )}
-                            </div> */}
                             <TeamField
                                 label="Created at"
                                 name="created_at"
@@ -261,6 +302,49 @@ const TeamPage = () => {
                     </div>
                 </form>
             </div>
+
+          {/*Users Section*/}
+          <div className="max-w-3xl mx-auto px-6 py-10">
+                <div className="flex justify-between items-center mb-8">
+                    <h1 className="text-3xl font-bold">Team Members</h1>
+                    {!isEditing && (
+                        <button
+                            onClick={() => doSomething(true)}
+                            className="px-5 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 font-medium hover:cursor-pointer"
+                        >
+                            Invite Team Member
+                        </button>
+                    )}
+                </div>
+
+                {success && (
+                    <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
+                        {success}
+                    </div>
+                )}
+                {error && (
+                    <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        {team.users.map((user) => (
+                            <UserField
+                                firstName={user.first_name}
+                                lastName={user.last_name}
+                                teamRole={user.teamRole}
+                                teamStatus={user.teamStatus}
+                                teamJoined={user.teamJoined}
+                                profilePic={user.profile_picture_url}
+                            />
+                        ))}
+                    </div>
+
+                </div>
+            </div>
+        
         </div>
     );
 };
@@ -290,6 +374,27 @@ const TeamField = ({
                 {value || "—"}
             </p>
         )}
+    </div>
+);
+
+const UserField = ({
+    firstName,
+    lastName,
+    teamRole,
+    teamStatus,
+    teamJoined,
+    profilePic,
+}) => (
+    <div>
+        <label className="block text-xl font-medium text-gray-500 mb-1">
+            {firstName} {lastName} | {teamRole} {teamStatus == "invited" ? "(pending)" : "" }
+        </label>
+        <p className="text-gray-800 p-3 bg-gray-50 rounded-md">
+            Team Member since {teamJoined.split('T')[0]}
+        </p>
+        <p className="text-gray-800 p-3 bg-gray-50 rounded-md">
+            Profile Picture link (idk how to display yet): {profilePic}
+        </p>
     </div>
 );
 

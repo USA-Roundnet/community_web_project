@@ -13,6 +13,12 @@ const getUserTeamById = asyncHandler(async (req, res) => {
   res.status(200).json(userTeam);
 });
 
+const getUserTeamsByTeamId = asyncHandler(async (req, res) => {
+  const userTeams = await userTeamService.getUserTeamsByTeamId(req.params.team_id);
+  if (!userTeams) throw new NotFoundError("UserTeam records not found");
+  res.status(200).json(userTeams);
+});
+
 const createUserTeam = asyncHandler(async (req, res) => {
   const newUserTeam = await userTeamService.createUserTeam(req.body);
   res.status(201).json(newUserTeam);
@@ -38,6 +44,7 @@ const deleteUserTeam = asyncHandler(async (req, res) => {
 module.exports = {
   getAllUserTeams,
   getUserTeamById,
+  getUserTeamsByTeamId,
   createUserTeam,
   updateUserTeam,
   deleteUserTeam,
