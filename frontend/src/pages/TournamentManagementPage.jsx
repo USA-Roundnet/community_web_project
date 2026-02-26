@@ -141,6 +141,13 @@ const TournamentManagementPage = () => {
                             </button>
                             <button
                                 type="button"
+                                onClick={() => navigate(`/events/${id}/schedule`)}
+                                className="px-4 py-2 rounded-md bg-indigo-700 text-white hover:bg-indigo-600 transition-colors"
+                            >
+                                Schedule Matches
+                            </button>
+                            <button
+                                type="button"
                                 onClick={handleDeleteTournament}
                                 disabled={deleting}
                                 className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:bg-gray-400"

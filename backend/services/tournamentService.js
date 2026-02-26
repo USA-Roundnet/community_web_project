@@ -1,5 +1,7 @@
 const knex = require("../knex-config.js");
 const { validateDuplicateRegistration } = require("../utils/validation");
+const { BadRequestError, NotFoundError } = require("../utils/customErrors");
+const { sendEmail } = require("../utils/emailUtils");
 
 const toIsoDateOnly = (dateValue) => {
   const parsedDate = new Date(dateValue);
@@ -240,6 +242,229 @@ const unregisterFromTournament = async (
   }
 };
 
+const getTournamentMatchCandidates = async (tournament_id) =>
+  knex("Registration as r")
+    .join("TournamentDivision as td", "r.tournament_division_id", "td.id")
+    .join("Team as team", "r.team_id", "team.id")
+    .leftJoin("Division as division", "td.division_id", "division.id")
+    .where("td.tournament_id", tournament_id)
+    .where("r.status", "registered")
+    .select(
+      "r.id as registration_id",
+      "r.team_id",
+      "team.name as team_name",
+      "r.tournament_division_id",
+      "division.name as division_name"
+    )
+    .orderBy("team.name", "asc");
+
+const getTournamentMatches = async (tournament_id, filters = {}) => {
+  const query = knex("Series as s")
+    .join("Registration as r1", "s.registration1_id", "r1.id")
+    .join("Registration as r2", "s.registration2_id", "r2.id")
+    .join("Team as t1", "r1.team_id", "t1.id")
+    .join("Team as t2", "r2.team_id", "t2.id")
+    .where("s.tournament_id", tournament_id)
+    .select(
+      "s.id",
+      "s.tournament_id",
+      "s.registration1_id",
+      "s.registration2_id",
+      "s.winner_id",
+      "s.wins_needed",
+      "s.location",
+      "s.created_at as scheduled_at",
+      "t1.id as team1_id",
+      "t1.name as team1_name",
+      "t2.id as team2_id",
+      "t2.name as team2_name"
+    )
+    .orderBy("s.created_at", "asc");
+
+  if (filters.date) {
+    query.whereRaw("DATE(s.created_at) = ?", [filters.date]);
+  }
+
+  return query;
+};
+
+const getTournamentMatchById = async (tournament_id, matchId) => {
+  const matches = await getTournamentMatches(tournament_id);
+  return matches.find((match) => match.id === matchId) || null;
+};
+
+const validateMatchScheduleInput = (matchData = {}) => {
+  const {
+    registration1_id,
+    registration2_id,
+    scheduled_date,
+    scheduled_time,
+    location,
+  } = matchData;
+
+  if (
+    !registration1_id ||
+    !registration2_id ||
+    !scheduled_date ||
+    !scheduled_time ||
+    !location
+  ) {
+    throw new BadRequestError(
+      "registration1_id, registration2_id, scheduled_date, scheduled_time, and location are required"
+    );
+  }
+
+  const registration1IdNumber = Number(registration1_id);
+  const registration2IdNumber = Number(registration2_id);
+  if (
+    !Number.isInteger(registration1IdNumber) ||
+    !Number.isInteger(registration2IdNumber)
+  ) {
+    throw new BadRequestError("registration ids must be integers");
+  }
+
+  if (registration1IdNumber === registration2IdNumber) {
+    throw new BadRequestError(
+      "registration1_id and registration2_id must be different teams"
+    );
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduled_date)) {
+    throw new BadRequestError("scheduled_date must be in YYYY-MM-DD format");
+  }
+
+  if (!/^\d{2}:\d{2}$/.test(scheduled_time)) {
+    throw new BadRequestError("scheduled_time must be in HH:mm format");
+  }
+
+  const scheduledDateTime = new Date(`${scheduled_date}T${scheduled_time}:00`);
+  if (Number.isNaN(scheduledDateTime.getTime())) {
+    throw new BadRequestError("Invalid scheduled date/time");
+  }
+
+  const winsNeeded =
+    matchData.wins_needed === undefined || matchData.wins_needed === null
+      ? 1
+      : Number(matchData.wins_needed);
+
+  if (!Number.isInteger(winsNeeded) || winsNeeded <= 0) {
+    throw new BadRequestError("wins_needed must be a positive integer");
+  }
+
+  return {
+    registration1IdNumber,
+    registration2IdNumber,
+    winsNeeded,
+    scheduledAtSql: `${scheduled_date} ${scheduled_time}:00`,
+    location: `${location}`.trim(),
+  };
+};
+
+const getTeamNotificationEmails = async (teamIds) => {
+  const rows = await knex("UserTeam as ut")
+    .join("User as u", "ut.user_id", "u.id")
+    .whereIn("ut.team_id", teamIds)
+    .where("ut.status", "accepted")
+    .whereNotNull("u.email")
+    .distinct("u.email");
+
+  return rows.map((row) => row.email).filter(Boolean);
+};
+
+const sendMatchScheduleNotifications = async (scheduledMatch) => {
+  if (
+    process.env.NODE_ENV === "test" ||
+    process.env.MATCH_SCHEDULE_EMAILS === "false"
+  ) {
+    return { attempted: false, delivered: 0, failed: 0, recipients: [] };
+  }
+
+  const recipients = await getTeamNotificationEmails([
+    scheduledMatch.team1_id,
+    scheduledMatch.team2_id,
+  ]);
+
+  if (!recipients.length) {
+    return { attempted: false, delivered: 0, failed: 0, recipients: [] };
+  }
+
+  const scheduledDisplay = new Date(scheduledMatch.scheduled_at).toLocaleString();
+  const subject = `Match Scheduled: ${scheduledMatch.team1_name} vs ${scheduledMatch.team2_name}`;
+  const html = `
+    <p>A new match has been scheduled.</p>
+    <p><strong>Teams:</strong> ${scheduledMatch.team1_name} vs ${scheduledMatch.team2_name}</p>
+    <p><strong>When:</strong> ${scheduledDisplay}</p>
+    <p><strong>Location:</strong> ${scheduledMatch.location}</p>
+  `;
+
+  const settled = await Promise.allSettled(
+    recipients.map((email) => sendEmail(email, subject, html))
+  );
+
+  const delivered = settled.filter((result) => result.status === "fulfilled").length;
+  const failed = settled.length - delivered;
+
+  return {
+    attempted: true,
+    delivered,
+    failed,
+    recipients,
+  };
+};
+
+const createTournamentMatch = async (tournament_id, matchData) => {
+  const {
+    registration1IdNumber,
+    registration2IdNumber,
+    winsNeeded,
+    scheduledAtSql,
+    location,
+  } = validateMatchScheduleInput(matchData);
+
+  if (!location) {
+    throw new BadRequestError("location is required");
+  }
+
+  const registrations = await knex("Registration as r")
+    .join("TournamentDivision as td", "r.tournament_division_id", "td.id")
+    .whereIn("r.id", [registration1IdNumber, registration2IdNumber])
+    .where("td.tournament_id", tournament_id)
+    .where("r.status", "registered")
+    .select("r.id", "r.team_id");
+
+  if (registrations.length !== 2) {
+    throw new NotFoundError(
+      "One or both registrations are not active for this tournament"
+    );
+  }
+
+  const [registrationOne, registrationTwo] = registrations;
+  if (registrationOne.team_id === registrationTwo.team_id) {
+    throw new BadRequestError("A team cannot be scheduled to play itself");
+  }
+
+  const [seriesId] = await knex("Series").insert({
+    tournament_id,
+    registration1_id: registration1IdNumber,
+    registration2_id: registration2IdNumber,
+    wins_needed: winsNeeded,
+    location,
+    created_at: scheduledAtSql,
+  });
+
+  const createdMatch = await getTournamentMatchById(tournament_id, seriesId);
+  if (!createdMatch) {
+    throw new NotFoundError("Scheduled match could not be retrieved");
+  }
+
+  const notifications = await sendMatchScheduleNotifications(createdMatch);
+
+  return {
+    ...createdMatch,
+    notifications,
+  };
+};
+
 module.exports = {
   getAllTournaments,
   getTournamentById,
@@ -249,4 +474,7 @@ module.exports = {
   getTournamentTeams,
   registerForTournament,
   unregisterFromTournament,
+  getTournamentMatchCandidates,
+  getTournamentMatches,
+  createTournamentMatch,
 };

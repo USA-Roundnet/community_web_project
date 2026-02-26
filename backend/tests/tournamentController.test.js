@@ -96,6 +96,74 @@ describe("Tournament Controller API Tests", () => {
     }
   });
 
+  const createScheduleFixture = async () => {
+    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+
+    const [teamOneId] = await knex("Team").insert({
+      name: `Schedule Team One ${uniqueSuffix}`,
+      public: true,
+      description: "Team used for scheduling tests",
+      created_at: new Date(),
+    });
+
+    const [teamTwoId] = await knex("Team").insert({
+      name: `Schedule Team Two ${uniqueSuffix}`,
+      public: true,
+      description: "Team used for scheduling tests",
+      created_at: new Date(),
+    });
+
+    await knex("UserTeam").insert([
+      {
+        user_id: testUserObject.id,
+        team_id: teamOneId,
+        role: "player",
+        status: "accepted",
+        created_at: new Date(),
+      },
+      {
+        user_id: testUserObject.id,
+        team_id: teamTwoId,
+        role: "player",
+        status: "accepted",
+        created_at: new Date(),
+      },
+    ]);
+
+    const [registrationOneId] = await knex("Registration").insert({
+      team_id: teamOneId,
+      tournament_division_id: tournamentDivisionId,
+      status: "registered",
+      payment_status: "unpaid",
+      created_at: new Date(),
+    });
+
+    const [registrationTwoId] = await knex("Registration").insert({
+      team_id: teamTwoId,
+      tournament_division_id: tournamentDivisionId,
+      status: "registered",
+      payment_status: "unpaid",
+      created_at: new Date(),
+    });
+
+    return {
+      teamOneId,
+      teamTwoId,
+      registrationOneId,
+      registrationTwoId,
+    };
+  };
+
+  const cleanupScheduleFixture = async (fixture) => {
+    if (!fixture) {
+      return;
+    }
+
+    await knex("Team")
+      .whereIn("id", [fixture.teamOneId, fixture.teamTwoId])
+      .del();
+  };
+
   afterAll(async () => {
     // Clean up the database after tests
     try {
@@ -638,6 +706,89 @@ describe("Tournament Controller API Tests", () => {
     expect(duplicateRes.body.message).toBe(
       "Team is already registered for this tournament division"
     );
+  });
+
+  test("GET /api/tournaments/:id/matches/candidates should return registration candidates", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const response = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/matches/candidates`)
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(
+        response.body.some(
+          (candidate) => candidate.registration_id === fixture.registrationOneId
+        )
+      ).toBe(true);
+      expect(
+        response.body.some(
+          (candidate) => candidate.registration_id === fixture.registrationTwoId
+        )
+      ).toBe(true);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches should create a scheduled match", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "14:30",
+          location: "Court 1",
+        });
+
+      expect(scheduleResponse.statusCode).toBe(201);
+      expect(scheduleResponse.body).toHaveProperty("id");
+      expect(scheduleResponse.body.registration1_id).toBe(
+        fixture.registrationOneId
+      );
+      expect(scheduleResponse.body.registration2_id).toBe(
+        fixture.registrationTwoId
+      );
+      expect(scheduleResponse.body.location).toBe("Court 1");
+
+      const listResponse = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(listResponse.statusCode).toBe(200);
+      expect(Array.isArray(listResponse.body)).toBe(true);
+      expect(
+        listResponse.body.some((match) => match.id === scheduleResponse.body.id)
+      ).toBe(true);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches should reject identical registrations", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const response = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationOneId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "10:00",
+          location: "Court 2",
+        });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toContain("must be different teams");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
   });
 
   test("GET /api/tournaments/:id/teams should return 404 for a non-existent tournament", async () => {
