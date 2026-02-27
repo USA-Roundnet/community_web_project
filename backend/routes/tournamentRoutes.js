@@ -9,17 +9,14 @@ const {
   checkTournamentDirector,
 } = require("../middleware/tournamentMiddleware");
 
-// Fetch all tournaments
 router.get("/", asyncHandler(tournamentController.getAllTournaments));
 
-// Fetch details of a specific tournament
 router.get(
   "/:id",
   checkTournamentExists,
   asyncHandler(tournamentController.getTournamentById)
 );
 
-// Fetch all teams registered for a specific tournament
 router.get(
   "/:id/teams",
   verifyToken,
@@ -27,7 +24,44 @@ router.get(
   asyncHandler(tournamentController.getTournamentTeams)
 );
 
-// Create a new tournament
+router.get(
+  "/:id/divisions",
+  checkTournamentExists,
+  asyncHandler(tournamentController.getTournamentDivisions)
+);
+
+router.post(
+  "/:id/divisions",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.createTournamentDivision)
+);
+
+router.get(
+  "/:id/registrations",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.getTournamentRegistrations)
+);
+
+router.patch(
+  "/:id/registrations/:registrationId",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.updateTournamentRegistration)
+);
+
+router.get(
+  "/:id/details",
+  verifyToken,
+  checkTournamentExists,
+  checkTournamentDirector,
+  asyncHandler(tournamentController.getTournamentDetails)
+);
+
 router.post(
   "/",
   verifyToken,
@@ -35,7 +69,6 @@ router.post(
   asyncHandler(tournamentController.createTournament)
 );
 
-// Update a tournament
 router.put(
   "/:id",
   verifyToken,
@@ -45,7 +78,6 @@ router.put(
   asyncHandler(tournamentController.updateTournament)
 );
 
-// Delete a tournament
 router.delete(
   "/:id",
   verifyToken,
@@ -54,7 +86,6 @@ router.delete(
   asyncHandler(tournamentController.deleteTournament)
 );
 
-// Register a user (and their team) for a specific division in a tournament
 router.post(
   "/:id/register",
   verifyToken,
@@ -90,6 +121,13 @@ router.post(
   checkTournamentExists,
   checkTournamentDirector,
   asyncHandler(tournamentController.createTournamentMatch)
+);
+
+router.get(
+  "/:id/my-match-alerts",
+  verifyToken,
+  checkTournamentExists,
+  asyncHandler(tournamentController.getMyMatchAlerts)
 );
 
 module.exports = router;

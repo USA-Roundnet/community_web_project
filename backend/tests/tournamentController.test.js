@@ -17,6 +17,7 @@ const dateTimeWithOffset = (daysFromToday) => {
 
 describe("Tournament Controller API Tests", () => {
   let testUserObject;
+  let otherUserObject;
   let testTeamId;
   let testTournamentId;
   let tournamentDivisionId;
@@ -35,6 +36,7 @@ describe("Tournament Controller API Tests", () => {
     // Use the global setupTestUser to register and log in a test user
     try {
       testUserObject = await setupTestUser();
+      otherUserObject = await setupTestUser();
       // console.log("Test user created:", { id: testUserObject.id, token: testUserObject.token });
 
       // Insert a team and retrieve the inserted row
@@ -96,7 +98,12 @@ describe("Tournament Controller API Tests", () => {
     }
   });
 
-  const createScheduleFixture = async () => {
+  const createScheduleFixture = async ({
+    teamOneUserIds = [testUserObject.id],
+    teamTwoUserIds = [testUserObject.id],
+    registrationOneStatus = "registered",
+    registrationTwoStatus = "registered",
+  } = {}) => {
     const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
 
     const [teamOneId] = await knex("Team").insert({
@@ -113,27 +120,31 @@ describe("Tournament Controller API Tests", () => {
       created_at: new Date(),
     });
 
-    await knex("UserTeam").insert([
-      {
-        user_id: testUserObject.id,
+    const teamMembershipRows = [
+      ...teamOneUserIds.map((userId) => ({
+        user_id: userId,
         team_id: teamOneId,
         role: "player",
         status: "accepted",
         created_at: new Date(),
-      },
-      {
-        user_id: testUserObject.id,
+      })),
+      ...teamTwoUserIds.map((userId) => ({
+        user_id: userId,
         team_id: teamTwoId,
         role: "player",
         status: "accepted",
         created_at: new Date(),
-      },
-    ]);
+      })),
+    ];
+
+    if (teamMembershipRows.length) {
+      await knex("UserTeam").insert(teamMembershipRows);
+    }
 
     const [registrationOneId] = await knex("Registration").insert({
       team_id: teamOneId,
       tournament_division_id: tournamentDivisionId,
-      status: "registered",
+      status: registrationOneStatus,
       payment_status: "unpaid",
       created_at: new Date(),
     });
@@ -141,7 +152,7 @@ describe("Tournament Controller API Tests", () => {
     const [registrationTwoId] = await knex("Registration").insert({
       team_id: teamTwoId,
       tournament_division_id: tournamentDivisionId,
-      status: "registered",
+      status: registrationTwoStatus,
       payment_status: "unpaid",
       created_at: new Date(),
     });
@@ -170,6 +181,9 @@ describe("Tournament Controller API Tests", () => {
       if (testUserObject.id) {
         await knex("User").where({ id: testUserObject.id }).del();
         // console.log("Test user deleted:", testUserObject.id);
+      }
+      if (otherUserObject?.id) {
+        await knex("User").where({ id: otherUserObject.id }).del();
       }
       if (testTeamId) {
         await knex("Team").where({ id: testTeamId }).del();
@@ -708,6 +722,58 @@ describe("Tournament Controller API Tests", () => {
     );
   });
 
+  test("GET /api/tournaments/:id/details should return tournament details payload for directors", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const scheduleRes = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "13:00",
+          location: "Court A",
+        });
+      expect(scheduleRes.statusCode).toBe(201);
+
+      const response = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/details`)
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toHaveProperty("tournament");
+      expect(response.body).toHaveProperty("divisions");
+      expect(response.body).toHaveProperty("registrations");
+      expect(response.body).toHaveProperty("schedule");
+      expect(Array.isArray(response.body.divisions)).toBe(true);
+      expect(Array.isArray(response.body.registrations)).toBe(true);
+      expect(Array.isArray(response.body.schedule)).toBe(true);
+      expect(
+        response.body.schedule.some((series) => series.id === scheduleRes.body.id)
+      ).toBe(true);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("GET /api/tournaments/:id/details should require authentication", async () => {
+    const response = await request(app).get(
+      `/api/tournaments/${testTournamentId}/details`
+    );
+
+    expect(response.statusCode).toBe(401);
+  });
+
+  test("GET /api/tournaments/:id/details should reject non-directors", async () => {
+    const response = await request(app)
+      .get(`/api/tournaments/${testTournamentId}/details`)
+      .set("Authorization", `Bearer ${otherUserObject.token}`);
+
+    expect(response.statusCode).toBe(403);
+    expect(response.body.message).toContain("not authorized");
+  });
+
   test("GET /api/tournaments/:id/matches/candidates should return registration candidates", async () => {
     const fixture = await createScheduleFixture();
     try {
@@ -786,6 +852,178 @@ describe("Tournament Controller API Tests", () => {
 
       expect(response.statusCode).toBe(400);
       expect(response.body.message).toContain("must be different teams");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches should reject missing required fields", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const response = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "10:00",
+        });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toContain("location are required");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches should reject invalid date/time format", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const response = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: "2026/01/01",
+          scheduled_time: "10:00",
+          location: "Court 9",
+        });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toContain("scheduled_date must be in YYYY-MM-DD format");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches should reject non-active registrations", async () => {
+    const fixture = await createScheduleFixture({
+      registrationOneStatus: "withdrawn",
+    });
+    try {
+      const response = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "11:00",
+          location: "Court 6",
+        });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.body.message).toContain("not active");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("GET /api/tournaments/:id/matches should support filtering by date", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const dateOne = dateWithOffset(3);
+      const dateTwo = dateWithOffset(4);
+
+      const firstSchedule = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateOne,
+          scheduled_time: "09:00",
+          location: "Court Date One",
+        });
+      expect(firstSchedule.statusCode).toBe(201);
+
+      const secondSchedule = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateTwo,
+          scheduled_time: "09:30",
+          location: "Court Date Two",
+        });
+      expect(secondSchedule.statusCode).toBe(201);
+
+      const filteredResponse = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/matches?date=${dateOne}`)
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(filteredResponse.statusCode).toBe(200);
+      expect(
+        filteredResponse.body.some((match) => match.id === firstSchedule.body.id)
+      ).toBe(true);
+      expect(
+        filteredResponse.body.some((match) => match.id === secondSchedule.body.id)
+      ).toBe(false);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("GET /api/tournaments/:id/my-match-alerts should return scheduled alerts for team members", async () => {
+    const fixture = await createScheduleFixture({
+      teamOneUserIds: [testUserObject.id],
+      teamTwoUserIds: [],
+    });
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "12:15",
+          location: "Court Alert",
+        });
+      expect(scheduleResponse.statusCode).toBe(201);
+
+      const alertsResponse = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/my-match-alerts`)
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(alertsResponse.statusCode).toBe(200);
+      expect(Array.isArray(alertsResponse.body)).toBe(true);
+      expect(alertsResponse.body.length).toBeGreaterThan(0);
+      expect(alertsResponse.body[0]).toHaveProperty("user_team_name");
+      expect(alertsResponse.body[0]).toHaveProperty("opponent_team_name");
+      expect(alertsResponse.body[0]).toHaveProperty("match_label");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("GET /api/tournaments/:id/my-match-alerts should return empty for unrelated users", async () => {
+    const fixture = await createScheduleFixture({
+      teamOneUserIds: [testUserObject.id],
+      teamTwoUserIds: [testUserObject.id],
+    });
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "16:00",
+          location: "Court Unrelated",
+        });
+      expect(scheduleResponse.statusCode).toBe(201);
+
+      const alertsResponse = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/my-match-alerts`)
+        .set("Authorization", `Bearer ${otherUserObject.token}`);
+
+      expect(alertsResponse.statusCode).toBe(200);
+      expect(alertsResponse.body).toEqual([]);
     } finally {
       await cleanupScheduleFixture(fixture);
     }

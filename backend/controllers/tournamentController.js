@@ -35,13 +35,75 @@ const deleteTournament = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Tournament deleted successfully" });
 });
 
-// Fetch all teams registered for a specific tournament
 const getTournamentTeams = asyncHandler(async (req, res) => {
   const teams = await tournamentService.getTournamentTeams(req.params.id);
   res.status(200).json(teams);
 });
 
-// Register a user (and their team) for a specific division in a tournament
+const getTournamentDivisions = asyncHandler(async (req, res) => {
+  const divisions = await tournamentService.getTournamentDivisions(req.params.id);
+  res.status(200).json(divisions);
+});
+
+const createTournamentDivision = asyncHandler(async (req, res) => {
+  const createdDivision = await tournamentService.createTournamentDivision(
+    req.params.id,
+    req.user.id,
+    req.body
+  );
+
+  const statusCode = Number.isInteger(createdDivision?.status)
+    ? createdDivision.status
+    : 201;
+  if (statusCode >= 400) {
+    const err = new Error(
+      createdDivision.message || "Failed to create tournament division"
+    );
+    err.statusCode = statusCode;
+    throw err;
+  }
+
+  res.status(statusCode).json(createdDivision);
+});
+
+const getTournamentRegistrations = asyncHandler(async (req, res) => {
+  const { division_id, payment_status } = req.query;
+  const registrations = await tournamentService.getTournamentRegistrations(
+    req.params.id,
+    { division_id, payment_status }
+  );
+  res.status(200).json(registrations);
+});
+
+const updateTournamentRegistration = asyncHandler(async (req, res) => {
+  const updatedRegistration = await tournamentService.updateTournamentRegistration(
+    req.params.id,
+    req.params.registrationId,
+    req.body
+  );
+
+  const statusCode = Number.isInteger(updatedRegistration?.status)
+    ? updatedRegistration.status
+    : 200;
+  if (statusCode >= 400) {
+    const err = new Error(
+      updatedRegistration.message || "Failed to update registration"
+    );
+    err.statusCode = statusCode;
+    throw err;
+  }
+
+  res.status(statusCode).json(updatedRegistration);
+});
+
+const getTournamentDetails = asyncHandler(async (req, res) => {
+  const details = await tournamentService.getTournamentDetails(req.params.id);
+  if (!details) {
+    throw new NotFoundError("Tournament not found");
+  }
+  res.status(200).json(details);
+});
+
 const registerForTournament = asyncHandler(async (req, res) => {
   const { team_id, tournament_division_id } = req.body;
   if (!team_id || !tournament_division_id) {
@@ -49,8 +111,8 @@ const registerForTournament = asyncHandler(async (req, res) => {
   }
 
   const registration = await tournamentService.registerForTournament(
-    req.params.id, // tournament_id
-    req.user.id, // user_id
+    req.params.id,
+    req.user.id,
     team_id,
     tournament_division_id
   );
@@ -72,8 +134,8 @@ const unregisterFromTournament = asyncHandler(async (req, res) => {
   }
 
   const result = await tournamentService.unregisterFromTournament(
-    req.params.id, // tournament_id
-    req.user.id, // user_id
+    req.params.id,
+    req.user.id,
     team_id,
     tournament_division_id
   );
@@ -110,6 +172,11 @@ const createTournamentMatch = asyncHandler(async (req, res) => {
   res.status(201).json(match);
 });
 
+const getMyMatchAlerts = asyncHandler(async (req, res) => {
+  const alerts = await tournamentService.getMyMatchAlerts(req.user.id, req.params.id);
+  res.status(200).json(alerts);
+});
+
 module.exports = {
   getAllTournaments,
   getTournamentById,
@@ -117,9 +184,15 @@ module.exports = {
   updateTournament,
   deleteTournament,
   getTournamentTeams,
+  getTournamentDivisions,
+  createTournamentDivision,
+  getTournamentRegistrations,
+  updateTournamentRegistration,
+  getTournamentDetails,
   registerForTournament,
   unregisterFromTournament,
   getTournamentMatchCandidates,
   getTournamentMatches,
   createTournamentMatch,
+  getMyMatchAlerts,
 };

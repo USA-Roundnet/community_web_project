@@ -127,6 +127,13 @@ const TournamentManagementPage = () => {
                         <div className="mt-6 flex flex-wrap gap-3">
                             <button
                                 type="button"
+                                onClick={() => navigate(`/events/${id}/details`)}
+                                className="px-4 py-2 rounded-md bg-indigo-700 text-white hover:bg-indigo-600 transition-colors"
+                            >
+                                Tournament Details
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => navigate(`/events/${id}`)}
                                 className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors"
                             >

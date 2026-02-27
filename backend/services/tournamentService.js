@@ -1,7 +1,6 @@
 const knex = require("../knex-config.js");
 const { validateDuplicateRegistration } = require("../utils/validation");
 const { BadRequestError, NotFoundError } = require("../utils/customErrors");
-const { sendEmail } = require("../utils/emailUtils");
 
 const toIsoDateOnly = (dateValue) => {
   const parsedDate = new Date(dateValue);
@@ -118,9 +117,7 @@ const deleteTournament = async (id) => {
   return rowsDeleted > 0;
 };
 
-// Fetch all teams registered for a specific tournament
 const getTournamentTeams = async (tournament_id) => {
-  // Fetch all teams registered for the tournament
   const teams = await knex("Team")
     .join("Registration", "Team.id", "Registration.team_id")
     .join(
@@ -135,11 +132,188 @@ const getTournamentTeams = async (tournament_id) => {
     throw new Error("No teams found for the specified tournament");
   }
 
-  // console.log("Fetched teams for tournament:", tournament_id, teams);
   return teams;
 };
 
-// Register a user (and their team) for a specific division in a tournament
+const getTournamentDivisions = async (tournament_id) => {
+  return knex("TournamentDivision as td")
+    .join("Division as d", "td.division_id", "d.id")
+    .leftJoin("Registration as r", "r.tournament_division_id", "td.id")
+    .where("td.tournament_id", tournament_id)
+    .groupBy(
+      "td.id",
+      "td.tournament_id",
+      "td.division_id",
+      "td.max_teams",
+      "td.registration_fee",
+      "td.created_at",
+      "d.name"
+    )
+    .orderBy("td.created_at", "asc")
+    .select(
+      "td.id",
+      "td.tournament_id",
+      "td.division_id",
+      "td.max_teams",
+      "td.registration_fee",
+      "td.created_at",
+      "d.name as division_name"
+    )
+    .count({ registered_teams: "r.id" });
+};
+
+const createTournamentDivision = async (
+  tournament_id,
+  creator_id,
+  divisionData
+) => {
+  const normalizedName = `${divisionData.name || ""}`.trim();
+  if (!normalizedName) {
+    return { status: 400, message: "Division name is required" };
+  }
+
+  const maxTeams = Number(divisionData.max_teams);
+  if (!Number.isInteger(maxTeams) || maxTeams <= 0) {
+    return { status: 400, message: "max_teams must be a positive integer" };
+  }
+
+  const existingDivision = await knex("TournamentDivision as td")
+    .join("Division as d", "td.division_id", "d.id")
+    .where("td.tournament_id", tournament_id)
+    .andWhereRaw("LOWER(d.name) = ?", [normalizedName.toLowerCase()])
+    .first("td.id");
+
+  if (existingDivision) {
+    return { status: 409, message: "Division already exists for this tournament" };
+  }
+
+  const [divisionId] = await knex("Division").insert({
+    creator_id,
+    name: normalizedName,
+  });
+
+  const registrationFee = divisionData.registration_fee;
+  const [tournamentDivisionId] = await knex("TournamentDivision").insert({
+    division_id: divisionId,
+    tournament_id,
+    max_teams: maxTeams,
+    registration_fee:
+      registrationFee === undefined || registrationFee === null
+        ? null
+        : Number(registrationFee),
+  });
+
+  const [createdDivision] = await knex("TournamentDivision as td")
+    .join("Division as d", "td.division_id", "d.id")
+    .where("td.id", tournamentDivisionId)
+    .select(
+      "td.id",
+      "td.tournament_id",
+      "td.division_id",
+      "td.max_teams",
+      "td.registration_fee",
+      "td.created_at",
+      "d.name as division_name"
+    );
+
+  return createdDivision;
+};
+
+const getTournamentRegistrations = async (
+  tournament_id,
+  { division_id, payment_status } = {}
+) => {
+  const query = knex("Registration as r")
+    .join("TournamentDivision as td", "r.tournament_division_id", "td.id")
+    .join("Division as d", "td.division_id", "d.id")
+    .join("Team as team", "r.team_id", "team.id")
+    .where("td.tournament_id", tournament_id)
+    .orderBy("r.created_at", "desc")
+    .select(
+      "r.id",
+      "r.team_id",
+      "r.tournament_division_id",
+      "r.status",
+      "r.payment_status",
+      "r.created_at",
+      "team.name as team_name",
+      "d.name as division_name",
+      "d.id as division_id"
+    );
+
+  if (division_id) {
+    query.andWhere("td.id", division_id);
+  }
+
+  if (payment_status) {
+    query.andWhere("r.payment_status", payment_status);
+  }
+
+  return query;
+};
+
+const updateTournamentRegistration = async (
+  tournament_id,
+  registration_id,
+  updates = {}
+) => {
+  const currentRegistration = await knex("Registration as r")
+    .join("TournamentDivision as td", "r.tournament_division_id", "td.id")
+    .where("r.id", registration_id)
+    .andWhere("td.tournament_id", tournament_id)
+    .first("r.id", "r.status", "r.payment_status");
+
+  if (!currentRegistration) {
+    return { status: 404, message: "Registration not found" };
+  }
+
+  const patch = {};
+  if (updates.status !== undefined) {
+    const allowedStatuses = new Set(["registered", "withdrawn"]);
+    if (!allowedStatuses.has(updates.status)) {
+      return { status: 400, message: "Invalid registration status" };
+    }
+    patch.status = updates.status;
+  }
+
+  if (updates.payment_status !== undefined) {
+    const allowedPaymentStatuses = new Set(["paid", "pending", "unpaid"]);
+    if (!allowedPaymentStatuses.has(updates.payment_status)) {
+      return { status: 400, message: "Invalid payment_status" };
+    }
+    patch.payment_status = updates.payment_status;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return {
+      status: 400,
+      message: "At least one of status or payment_status is required",
+    };
+  }
+
+  await knex("Registration").where({ id: registration_id }).update(patch);
+
+  const [updatedRegistration] = await knex("Registration as r")
+    .join("TournamentDivision as td", "r.tournament_division_id", "td.id")
+    .join("Division as d", "td.division_id", "d.id")
+    .join("Team as team", "r.team_id", "team.id")
+    .where("r.id", registration_id)
+    .andWhere("td.tournament_id", tournament_id)
+    .select(
+      "r.id",
+      "r.team_id",
+      "r.tournament_division_id",
+      "r.status",
+      "r.payment_status",
+      "r.created_at",
+      "team.name as team_name",
+      "d.name as division_name",
+      "d.id as division_id"
+    );
+
+  return updatedRegistration;
+};
+
 const registerForTournament = async (
   tournament_id,
   user_id,
@@ -147,32 +321,26 @@ const registerForTournament = async (
   tournament_division_id
 ) => {
   try {
-    // Validate that the tournament exists
     const tournament = await knex("Tournament")
       .where({ id: tournament_id })
       .first();
     if (!tournament) {
-      // console.log("Tournament not found:", tournament_id);
       return { status: 404, message: "Tournament not found" };
     }
 
-    // Validate that the tournament division exists
     const tournamentDivision = await knex("TournamentDivision")
       .where({ id: tournament_division_id, tournament_id })
       .first();
     if (!tournamentDivision) {
-      // console.log("Tournament division not found:", { tournament_division_id, tournament_id,});
       return { status: 404, message: "Tournament division not found" };
     }
 
-    // Validate duplicate registration
     try {
       await validateDuplicateRegistration(team_id, tournament_division_id);
     } catch (error) {
-      return error; // Return the error object to the controller
+      return error;
     }
 
-    // Insert the registration
     const [registrationId] = await knex("Registration").insert({
       team_id,
       tournament_division_id,
@@ -180,7 +348,7 @@ const registerForTournament = async (
       payment_status: "unpaid",
       created_at: new Date(),
     });
-    // Link the user to the tournament in the TournamentUser table
+
     const existingTournamentUser = await knex("TournamentUser")
       .where({ user_id, tournament_id })
       .first();
@@ -194,7 +362,7 @@ const registerForTournament = async (
 
     return { id: registrationId };
   } catch (error) {
-    throw error; // Re-throw unexpected errors
+    throw error;
   }
 };
 
@@ -205,7 +373,6 @@ const unregisterFromTournament = async (
   tournament_division_id
 ) => {
   try {
-    // Validate that the registration exists
     const registration = await knex("Registration")
       .where({ team_id, tournament_division_id })
       .first();
@@ -213,9 +380,8 @@ const unregisterFromTournament = async (
       return { status: 404, message: "Registration not found" };
     }
 
-    // Delete the registration
     await knex("Registration").where({ team_id, tournament_division_id }).del();
-    // Check if the user is still associated with the tournament
+
     const remainingRegistrations = await knex("Registration")
       .join(
         "TournamentDivision",
@@ -228,9 +394,7 @@ const unregisterFromTournament = async (
       .first();
 
     if (remainingRegistrations.count === 0) {
-      // Remove the user from the TournamentUser table
       await knex("TournamentUser").where({ user_id, tournament_id }).del();
-      // console.log("User removed from tournament:", { user_id, tournament_id });
     }
 
     return {
@@ -360,56 +524,17 @@ const validateMatchScheduleInput = (matchData = {}) => {
   };
 };
 
-const getTeamNotificationEmails = async (teamIds) => {
-  const rows = await knex("UserTeam as ut")
-    .join("User as u", "ut.user_id", "u.id")
-    .whereIn("ut.team_id", teamIds)
-    .where("ut.status", "accepted")
-    .whereNotNull("u.email")
-    .distinct("u.email");
-
-  return rows.map((row) => row.email).filter(Boolean);
-};
-
-const sendMatchScheduleNotifications = async (scheduledMatch) => {
-  if (
-    process.env.NODE_ENV === "test" ||
-    process.env.MATCH_SCHEDULE_EMAILS === "false"
-  ) {
-    return { attempted: false, delivered: 0, failed: 0, recipients: [] };
+const getTeamMemberUserIds = async (teamIds) => {
+  if (!Array.isArray(teamIds) || teamIds.length === 0) {
+    return [];
   }
 
-  const recipients = await getTeamNotificationEmails([
-    scheduledMatch.team1_id,
-    scheduledMatch.team2_id,
-  ]);
+  const rows = await knex("UserTeam")
+    .whereIn("team_id", teamIds)
+    .andWhere("status", "accepted")
+    .distinct("user_id");
 
-  if (!recipients.length) {
-    return { attempted: false, delivered: 0, failed: 0, recipients: [] };
-  }
-
-  const scheduledDisplay = new Date(scheduledMatch.scheduled_at).toLocaleString();
-  const subject = `Match Scheduled: ${scheduledMatch.team1_name} vs ${scheduledMatch.team2_name}`;
-  const html = `
-    <p>A new match has been scheduled.</p>
-    <p><strong>Teams:</strong> ${scheduledMatch.team1_name} vs ${scheduledMatch.team2_name}</p>
-    <p><strong>When:</strong> ${scheduledDisplay}</p>
-    <p><strong>Location:</strong> ${scheduledMatch.location}</p>
-  `;
-
-  const settled = await Promise.allSettled(
-    recipients.map((email) => sendEmail(email, subject, html))
-  );
-
-  const delivered = settled.filter((result) => result.status === "fulfilled").length;
-  const failed = settled.length - delivered;
-
-  return {
-    attempted: true,
-    delivered,
-    failed,
-    recipients,
-  };
+  return rows.map((row) => Number(row.user_id)).filter(Boolean);
 };
 
 const createTournamentMatch = async (tournament_id, matchData) => {
@@ -457,11 +582,87 @@ const createTournamentMatch = async (tournament_id, matchData) => {
     throw new NotFoundError("Scheduled match could not be retrieved");
   }
 
-  const notifications = await sendMatchScheduleNotifications(createdMatch);
+  const recipientUserIds = await getTeamMemberUserIds([
+    createdMatch.team1_id,
+    createdMatch.team2_id,
+  ]);
 
   return {
     ...createdMatch,
-    notifications,
+    notifications: {
+      mode: "in_app",
+      recipient_user_count: recipientUserIds.length,
+      recipient_user_ids: recipientUserIds,
+    },
+  };
+};
+
+const getMyMatchAlerts = async (user_id, tournament_id) => {
+  const memberships = await knex("UserTeam")
+    .where({ user_id, status: "accepted" })
+    .distinct("team_id");
+
+  const teamIds = memberships
+    .map((membership) => Number(membership.team_id))
+    .filter(Boolean);
+
+  if (!teamIds.length) {
+    return [];
+  }
+
+  const teamIdSet = new Set(teamIds);
+  const matches = await getTournamentMatches(tournament_id);
+
+  return matches
+    .filter(
+      (match) => teamIdSet.has(match.team1_id) || teamIdSet.has(match.team2_id)
+    )
+    .map((match) => {
+      const isTeamOne = teamIdSet.has(match.team1_id);
+      return {
+        id: match.id,
+        tournament_id: match.tournament_id,
+        scheduled_at: match.scheduled_at,
+        location: match.location,
+        wins_needed: match.wins_needed,
+        user_team_id: isTeamOne ? match.team1_id : match.team2_id,
+        user_team_name: isTeamOne ? match.team1_name : match.team2_name,
+        opponent_team_id: isTeamOne ? match.team2_id : match.team1_id,
+        opponent_team_name: isTeamOne ? match.team2_name : match.team1_name,
+        match_label: `${match.team1_name} vs ${match.team2_name}`,
+      };
+    });
+};
+
+const getTournamentDetails = async (tournament_id) => {
+  const tournament = await getTournamentById(tournament_id);
+  if (!tournament) {
+    return null;
+  }
+
+  const [divisions, registrations, matches] = await Promise.all([
+    getTournamentDivisions(tournament_id),
+    getTournamentRegistrations(tournament_id),
+    getTournamentMatches(tournament_id),
+  ]);
+
+  const schedule = matches.map((match) => ({
+    id: match.id,
+    location: match.location,
+    wins_needed: match.wins_needed,
+    created_at: match.scheduled_at,
+    registration1_id: match.registration1_id,
+    registration2_id: match.registration2_id,
+    winner_id: match.winner_id,
+    registration1_team_name: match.team1_name,
+    registration2_team_name: match.team2_name,
+  }));
+
+  return {
+    tournament,
+    divisions,
+    registrations,
+    schedule,
   };
 };
 
@@ -472,9 +673,15 @@ module.exports = {
   updateTournament,
   deleteTournament,
   getTournamentTeams,
+  getTournamentDivisions,
+  createTournamentDivision,
+  getTournamentRegistrations,
+  updateTournamentRegistration,
+  getTournamentDetails,
   registerForTournament,
   unregisterFromTournament,
   getTournamentMatchCandidates,
   getTournamentMatches,
   createTournamentMatch,
+  getMyMatchAlerts,
 };

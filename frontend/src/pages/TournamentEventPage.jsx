@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../config";
+import { parseJsonSafely } from "../utils/http";
 
 const formatDate = (dateValue) => {
     if (!dateValue) {
@@ -34,6 +35,9 @@ const TournamentEventPage = () => {
     const [tournament, setTournament] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [matchAlerts, setMatchAlerts] = useState([]);
+    const [alertsLoading, setAlertsLoading] = useState(false);
+    const [alertsError, setAlertsError] = useState("");
 
     const isDirector = useMemo(() => {
         const localUserId = Number(localStorage.getItem("userId"));
@@ -60,6 +64,44 @@ const TournamentEventPage = () => {
         };
 
         fetchTournament();
+    }, [id]);
+
+    useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+            setMatchAlerts([]);
+            setAlertsError("");
+            return;
+        }
+
+        const fetchAlerts = async () => {
+            try {
+                setAlertsLoading(true);
+                setAlertsError("");
+                const response = await fetch(
+                    `${API_BASE_URL}/api/tournaments/${id}/my-match-alerts`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    const payload = await parseJsonSafely(response);
+                    throw new Error(payload?.message || "Unable to load match alerts.");
+                }
+
+                const payload = await parseJsonSafely(response);
+                setMatchAlerts(Array.isArray(payload) ? payload : []);
+            } catch (loadError) {
+                setAlertsError(loadError?.message || "Unable to load match alerts.");
+            } finally {
+                setAlertsLoading(false);
+            }
+        };
+
+        fetchAlerts();
     }, [id]);
 
     const statusDisplay = getStatusDisplay(tournament?.status);
@@ -102,6 +144,36 @@ const TournamentEventPage = () => {
                                 <span className="font-semibold">End Date:</span>{" "}
                                 {formatDate(tournament?.end_date)}
                             </p>
+                        </div>
+
+                        <div className="mt-6 border border-blue-200 bg-blue-50 rounded-md p-4">
+                            <h2 className="font-semibold text-blue-900 mb-2">Your Match Alerts</h2>
+                            {alertsLoading ? <p className="text-sm text-blue-800">Loading your match alerts...</p> : null}
+                            {alertsError ? <p className="text-sm text-red-600">{alertsError}</p> : null}
+                            {!alertsLoading && !alertsError && matchAlerts.length === 0 ? (
+                                <p className="text-sm text-blue-800">No scheduled matches for your teams yet.</p>
+                            ) : null}
+                            {!alertsLoading && !alertsError && matchAlerts.length > 0 ? (
+                                <ul className="space-y-2 text-sm">
+                                    {matchAlerts.map((alert) => (
+                                        <li key={alert.id} className="border border-blue-100 bg-white rounded p-2">
+                                            <p className="font-medium text-blue-900">{alert.match_label}</p>
+                                            <p>
+                                                <span className="font-semibold">Your Team:</span> {alert.user_team_name}
+                                            </p>
+                                            <p>
+                                                <span className="font-semibold">Opponent:</span> {alert.opponent_team_name}
+                                            </p>
+                                            <p>
+                                                <span className="font-semibold">When:</span> {new Date(alert.scheduled_at).toLocaleString()}
+                                            </p>
+                                            <p>
+                                                <span className="font-semibold">Location:</span> {alert.location || "TBD"}
+                                            </p>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : null}
                         </div>
 
                         <div className="mt-6 flex flex-wrap gap-3">

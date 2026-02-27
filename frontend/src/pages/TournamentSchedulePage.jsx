@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../config";
-import { formatSqlDateTime } from "../utils/dateTime";
 import { parseJsonSafely } from "../utils/http";
 
 const formatDateTime = (dateValue) => {
@@ -154,7 +153,6 @@ const TournamentSchedulePage = () => {
                     scheduled_date: formData.scheduled_date,
                     scheduled_time: formData.scheduled_time,
                     location: formData.location.trim(),
-                    scheduled_at: formatSqlDateTime(scheduledDateTime),
                 }),
             });
 
@@ -166,9 +164,9 @@ const TournamentSchedulePage = () => {
             }
 
             const createdMatch = await parseJsonSafely(response);
-            const deliveredCount = createdMatch?.notifications?.delivered || 0;
+            const recipientCount = createdMatch?.notifications?.recipient_user_count || 0;
             setMessage(
-                `Match scheduled successfully.${deliveredCount > 0 ? ` Notifications sent: ${deliveredCount}.` : ""}`
+                `Match scheduled successfully.${recipientCount > 0 ? ` Alerts available for ${recipientCount} user${recipientCount === 1 ? "" : "s"}.` : ""}`
             );
             setFormData((previous) => ({
                 ...previous,
