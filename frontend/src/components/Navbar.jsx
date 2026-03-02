@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FiLogOut, FiMenu, FiX } from "react-icons/fi";
 import logo from "../assets/rallypoint-logo.png";
-import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
+
+const navLinks = [
+  { to: "/", label: "Home" },
+  { to: "/about", label: "About" },
+  { to: "/events", label: "Events" },
+  { to: "/rankings", label: "Rankings" },
+];
 
 const Navbar = () => {
   const location = useLocation();
@@ -9,162 +16,127 @@ const Navbar = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-    // Check auth state on route change
-    useEffect(() => {
-        const hasToken = Boolean(localStorage.getItem("authToken"));
-        setLoggedIn(hasToken);
-        setMenuOpen(false);
-    }, [location.pathname]);
+  useEffect(() => {
+    setLoggedIn(Boolean(localStorage.getItem("authToken")));
+    setMenuOpen(false);
+  }, [location.pathname]);
 
-    const handleLogout = () => {
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("loggedIn");
-        localStorage.removeItem("userId");
-        localStorage.removeItem("tournamentBasicInfo");
-        localStorage.removeItem("tournamentFormat");
-        localStorage.removeItem("tournamentRegistration");
-        setLoggedIn(false);
-        setMenuOpen(false);
-        navigate("/", { replace: true });
-    };
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("tournamentBasicInfo");
+    localStorage.removeItem("tournamentFormat");
+    localStorage.removeItem("tournamentRegistration");
+    setLoggedIn(false);
+    setMenuOpen(false);
+    navigate("/", { replace: true });
+  };
 
-    const isActive = (path) => {
-        return location.pathname === path
-            ? "text-black hover:text-blue-900"
-            : "text-blue-900";
-    };
+  const linkClass = (path) =>
+    location.pathname === path
+      ? "text-[var(--op-primary-strong)]"
+      : "text-[var(--op-secondary)] hover:text-[var(--op-primary)]";
 
-    return (
-        <nav className="h-[11vh] w-full bg-[#f8f8f8] text-black p-4 flex justify-around items-center shadow-md relative top-0 z-50">
-            <div className="h-[11vh] w-7/8 flex justify-between items-center">
-                <div className="flex items-center">
-                    <img
-                        src={logo}
-                        alt="Rally Point Logo"
-                        className="h-10 w-10 inline-block mr-2"
-                    />
-                    <Link to="/">
-                        <h1 className="text-xl font-bold px-2">Rally Point</h1>
-                    </Link>
-                </div>
-                <div className="md:hidden flex items-center">
-                    <button
-                        className="text-3xl text-blue-900 focus:outline-none hover:cursor-pointer"
-                        onClick={() => setMenuOpen((prev) => !prev)}
-                        aria-label="Toggle menu"
-                    >
-                        {menuOpen ? <FiX /> : <FiMenu />}
-                    </button>
-                </div>
-                {/* Desktop nav */}
-                <div className="hidden md:flex space-x-8 font-semibold items-center">
-                    <Link to="/" className={isActive("/")}>
-                        Home
-                    </Link>
-                    <Link to="/about" className={isActive("/about")}>
-                        About
-                    </Link>
-                    <Link to="/events" className={isActive("/events")}>
-                        Events
-                    </Link>
-                    <Link to="/rankings" className={isActive("/rankings")}>
-                        Rankings
-                    </Link>
-                    {loggedIn ? (
-                        <div className="flex items-center space-x-3 ml-2">
-                            <Link
-                                className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300"
-                                to="/profile"
-                            >
-                                Account
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors duration-300 hover:cursor-pointer"
-                                title="Log out"
-                            >
-                                <FiLogOut className="text-lg" />
-                                <span className="text-sm font-medium">Logout</span>
-                            </button>
-                        </div>
-                    ) : (
-                        <Link
-                            className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 ml-2"
-                            to="/login"
-                        >
-                            Login
-                        </Link>
-                    )}
-                </div>
+  return (
+    <nav className="sticky top-0 z-50 border-b border-[var(--op-border)] bg-white/95 backdrop-blur">
+      <div className="max-w-[1220px] mx-auto px-3 sm:px-4 h-[72px] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="Rally Point" className="h-9 w-9" />
+          <Link to="/" className="op-display text-lg sm:text-xl font-bold text-[var(--op-primary-strong)]">
+            Rally Point
+          </Link>
+        </div>
+
+        <button
+          type="button"
+          className="md:hidden text-2xl text-[var(--op-secondary)]"
+          onClick={() => setMenuOpen((previous) => !previous)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <FiX /> : <FiMenu />}
+        </button>
+
+        <div className="hidden md:flex items-center gap-6 op-ui font-semibold text-sm">
+          {navLinks.map((item) => (
+            <Link key={item.to} to={item.to} className={linkClass(item.to)}>
+              {item.label}
+            </Link>
+          ))}
+
+          {loggedIn ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/profile"
+                className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300"
+              >
+                Account
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors duration-300 hover:cursor-pointer"
+              >
+                <FiLogOut className="text-lg" />
+                Logout
+              </button>
             </div>
-            {/* Mobile side menu */}
-            <div
-                className={`md:hidden fixed top-0 right-0 w-3/4 max-w-xs h-full bg-[#f8f8f8] shadow-lg z-50 transform transition-transform duration-300 ${
-                    menuOpen ? "translate-x-0" : "translate-x-full"
-                }`}
+          ) : (
+            <Link
+              to="/login"
+              className="op-btn px-4 py-2 bg-[var(--op-primary)] text-white hover:bg-[var(--op-primary-strong)]"
             >
-                <div className="flex flex-col h-full p-6 space-y-6 font-semibold text-lg">
-                    <div className="h-10">
-                        
-                    </div>
-                    <Link
-                        to="/"
-                        className={isActive("/")}
-                        onClick={() => setMenuOpen(false)}
-                    >
-                        Home
-                    </Link>
-                    <Link
-                        to="/about"
-                        className={isActive("/about")}
-                        onClick={() => setMenuOpen(false)}
-                    >
-                        About
-                    </Link>
-                    <Link
-                        to="/events"
-                        className={isActive("/events")}
-                        onClick={() => setMenuOpen(false)}
-                    >
-                        Events
-                    </Link>
-                    <Link
-                        to="/rankings"
-                        className={isActive("/rankings")}
-                        onClick={() => setMenuOpen(false)}
-                    >
-                        Rankings
-                    </Link>
-                    {loggedIn ? (
-                        <>
-                            <Link
-                                className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 text-center mt-2"
-                                to="/profile"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Account
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center justify-center gap-2 px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-md transition-colors duration-300 hover:cursor-pointer"
-                            >
-                                <FiLogOut />
-                                <span>Logout</span>
-                            </button>
-                        </>
-                    ) : (
-                        <Link
-                            className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 mt-2"
-                            to="/login"
-                            onClick={() => setMenuOpen(false)}
-                        >
-                            Login
-                        </Link>
-                    )}
-                </div>
-            </div>
-        </nav>
-    );
+              Login
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {menuOpen ? (
+        <div className="md:hidden border-t border-[var(--op-border)] bg-white p-3">
+          <div className="flex flex-col gap-2 op-ui font-semibold text-sm">
+            {navLinks.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`px-3 py-2 rounded-lg ${linkClass(item.to)}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            {loggedIn ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="hover:cursor-pointer px-4 py-2 text-[#f8f8f8] bg-blue-900 hover:bg-blue-600 rounded-md transition-colors duration-300 text-center mt-2"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Account
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-red-600 border border-red-200 hover:bg-red-50 rounded-md transition-colors duration-300 hover:cursor-pointer"
+                >
+                  <FiLogOut />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="op-btn px-4 py-2 bg-[var(--op-primary)] text-white text-center"
+                onClick={() => setMenuOpen(false)}
+              >
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </nav>
+  );
 };
 
 export default Navbar;

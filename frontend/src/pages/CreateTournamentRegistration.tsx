@@ -1,357 +1,571 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/LoginPage.css";
-import { API_BASE_URL } from "../config";
-import { parseJsonSafely } from "../utils/http";
+import TournamentWizardLayout from "../features/tournament-ui/components/TournamentWizardLayout";
+import TournamentPanel from "../features/tournament-ui/components/TournamentPanel";
+import InlineBanner from "../features/tournament-ui/components/InlineBanner";
+import useLocalStorageState from "../features/tournament-ui/hooks/useLocalStorageState";
 import { formatSqlDateTime } from "../utils/dateTime";
+import {
+  createTournament,
+  createTournamentDivision,
+} from "../features/tournament-ui/api/tournamentApi";
+
+type DivisionDraft = {
+  divisionName: string;
+  playersPerTeam: number;
+  maxTeams: string;
+};
+
+type RegistrationForm = {
+  availability: string;
+  divisionsType: string;
+  numDivisons: number;
+  divisions: DivisionDraft[];
+};
+
+type PublishDivisionResult = {
+  localId: number;
+  divisionName: string;
+  maxTeams: number;
+  playersPerTeam: number;
+  status: "pending" | "success" | "error";
+  apiDivisionId?: number;
+  error?: string;
+};
+
+const defaultRegistration: RegistrationForm = {
+  availability: "",
+  divisionsType: "",
+  numDivisons: 1,
+  divisions: [
+    {
+      divisionName: "",
+      playersPerTeam: 1,
+      maxTeams: "",
+    },
+  ],
+};
 
 const CreateTournamentRegistration = () => {
-    const [formData, setFormData] = useState(() => {
-        const saved = localStorage.getItem('tournamentRegistration');
-        return saved ? JSON.parse(saved) : {
-            availability: "",
-            divisionsType: "",
-            numDivisons: 1,
-            divisions: [
-                {
-                    divisionName: "",
-                    playersPerTeam: 1,
-                    maxTeams: "",
-                },
-            ],
-        };
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useLocalStorageState(
+    "tournamentRegistration",
+    defaultRegistration
+  ) as [RegistrationForm, Dispatch<SetStateAction<RegistrationForm>>, () => void];
+  const [error, setError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [createdTournamentId, setCreatedTournamentId] = useState<number | null>(null);
+  const [createdTournamentName, setCreatedTournamentName] = useState<string>("");
+  const [divisionResults, setDivisionResults] = useState<PublishDivisionResult[]>([]);
 
-    const makeApiCall = async (endpoint: string, options: RequestInit = {}) => {
-        const url = `${API_BASE_URL}${endpoint}`;
-        const config: RequestInit = {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            ...options,
-        };
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+        state: { from: "/events/create/registration" },
+      });
+      return;
+    }
 
-        const token = localStorage.getItem('authToken');
-        if (token && config.headers) {
-            (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
-        } else {
-            console.warn("No auth token found when attempting API call", { endpoint });
-        }
+    const hasBasics = localStorage.getItem("tournamentBasicInfo");
+    const hasFormat = localStorage.getItem("tournamentFormat");
+    if (!hasBasics) {
+      navigate("/events/create", { replace: true });
+      return;
+    }
+    if (!hasFormat) {
+      navigate("/events/create/format", { replace: true });
+    }
+  }, [navigate]);
 
-        const response = await fetch(url, config);
-        
-        if (!response.ok) {
-            const errorData = await parseJsonSafely(response);
-            const message =
-                errorData?.message ||
-                (response.status === 401
-                    ? "Unauthorized. Please log in and try again."
-                    : `API request failed (${response.status}). Check backend API port/config.`);
-            throw new Error(message);
-        }
+  const completedDivisionCount = useMemo(
+    () =>
+      formData.divisions.filter(
+        (division) =>
+          `${division.divisionName || ""}`.trim().length > 0 &&
+          Number(division.maxTeams) > 0
+      ).length,
+    [formData.divisions]
+  );
 
-        return await parseJsonSafely(response);
-    };
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
+  const summary = useMemo(() => {
+    const successCount = divisionResults.filter((result) => result.status === "success").length;
+    const failedCount = divisionResults.filter((result) => result.status === "error").length;
 
-        // Match inputs like "divisionName-0", "playersPerTeam-1", etc.
-        const divisionMatch = name.match(
-            /^(divisionName|playersPerTeam|maxTeams)-(\d+)$/
-        );
-
-        if (divisionMatch) {
-            const field = divisionMatch[1];
-            const index = parseInt(divisionMatch[2]);
-
-            setFormData((prev: any) => {
-                const updatedDivisions = [...prev.divisions];
-                updatedDivisions[index] = {
-                    ...updatedDivisions[index],
-                    [field]: value,
-                };
-                const updatedData = { ...prev, divisions: updatedDivisions };
-                localStorage.setItem('tournamentRegistration', JSON.stringify(updatedData));
-                return updatedData;
-            });
-        } else {
-            setFormData((prev: any) => {
-                const updated = {
-                    ...prev,
-                    [name]: name === "numDivisons" ? parseInt(value) : value,
-                };
-
-                if (name === "numDivisons") {
-                    const num = parseInt(value) || 1;
-                    updated.divisions = Array.from(
-                        { length: num },
-                        (_, i) =>
-                            prev.divisions[i] || {
-                                divisionName: "",
-                                playersPerTeam: 1,
-                                maxTeams: "",
-                            }
-                    );
-                }
-                localStorage.setItem('tournamentRegistration', JSON.stringify(updated));
-                return updated;
-            });
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
-
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-            setError("You must be logged in to create a tournament.");
-            setIsLoading(false);
-            navigate("/login", { replace: true, state: { from: "/events/create/registration" } });
-            return;
-        }
-
-        if (!formData.availability) {
-            setError("All fields are required.");
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const basicInfo = JSON.parse(localStorage.getItem('tournamentBasicInfo') || '{}');
-            const format = JSON.parse(localStorage.getItem('tournamentFormat') || '{}');
-
-            const tournamentStartDate = new Date(basicInfo.startDate);
-            const tournamentEndDate = new Date(basicInfo.endDate);
-            const registrationDeadline = new Date(tournamentStartDate);
-            registrationDeadline.setDate(tournamentStartDate.getDate() - 2);
-
-            let startDateTime: string;
-            let endDateTime: string;
-            if (basicInfo.time) {
-                const start = new Date(`${basicInfo.startDate}T${basicInfo.time}:00`);
-                startDateTime = formatSqlDateTime(start);
-
-                const end = new Date(`${basicInfo.endDate}T${basicInfo.time}:00`);
-                endDateTime = formatSqlDateTime(end);
-            } else {
-                const start = new Date(`${basicInfo.startDate}T09:00:00`);
-                const end = new Date(`${basicInfo.endDate}T18:00:00`);
-                startDateTime = formatSqlDateTime(start);
-                endDateTime = formatSqlDateTime(end);
-            }
-
-            if (Number.isNaN(tournamentStartDate.getTime()) || Number.isNaN(tournamentEndDate.getTime())) {
-                throw new Error("Please provide valid start and end dates.");
-            }
-
-            if (tournamentEndDate < tournamentStartDate) {
-                throw new Error("End date must be on or after start date.");
-            }
-
-            const maxTeams = Number(basicInfo.maxTeams);
-            if (!Number.isInteger(maxTeams) || maxTeams <= 0) {
-                throw new Error("Please provide a valid positive max teams value.");
-            }
-
-            const tournamentData = {
-                name: basicInfo.tournamentName,
-                city: basicInfo.city,
-                state_province: basicInfo.state,
-                zip_code: basicInfo.zipCode,
-                country: basicInfo.country,
-                timezone: 'UTC',
-                status: "upcoming",
-                format: format.format || "classic",
-                start_date: startDateTime,
-                end_date: endDateTime,
-                max_teams: maxTeams,
-                registration_deadline: formatSqlDateTime(registrationDeadline),
-            };
-
-            const createdTournament = await makeApiCall('/api/tournaments/', {
-                method: 'POST',
-                body: JSON.stringify(tournamentData),
-            });
-
-            localStorage.removeItem('tournamentBasicInfo');
-            localStorage.removeItem('tournamentFormat');
-            localStorage.removeItem('tournamentRegistration');
-
-            navigate(`/events/${createdTournament.id}/manage`, { 
-                replace: true, 
-                state: { message: `Tournament "${tournamentData.name}" created successfully!` }
-            });
-        } catch (err: any) {
-            setError(err?.message || "Tournament creation failed. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
     return (
-        <div className="min-h-[90vh] w-full flex items-center justify-center text-black">
-            <div className="w-full max-w-4xl flex flex-col gap-4 p-4 sm:p-6 md:p-8 lg:p-10">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
-                    Create Tournament
-                </h1>
-                <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-4 text-center">
-                    Registration Info
-                </h2>
-                {error && (
-                    <div className="text-red-600 text-center font-semibold mb-2">
-                        {error}
-                    </div>
-                )}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="availability"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                Tournament Availability
-                            </label>
-                            <select
-                                id="availability"
-                                name="availability"
-                                value={formData.availability}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            >
-                                <option value="">Select availability</option>
-                                <option value="public">Public</option>
-                                <option value="private">Private</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="divisionsType"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                USAR Divisions or Custom Divisions
-                            </label>
-                            <select
-                                id="divisionsType"
-                                name="divisionsType"
-                                value={formData.divisionsType}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            >
-                                <option value="">Select type</option>
-                                <option value="custom">Custom Divisions</option>
-                                <option value="usar">USAR Divisions</option>
-                            </select>
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="numDivisons"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                # of Divisions
-                            </label>
-                            <input
-                                type="number"
-                                id="numDivisons"
-                                name="numDivisons"
-                                value={formData.numDivisons}
-                                onChange={handleChange}
-                                placeholder="# of Divisions"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                                min={1}
-                            />
-                        </div>
-                    </div>
-
-                    {formData.divisions.map((division: any, index: number) => (
-                        <div
-                            key={index}
-                            className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-100 mb-2"
-                        >
-                            <h2 className="text-base sm:text-lg font-bold text-blue-900 mb-2">
-                                Division #{index + 1}
-                            </h2>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <div className="flex-1 flex flex-col">
-                                    <label
-                                        htmlFor={`divisionName-${index}`}
-                                        className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                                    >
-                                        Division Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id={`divisionName-${index}`}
-                                        name={`divisionName-${index}`}
-                                        value={division.divisionName}
-                                        onChange={handleChange}
-                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white text-sm sm:text-base"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                                <div className="flex-1 flex flex-col">
-                                    <label
-                                        htmlFor={`playersPerTeam-${index}`}
-                                        className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                                    >
-                                        Players per Team
-                                    </label>
-                                    <input
-                                        type="number"
-                                        id={`playersPerTeam-${index}`}
-                                        name={`playersPerTeam-${index}`}
-                                        value={division.playersPerTeam}
-                                        onChange={handleChange}
-                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white text-sm sm:text-base"
-                                        required
-                                        min={1}
-                                    />
-                                </div>
-                                <div className="flex-1 flex flex-col">
-                                    <label
-                                        htmlFor={`maxTeams-${index}`}
-                                        className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                                    >
-                                        Max # of Teams
-                                    </label>
-                                    <input
-                                        type="number"
-                                        id={`maxTeams-${index}`}
-                                        name={`maxTeams-${index}`}
-                                        value={division.maxTeams}
-                                        onChange={handleChange}
-                                        className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-white text-sm sm:text-base"
-                                        required
-                                        min={1}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-base sm:text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                    >
-                        {isLoading ? "Creating Tournament..." : "Create Tournament"}
-                    </button>
-                </form>
-            </div>
-        </div>
+      <div className="space-y-3 text-sm text-[var(--op-text-muted)]">
+        <p>
+          Division drafts ready: <span className="font-semibold text-[var(--op-text)]">{completedDivisionCount}/{formData.divisions.length}</span>
+        </p>
+        <p>
+          Draft status: <span className="font-semibold text-[var(--op-accent)]">Saved automatically</span>
+        </p>
+        {createdTournamentId ? (
+          <p>
+            Tournament created: <span className="font-semibold text-[var(--op-text)]">#{createdTournamentId}</span>
+          </p>
+        ) : null}
+        {divisionResults.length > 0 ? (
+          <div className="op-card-muted p-2">
+            <p className="font-semibold text-[var(--op-text)]">Division publish status</p>
+            <p>Success: {successCount}</p>
+            <p>Failed: {failedCount}</p>
+          </div>
+        ) : null}
+      </div>
     );
+  }, [completedDivisionCount, formData.divisions.length, divisionResults, createdTournamentId]);
+
+  const updateField = (key: keyof RegistrationForm, value: string | number) => {
+    setFormData((previous) => {
+      const next = {
+        ...previous,
+        [key]: value,
+      };
+
+      if (key === "numDivisons") {
+        const count = Number(value) || 1;
+        next.numDivisons = Math.max(1, count);
+        next.divisions = Array.from({ length: next.numDivisons }, (_, index) => {
+          return (
+            previous.divisions[index] || {
+              divisionName: "",
+              playersPerTeam: 1,
+              maxTeams: "",
+            }
+          );
+        });
+      }
+
+      return next;
+    });
+  };
+
+  const updateDivisionField = (
+    index: number,
+    field: keyof DivisionDraft,
+    value: string
+  ) => {
+    setFormData((previous) => {
+      const divisions = [...previous.divisions];
+      const existing = divisions[index] || {
+        divisionName: "",
+        playersPerTeam: 1,
+        maxTeams: "",
+      };
+
+      divisions[index] = {
+        ...existing,
+        [field]: field === "playersPerTeam" ? Number(value || 1) : value,
+      };
+
+      return {
+        ...previous,
+        divisions,
+      };
+    });
+  };
+
+  const buildDivisionPayloads = (): PublishDivisionResult[] => {
+    const count = Math.max(1, Number(formData.numDivisons) || 1);
+    const scopedDivisions = formData.divisions.slice(0, count);
+
+    return scopedDivisions.map((division, index) => {
+      const maxTeams = Number(division.maxTeams);
+      const playersPerTeam = Number(division.playersPerTeam) || 1;
+
+      if (!`${division.divisionName || ""}`.trim()) {
+        throw new Error(`Division #${index + 1}: Division name is required.`);
+      }
+
+      if (!Number.isInteger(maxTeams) || maxTeams <= 0) {
+        throw new Error(`Division #${index + 1}: Max Teams must be a positive integer.`);
+      }
+
+      if (!Number.isInteger(playersPerTeam) || playersPerTeam <= 0) {
+        throw new Error(`Division #${index + 1}: Players per team must be a positive integer.`);
+      }
+
+      return {
+        localId: index,
+        divisionName: `${division.divisionName}`.trim(),
+        maxTeams,
+        playersPerTeam,
+        status: "pending",
+      };
+    });
+  };
+
+  const createTournamentPayload = () => {
+    const basicInfo = JSON.parse(localStorage.getItem("tournamentBasicInfo") || "{}");
+    const formatInfo = JSON.parse(localStorage.getItem("tournamentFormat") || "{}");
+
+    const tournamentStartDate = new Date(basicInfo.startDate);
+    const tournamentEndDate = new Date(basicInfo.endDate);
+    const registrationDeadline = new Date(tournamentStartDate);
+    registrationDeadline.setDate(tournamentStartDate.getDate() - 2);
+
+    if (
+      Number.isNaN(tournamentStartDate.getTime()) ||
+      Number.isNaN(tournamentEndDate.getTime())
+    ) {
+      throw new Error("Please provide valid start and end dates in Step 1.");
+    }
+
+    if (tournamentEndDate < tournamentStartDate) {
+      throw new Error("End date must be on or after start date.");
+    }
+
+    const maxTeams = Number(basicInfo.maxTeams);
+    if (!Number.isInteger(maxTeams) || maxTeams <= 0) {
+      throw new Error("Please provide a valid positive max teams value in Step 1.");
+    }
+
+    let startDateTime: string;
+    let endDateTime: string;
+
+    if (basicInfo.time) {
+      const start = new Date(`${basicInfo.startDate}T${basicInfo.time}:00`);
+      const end = new Date(`${basicInfo.endDate}T${basicInfo.time}:00`);
+      startDateTime = formatSqlDateTime(start);
+      endDateTime = formatSqlDateTime(end);
+    } else {
+      startDateTime = formatSqlDateTime(new Date(`${basicInfo.startDate}T09:00:00`));
+      endDateTime = formatSqlDateTime(new Date(`${basicInfo.endDate}T18:00:00`));
+    }
+
+    return {
+      name: basicInfo.tournamentName,
+      city: basicInfo.city,
+      state_province: basicInfo.state,
+      zip_code: basicInfo.zipCode,
+      country: basicInfo.country,
+      timezone: "UTC",
+      status: "upcoming",
+      format: formatInfo.format || "classic",
+      start_date: startDateTime,
+      end_date: endDateTime,
+      max_teams: maxTeams,
+      registration_deadline: formatSqlDateTime(registrationDeadline),
+    };
+  };
+
+  const runDivisionPublish = async (
+    token: string,
+    tournamentId: number,
+    allDivisionPayloads: PublishDivisionResult[],
+    retryFailedOnly: boolean
+  ) => {
+    const resultByLocalId = new Map(
+      allDivisionPayloads.map((payload) => [payload.localId, payload])
+    );
+
+    const previousResultsById = new Map(
+      divisionResults.map((result) => [result.localId, result])
+    );
+
+    for (const payload of allDivisionPayloads) {
+      const previous = previousResultsById.get(payload.localId);
+      const alreadySucceeded = previous?.status === "success";
+      const shouldSkip = retryFailedOnly ? previous?.status !== "error" : alreadySucceeded;
+
+      if (shouldSkip && previous) {
+        resultByLocalId.set(payload.localId, previous);
+        continue;
+      }
+
+      try {
+        const createdDivision = await createTournamentDivision(token, tournamentId, {
+          name: payload.divisionName,
+          max_teams: payload.maxTeams,
+        });
+
+        resultByLocalId.set(payload.localId, {
+          ...payload,
+          status: "success",
+          apiDivisionId: Number(createdDivision?.id),
+          error: undefined,
+        });
+      } catch (divisionError: any) {
+        resultByLocalId.set(payload.localId, {
+          ...payload,
+          status: "error",
+          error: divisionError?.message || "Failed to create division.",
+        });
+      }
+    }
+
+    const nextResults = [...resultByLocalId.values()].sort(
+      (left, right) => left.localId - right.localId
+    );
+
+    setDivisionResults(nextResults);
+    return nextResults;
+  };
+
+  const finalizeSuccessAndNavigate = (tournamentId: number, tournamentName: string, divisionCount: number) => {
+    localStorage.removeItem("tournamentBasicInfo");
+    localStorage.removeItem("tournamentFormat");
+    localStorage.removeItem("tournamentRegistration");
+
+    navigate(`/events/${tournamentId}/manage`, {
+      replace: true,
+      state: {
+        message: `Tournament "${tournamentName}" created with ${divisionCount} divisions.`,
+      },
+    });
+  };
+
+  const publish = async (retryFailedOnly = false) => {
+    setError(null);
+    setIsPublishing(true);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("You must be logged in to publish a tournament.");
+      }
+
+      if (!formData.availability || !formData.divisionsType) {
+        throw new Error("Availability and division type are required.");
+      }
+
+      const divisionPayloads = buildDivisionPayloads();
+      const tournamentPayload = createTournamentPayload();
+
+      let tournamentId = createdTournamentId;
+      let tournamentName = createdTournamentName || tournamentPayload.name;
+
+      if (!tournamentId) {
+        const createdTournament = await createTournament(token, tournamentPayload);
+        tournamentId = Number(createdTournament?.id);
+        tournamentName = createdTournament?.name || tournamentPayload.name;
+
+        if (!Number.isInteger(tournamentId) || tournamentId <= 0) {
+          throw new Error("Tournament was created but no valid id was returned.");
+        }
+
+        setCreatedTournamentId(tournamentId);
+        setCreatedTournamentName(tournamentName);
+      }
+
+      const publishResults = await runDivisionPublish(
+        token,
+        tournamentId,
+        divisionPayloads,
+        retryFailedOnly
+      );
+
+      const failed = publishResults.filter((result) => result.status === "error");
+      if (failed.length === 0) {
+        finalizeSuccessAndNavigate(tournamentId, tournamentName, publishResults.length);
+      }
+    } catch (publishError: any) {
+      setError(publishError?.message || "Tournament publishing failed.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const failedDivisionCount = divisionResults.filter((result) => result.status === "error").length;
+  const hasPartialFailure = createdTournamentId && failedDivisionCount > 0;
+
+  return (
+    <TournamentWizardLayout
+      step={3}
+      title="Registration & Division Setup"
+      subtitle="Finalize visibility and seed your divisions. Publish creates the tournament and then creates each division using existing APIs."
+      summary={summary}
+      banner={
+        error ? (
+          <InlineBanner tone="error" title="Publishing issue" message={error} />
+        ) : hasPartialFailure ? (
+          <InlineBanner
+            tone="warning"
+            title="Partial completion"
+            message={`Tournament #${createdTournamentId} was created, but ${failedDivisionCount} division(s) failed. Retry failed divisions or continue to management.`}
+          />
+        ) : (
+          <InlineBanner
+            tone="info"
+            title="Deterministic publish"
+            message="Publish runs once for tournament creation and then persists each division with status tracking."
+          />
+        )
+      }
+    >
+      <div className="space-y-4">
+        <TournamentPanel title="Registration Controls" subtitle="These values are retained for director context and future policy wiring.">
+          <div className="op-ui grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="availability" className="block text-sm font-semibold mb-1">Tournament Availability</label>
+              <select
+                id="availability"
+                value={formData.availability}
+                onChange={(event) => updateField("availability", event.target.value)}
+                className="op-select w-full p-3"
+                required
+              >
+                <option value="">Select availability</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="divisionsType" className="block text-sm font-semibold mb-1">Division Catalog</label>
+              <select
+                id="divisionsType"
+                value={formData.divisionsType}
+                onChange={(event) => updateField("divisionsType", event.target.value)}
+                className="op-select w-full p-3"
+                required
+              >
+                <option value="">Select type</option>
+                <option value="custom">Custom Divisions</option>
+                <option value="usar">USAR Divisions</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="numDivisons" className="block text-sm font-semibold mb-1">Number of Divisions</label>
+              <input
+                id="numDivisons"
+                type="number"
+                min={1}
+                value={formData.numDivisons}
+                onChange={(event) => updateField("numDivisons", Number(event.target.value || 1))}
+                className="op-input w-full p-3"
+              />
+            </div>
+          </div>
+        </TournamentPanel>
+
+        <TournamentPanel title="Division Definitions" subtitle="These are persisted via POST /api/tournaments/:id/divisions during publish.">
+          <div className="space-y-3">
+            {formData.divisions.slice(0, formData.numDivisons).map((division, index) => (
+              <div key={index} className="op-card-muted p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="op-display text-base font-semibold text-[var(--op-primary-strong)]">Division {index + 1}</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 op-ui">
+                  <div className="sm:col-span-2">
+                    <label htmlFor={`division-name-${index}`} className="block text-xs font-semibold mb-1">Division Name</label>
+                    <input
+                      id={`division-name-${index}`}
+                      value={division.divisionName}
+                      onChange={(event) =>
+                        updateDivisionField(index, "divisionName", event.target.value)
+                      }
+                      className="op-input w-full p-2.5"
+                      placeholder="Men's Premier"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor={`division-max-${index}`} className="block text-xs font-semibold mb-1">Max Teams</label>
+                    <input
+                      id={`division-max-${index}`}
+                      type="number"
+                      min={1}
+                      value={division.maxTeams}
+                      onChange={(event) => updateDivisionField(index, "maxTeams", event.target.value)}
+                      className="op-input w-full p-2.5"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor={`division-players-${index}`} className="block text-xs font-semibold mb-1">Players / Team</label>
+                    <input
+                      id={`division-players-${index}`}
+                      type="number"
+                      min={1}
+                      value={division.playersPerTeam}
+                      onChange={(event) =>
+                        updateDivisionField(index, "playersPerTeam", event.target.value)
+                      }
+                      className="op-input w-full p-2.5"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TournamentPanel>
+
+        {divisionResults.length > 0 ? (
+          <TournamentPanel title="Publish Results" subtitle="Division persistence status from the latest publish attempt.">
+            <div className="overflow-x-auto border border-[var(--op-border)] rounded-xl">
+              <table className="w-full text-sm op-ui">
+                <thead className="bg-[var(--op-surface-muted)] text-[var(--op-secondary)]">
+                  <tr>
+                    <th className="text-left p-2">Division</th>
+                    <th className="text-left p-2">Max Teams</th>
+                    <th className="text-left p-2">Players/Team</th>
+                    <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {divisionResults.map((result) => (
+                    <tr key={result.localId} className="border-t border-[var(--op-border)]">
+                      <td className="p-2">{result.divisionName}</td>
+                      <td className="p-2">{result.maxTeams}</td>
+                      <td className="p-2">{result.playersPerTeam}</td>
+                      <td className="p-2 capitalize">{result.status}</td>
+                      <td className="p-2">{result.error || "Created"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TournamentPanel>
+        ) : null}
+
+        <div className="op-card p-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/events/create/format", { replace: true })}
+            className="op-btn px-5 py-2.5 bg-white border border-[var(--op-border)] text-[var(--op-secondary)] hover:bg-[var(--op-surface-muted)]"
+          >
+            Back to Format
+          </button>
+
+          <button
+            type="button"
+            onClick={() => publish(false)}
+            disabled={isPublishing}
+            className="op-btn px-5 py-2.5 bg-[var(--op-primary)] text-white hover:bg-[var(--op-primary-strong)]"
+          >
+            {isPublishing ? "Publishing..." : "Publish Tournament"}
+          </button>
+
+          {hasPartialFailure ? (
+            <>
+              <button
+                type="button"
+                onClick={() => publish(true)}
+                disabled={isPublishing}
+                className="op-btn px-5 py-2.5 bg-[var(--op-warning)] text-white hover:brightness-95"
+              >
+                Retry Failed Divisions
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/events/${createdTournamentId}/manage`)}
+                className="op-btn px-5 py-2.5 bg-[var(--op-secondary)] text-white hover:brightness-95"
+              >
+                Open Tournament Management
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </TournamentWizardLayout>
+  );
 };
 
 export default CreateTournamentRegistration;

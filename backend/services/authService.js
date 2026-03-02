@@ -11,6 +11,7 @@ const {
   DuplicateError,
   ValidationError,
 } = require("../utils/customErrors");
+const { getJwtSecret } = require("../utils/authConfig");
 
 function generateRandomToken(length = 32) {
   // Node 16+ supports 'base64url'
@@ -108,7 +109,7 @@ const loginUser = async ({ email, password }) => {
   // Generate a JWT token for the user
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role || "user" },
-    process.env.JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: "1h" }
   );
 

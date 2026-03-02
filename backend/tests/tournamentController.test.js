@@ -165,14 +165,118 @@ describe("Tournament Controller API Tests", () => {
     };
   };
 
+  const createIsolatedTournamentDivision = async () => {
+    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const [isolatedTournamentId] = await knex("Tournament").insert({
+      name: `Pool Fixture Tournament ${uniqueSuffix}`,
+      city: "Austin",
+      state_province: "TX",
+      zip_code: "78701",
+      country: "USA",
+      timezone: "America/Chicago",
+      status: "upcoming",
+      format: "college",
+      start_date: dateWithOffset(7),
+      end_date: dateWithOffset(8),
+      max_teams: 24,
+      director_id: testUserObject.id,
+    });
+
+    const [isolatedDivisionId] = await knex("TournamentDivision").insert({
+      division_id: 1,
+      tournament_id: isolatedTournamentId,
+      registration_fee: 50,
+      created_at: new Date(),
+    });
+
+    return {
+      tournamentId: isolatedTournamentId,
+      tournamentDivisionId: isolatedDivisionId,
+    };
+  };
+
+  const createSeededPoolFixture = async ({
+    seedValues = [1, 2, 3, 4, 5, 6],
+    userIds = [testUserObject.id],
+    useIsolatedTournamentDivision = false,
+    fixtureTournamentId = testTournamentId,
+    fixtureTournamentDivisionId = tournamentDivisionId,
+  } = {}) => {
+    let targetTournamentId = fixtureTournamentId;
+    let targetDivisionId = fixtureTournamentDivisionId;
+
+    if (useIsolatedTournamentDivision) {
+      const isolated = await createIsolatedTournamentDivision();
+      targetTournamentId = isolated.tournamentId;
+      targetDivisionId = isolated.tournamentDivisionId;
+    }
+
+    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const teamIds = [];
+    const registrationIds = [];
+
+    for (let i = 0; i < seedValues.length; i += 1) {
+      const seed = seedValues[i];
+      const [teamId] = await knex("Team").insert({
+        name: `Pool Team ${i + 1} ${uniqueSuffix}`,
+        public: true,
+        description: "Team used for pool generation tests",
+        created_at: new Date(),
+      });
+      teamIds.push(teamId);
+
+      if (userIds.length) {
+        await knex("UserTeam").insert(
+          userIds.map((userId) => ({
+            user_id: userId,
+            team_id: teamId,
+            role: "player",
+            status: "accepted",
+            created_at: new Date(),
+          }))
+        );
+      }
+
+      const [registrationId] = await knex("Registration").insert({
+        team_id: teamId,
+        tournament_division_id: targetDivisionId,
+        status: "registered",
+        payment_status: "unpaid",
+        seed,
+        created_at: new Date(),
+      });
+      registrationIds.push(registrationId);
+    }
+
+    return {
+      teamIds,
+      registrationIds,
+      seedValues,
+      tournamentId: targetTournamentId,
+      tournamentDivisionId: targetDivisionId,
+    };
+  };
+
   const cleanupScheduleFixture = async (fixture) => {
     if (!fixture) {
       return;
     }
 
-    await knex("Team")
-      .whereIn("id", [fixture.teamOneId, fixture.teamTwoId])
-      .del();
+    const teamIds = fixture.teamIds
+      ? fixture.teamIds
+      : [fixture.teamOneId, fixture.teamTwoId].filter(Boolean);
+
+    if (teamIds.length) {
+      await knex("Team")
+        .whereIn("id", teamIds)
+        .del();
+    }
+
+    if (fixture.tournamentId && fixture.tournamentId !== testTournamentId) {
+      await knex("Tournament")
+        .where({ id: fixture.tournamentId })
+        .del();
+    }
   };
 
   afterAll(async () => {
@@ -798,6 +902,254 @@ describe("Tournament Controller API Tests", () => {
     }
   });
 
+  test("PATCH /api/tournaments/:id/registrations/:registrationId should allow director pool and seed overrides", async () => {
+    const fixture = await createSeededPoolFixture({
+      seedValues: [1, 2],
+      useIsolatedTournamentDivision: true,
+    });
+
+    try {
+      const response = await request(app)
+        .patch(
+          `/api/tournaments/${fixture.tournamentId}/registrations/${fixture.registrationIds[0]}`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          seed: 9,
+          group_id: 2,
+        });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.seed).toBe(9);
+      expect(response.body.group_id).toBe(2);
+
+      const [registration] = await knex("Registration")
+        .where({ id: fixture.registrationIds[0] })
+        .select("seed", "group_id");
+      expect(registration.seed).toBe(9);
+      expect(registration.group_id).toBe(2);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("PATCH /api/tournaments/:id/registrations/reorder should persist drag-drop seed and division updates", async () => {
+    const fixture = await createSeededPoolFixture({
+      seedValues: [1, 2, 3],
+      useIsolatedTournamentDivision: true,
+    });
+
+    try {
+      const [secondDivisionId] = await knex("TournamentDivision").insert({
+        division_id: 1,
+        tournament_id: fixture.tournamentId,
+        registration_fee: 50,
+        created_at: new Date(),
+      });
+
+      const response = await request(app)
+        .patch(`/api/tournaments/${fixture.tournamentId}/registrations/reorder`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          updates: [
+            {
+              registration_id: fixture.registrationIds[0],
+              tournament_division_id: secondDivisionId,
+              seed: 1,
+              group_id: null,
+            },
+            {
+              registration_id: fixture.registrationIds[1],
+              tournament_division_id: fixture.tournamentDivisionId,
+              seed: 1,
+              group_id: 1,
+            },
+            {
+              registration_id: fixture.registrationIds[2],
+              tournament_division_id: fixture.tournamentDivisionId,
+              seed: 2,
+              group_id: 1,
+            },
+          ],
+        });
+
+      expect(response.statusCode).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+
+      const movedRegistration = await knex("Registration")
+        .where({ id: fixture.registrationIds[0] })
+        .first("tournament_division_id", "seed", "group_id");
+      expect(movedRegistration.tournament_division_id).toBe(secondDivisionId);
+      expect(movedRegistration.seed).toBe(1);
+      expect(movedRegistration.group_id).toBeNull();
+
+      const seededRegistration = await knex("Registration")
+        .where({ id: fixture.registrationIds[1] })
+        .first("tournament_division_id", "seed", "group_id");
+      expect(seededRegistration.tournament_division_id).toBe(
+        fixture.tournamentDivisionId
+      );
+      expect(seededRegistration.seed).toBe(1);
+      expect(seededRegistration.group_id).toBe(1);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("PATCH /api/tournaments/:id/registrations/reorder should reject duplicate seeds per division", async () => {
+    const fixture = await createSeededPoolFixture({
+      seedValues: [1, 2],
+      useIsolatedTournamentDivision: true,
+    });
+
+    try {
+      const response = await request(app)
+        .patch(`/api/tournaments/${fixture.tournamentId}/registrations/reorder`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          updates: [
+            {
+              registration_id: fixture.registrationIds[0],
+              tournament_division_id: fixture.tournamentDivisionId,
+              seed: 1,
+              group_id: 1,
+            },
+            {
+              registration_id: fixture.registrationIds[1],
+              tournament_division_id: fixture.tournamentDivisionId,
+              seed: 1,
+              group_id: 2,
+            },
+          ],
+        });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toContain("Duplicate seed detected");
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("GET /api/tournaments/:id/divisions/:divisionId/pools should return unassigned teams before pool generation", async () => {
+    const fixture = await createSeededPoolFixture({
+      seedValues: [1, 2, 3],
+      useIsolatedTournamentDivision: true,
+    });
+
+    try {
+      const response = await request(app)
+        .get(
+          `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/pools`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body.pools).toEqual([]);
+      expect(response.body.unassigned).toHaveLength(3);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/divisions/:divisionId/pools/generate should assign snake-draft pools from seeds", async () => {
+    const fixture = await createSeededPoolFixture({
+      seedValues: [1, 2, 3, 4, 5, 6],
+      useIsolatedTournamentDivision: true,
+    });
+
+    try {
+      const response = await request(app)
+        .post(
+          `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/pools/generate`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({ pool_count: 3 });
+
+      expect(response.statusCode).toBe(200);
+      expect(Array.isArray(response.body.pools)).toBe(true);
+      expect(response.body.pools).toHaveLength(3);
+      expect(response.body.unassigned).toHaveLength(0);
+
+      const registrations = await knex("Registration")
+        .whereIn("id", fixture.registrationIds)
+        .select("seed", "group_id");
+
+      const expectedPoolBySeed = {
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 3,
+        5: 2,
+        6: 1,
+      };
+
+      registrations.forEach((registration) => {
+        expect(registration.group_id).toBe(expectedPoolBySeed[registration.seed]);
+      });
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/divisions/:divisionId/matches/auto-generate should create high-low round-robin matches", async () => {
+    const fixture = await createSeededPoolFixture({
+      seedValues: [1, 2, 3, 4, 5, 6],
+      useIsolatedTournamentDivision: true,
+    });
+
+    try {
+      const poolResponse = await request(app)
+        .post(
+          `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/pools/generate`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({ pool_count: 1 });
+      expect(poolResponse.statusCode).toBe(200);
+
+      const generateResponse = await request(app)
+        .post(
+          `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/matches/auto-generate`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          scheduled_date: dateWithOffset(3),
+          scheduled_time: "09:00",
+          location_prefix: "Pool Round",
+          minutes_between_matches: 15,
+          wins_needed: 2,
+        });
+
+      expect(generateResponse.statusCode).toBe(201);
+      expect(generateResponse.body.candidate_count).toBe(15);
+      expect(generateResponse.body.created_count).toBe(15);
+      expect(generateResponse.body.skipped_count).toBe(0);
+      expect(generateResponse.body.created_matches).toHaveLength(15);
+      expect(generateResponse.body.created_matches[0].seed1).toBe(1);
+      expect(generateResponse.body.created_matches[0].seed2).toBe(6);
+      expect(generateResponse.body.created_matches[1].seed1).toBe(2);
+      expect(generateResponse.body.created_matches[1].seed2).toBe(5);
+      expect(generateResponse.body.created_matches[2].seed1).toBe(3);
+      expect(generateResponse.body.created_matches[2].seed2).toBe(4);
+
+      const duplicateRunResponse = await request(app)
+        .post(
+          `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/matches/auto-generate`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          scheduled_date: dateWithOffset(3),
+          scheduled_time: "09:00",
+          location_prefix: "Pool Round",
+        });
+
+      expect(duplicateRunResponse.statusCode).toBe(201);
+      expect(duplicateRunResponse.body.created_count).toBe(0);
+      expect(duplicateRunResponse.body.skipped_count).toBe(15);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
   test("POST /api/tournaments/:id/matches should create a scheduled match", async () => {
     const fixture = await createScheduleFixture();
     try {
@@ -831,6 +1183,138 @@ describe("Tournament Controller API Tests", () => {
       expect(
         listResponse.body.some((match) => match.id === scheduleResponse.body.id)
       ).toBe(true);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("PATCH /api/tournaments/:id/matches/:matchId should update schedule metadata", async () => {
+    const fixture = await createScheduleFixture();
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "08:30",
+          location: "Court Edit Before",
+        });
+      expect(scheduleResponse.statusCode).toBe(201);
+
+      const patchDate = dateWithOffset(5);
+      const patchResponse = await request(app)
+        .patch(`/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          scheduled_date: patchDate,
+          scheduled_time: "17:45",
+          wins_needed: 3,
+          location: "Court Edit After",
+        });
+
+      expect(patchResponse.statusCode).toBe(200);
+      expect(patchResponse.body.wins_needed).toBe(3);
+      expect(patchResponse.body.location).toBe("Court Edit After");
+      expect(`${patchResponse.body.scheduled_at}`).toContain(patchDate);
+      expect(Number.isNaN(Date.parse(patchResponse.body.scheduled_at))).toBe(false);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches/:matchId/results should save game scores and winner", async () => {
+    const fixture = await createScheduleFixture({
+      teamOneUserIds: [testUserObject.id],
+      teamTwoUserIds: [otherUserObject.id],
+    });
+
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "10:00",
+          location: "Court Results",
+          wins_needed: 2,
+        });
+      expect(scheduleResponse.statusCode).toBe(201);
+
+      const resultsResponse = await request(app)
+        .post(
+          `/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}/results`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          games: [
+            { game_number: 1, team1_score: 21, team2_score: 18 },
+            { game_number: 2, team1_score: 19, team2_score: 21 },
+            { game_number: 3, team1_score: 25, team2_score: 24 },
+          ],
+        });
+
+      expect(resultsResponse.statusCode).toBe(200);
+      expect(resultsResponse.body.winner_id).toBe(fixture.registrationOneId);
+      expect(resultsResponse.body.games).toHaveLength(3);
+      expect(resultsResponse.body.result_summary.team1_wins).toBe(2);
+      expect(resultsResponse.body.result_summary.team2_wins).toBe(1);
+
+      const statsResponse = await request(app)
+        .get(`/api/tournaments/${testTournamentId}/stats`)
+        .set("Authorization", `Bearer ${testUserObject.token}`);
+
+      expect(statsResponse.statusCode).toBe(200);
+      expect(Array.isArray(statsResponse.body.team_stats)).toBe(true);
+      expect(Array.isArray(statsResponse.body.player_stats)).toBe(true);
+
+      const winningTeamStats = statsResponse.body.team_stats.find(
+        (entry) => entry.registration_id === fixture.registrationOneId
+      );
+      const losingTeamStats = statsResponse.body.team_stats.find(
+        (entry) => entry.registration_id === fixture.registrationTwoId
+      );
+
+      expect(winningTeamStats.wins).toBeGreaterThan(0);
+      expect(losingTeamStats.losses).toBeGreaterThan(0);
+      expect(Array.isArray(winningTeamStats.wins_against)).toBe(true);
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches/:matchId/results should reject invalid score payloads", async () => {
+    const fixture = await createScheduleFixture();
+
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "11:00",
+          location: "Court Invalid Scores",
+        });
+      expect(scheduleResponse.statusCode).toBe(201);
+
+      const invalidResultsResponse = await request(app)
+        .post(
+          `/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}/results`
+        )
+        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .send({
+          games: [{ game_number: 1, team1_score: 20, team2_score: 18 }],
+        });
+
+      expect(invalidResultsResponse.statusCode).toBe(400);
+      expect(invalidResultsResponse.body.message).toContain(
+        "Winning score must reach at least"
+      );
     } finally {
       await cleanupScheduleFixture(fixture);
     }

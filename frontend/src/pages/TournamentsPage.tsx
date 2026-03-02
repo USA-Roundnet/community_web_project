@@ -1,236 +1,200 @@
-import { useEffect, useState } from "react";
-import TabButton from "../components/TabButton";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import TabButton from "../components/TabButton";
 import EventCard from "../components/EventCard";
 import { placeholderEvents } from "../utils/placeholderEvents";
-import { API_BASE_URL } from "../config";
+import TournamentPageShell from "../features/tournament-ui/components/TournamentPageShell";
+import InlineBanner from "../features/tournament-ui/components/InlineBanner";
+import { getTournamentList } from "../features/tournament-ui/api/tournamentApi";
 
 const toSafeDate = (dateValue: string | undefined) => {
-    if (!dateValue) {
-        return null;
-    }
+  if (!dateValue) {
+    return null;
+  }
 
-    const parsedDate = new Date(dateValue);
-    if (Number.isNaN(parsedDate.getTime())) {
-        return null;
-    }
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
 
-    return parsedDate;
+  return parsedDate;
 };
 
 const getEventPhase = (event: any) => {
-    const normalizedStatus = (event.registrationStatus || "").toLowerCase();
-    if (
-        normalizedStatus === "upcoming" ||
-        normalizedStatus === "open" ||
-        normalizedStatus === "closing"
-    ) {
-        return "upcoming";
-    }
-    if (normalizedStatus === "in_progress") {
-        return "in_progress";
-    }
-    if (normalizedStatus === "completed" || normalizedStatus === "closed") {
-        return "completed";
-    }
-
-    const now = new Date();
-    const startDate = toSafeDate(event.date);
-    const endDate = toSafeDate(event.endDate || event.date);
-
-    if (!startDate || !endDate) {
-        return "upcoming";
-    }
-
-    if (now < startDate) {
-        return "upcoming";
-    }
-
-    if (now > endDate) {
-        return "completed";
-    }
-
+  const normalizedStatus = (event.registrationStatus || "").toLowerCase();
+  if (
+    normalizedStatus === "upcoming" ||
+    normalizedStatus === "open" ||
+    normalizedStatus === "closing"
+  ) {
+    return "upcoming";
+  }
+  if (normalizedStatus === "in_progress") {
     return "in_progress";
+  }
+  if (normalizedStatus === "completed" || normalizedStatus === "closed") {
+    return "completed";
+  }
+
+  const now = new Date();
+  const startDate = toSafeDate(event.date);
+  const endDate = toSafeDate(event.endDate || event.date);
+
+  if (!startDate || !endDate) {
+    return "upcoming";
+  }
+
+  if (now < startDate) {
+    return "upcoming";
+  }
+
+  if (now > endDate) {
+    return "completed";
+  }
+
+  return "in_progress";
 };
 
 const TournamentsPage = () => {
+  const [activeTab, setActiveTab] = useState("upcoming");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const [activeTab, setActiveTab] = useState("upcoming");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filteredEvents, setFilteredEvents] = useState([]);
-    const [events, setEvents] = useState([]);
-    const [Loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const navigate = useNavigate();
-    const location = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-            setError("Please log in to create a tournament.");
-            navigate("/login", {
-                replace: true,
-                state: { from: "/events/create/" },
-            });
-            return;
+        const data = await getTournamentList();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          setEvents(placeholderEvents);
+          return;
         }
 
-        setLoading(true);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            navigate("/events/create/", { replace: true });
-        } catch {
-            setError("Cannot Create Tournament. Please try again.");
-        } finally {
-            setLoading(false);
-        }
+        const formattedEvents = data.map((tournament: any) => ({
+          date: tournament.start_date || "TBD",
+          endDate: tournament.end_date || tournament.start_date || "TBD",
+          city: tournament.city || "TBD",
+          eventName: tournament.name || "Tournament Event",
+          description:
+            tournament.description || "Join us for this tournament event.",
+          teamsRegistered: tournament.teams_registered || 0,
+          teamLimit: tournament.max_teams || tournament.team_limit || 20,
+          registrationStatus: tournament.status || "upcoming",
+          id: tournament.id,
+        }));
+
+        setEvents(formattedEvents);
+      } catch {
+        setError("Using demo data - backend connection failed");
+        setEvents(placeholderEvents);
+      } finally {
+        setLoading(false);
+      }
     };
-    useEffect(() => {
-        const fetchEvents = async () => {
-            try {
-                const response = await fetch(
-                    `${API_BASE_URL}/api/tournaments`,
-                    {
-                        method: "GET",
-                        headers: {
-                            Accept: "application/json",
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(
-                        `Failed to fetch events: ${response.status} ${errorText}`
-                    );
-                }
+    fetchEvents();
+  }, []);
 
-                const data = await response.json();
+  const filteredEvents = useMemo(() => {
+    let scoped = [...events];
 
-                if (!Array.isArray(data) || data.length === 0) {
-                    console.warn(
-                        "API returned empty or invalid data, using fallback"
-                    );
-                    setEvents(placeholderEvents);
-                    return;
-                }
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      scoped = scoped.filter(
+        (event) =>
+          event.eventName.toLowerCase().includes(query) ||
+          event.city.toLowerCase().includes(query)
+      );
+    }
 
-                const formattedEvents = data.map((tournament) => ({
-                    date: tournament.start_date || "TBD",
-                    endDate: tournament.end_date || tournament.start_date || "TBD",
-                    city: tournament.city || "TBD",
-                    eventName: tournament.name || "Tournament Event",
-                    description:
-                        tournament.description ||
-                        "Join us for this exciting tournament!",
-                    teamsRegistered: tournament.teams_registered || 0,
-                    teamLimit: tournament.max_teams || tournament.team_limit || 20,
-                    registrationStatus: tournament.status || "upcoming",
-                    id: tournament.id,
-                }));
+    if (activeTab === "upcoming") {
+      scoped = scoped.filter((event) => {
+        const phase = getEventPhase(event);
+        return phase === "upcoming" || phase === "in_progress";
+      });
+    } else if (activeTab === "past") {
+      scoped = scoped.filter((event) => getEventPhase(event) === "completed");
+    }
 
-                setEvents(formattedEvents);
-            } catch {
-                setError("Using demo data - backend connection failed");
-                setEvents(placeholderEvents);
-            } finally {
-                setLoading(false);
-            }
-        };
+    return scoped;
+  }, [events, searchQuery, activeTab]);
 
-        fetchEvents();
-    }, []);
+  const handleCreate = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+        state: { from: "/events/create" },
+      });
+      return;
+    }
 
-    useEffect(() => {
-        let filtered = events;
+    navigate("/events/create", { replace: true });
+  };
 
-        if (searchQuery) {
-            filtered = filtered.filter(
-                (event) =>
-                    event.eventName
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()) ||
-                    event.city.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
-        if (activeTab === "upcoming") {
-            filtered = filtered.filter((event) => {
-                const phase = getEventPhase(event);
-                return phase === "upcoming" || phase === "in_progress";
-            });
-        } else if (activeTab === "past") {
-            filtered = filtered.filter((event) => getEventPhase(event) === "completed");
-        }
+  return (
+    <TournamentPageShell
+      kicker="Events"
+      title="Discover Tournaments"
+      subtitle="Search, filter, and open events across upcoming, active, and completed states."
+      maxWidth="1220px"
+      actions={
+        <button
+          onClick={handleCreate}
+          className="op-btn px-4 py-2 bg-[var(--op-primary)] text-white hover:bg-[var(--op-primary-strong)]"
+        >
+          Create Tournament
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        {location.state?.message ? (
+          <InlineBanner tone="success" title="Update" message={location.state.message} />
+        ) : null}
+        {error ? <InlineBanner tone="warning" title="Notice" message={error} /> : null}
 
-        setFilteredEvents(filtered);
-    }, [searchQuery, activeTab, events]);
+        <div className="op-card p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <TabButton active={activeTab === "upcoming"} onClick={() => setActiveTab("upcoming")}>
+              Upcoming
+            </TabButton>
+            <TabButton active={activeTab === "past"} onClick={() => setActiveTab("past")}>
+              Past
+            </TabButton>
+            <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")}>
+              All
+            </TabButton>
+          </div>
 
-    return (
-        <div className="w-full bg-[#f8f8f8] text-black flex items-center justify-center">
-            <div className="min-h-screen w-7/8">
-                <div className="mx-auto px-6 py-8">
-                    <div className="flex flex-col md:flex-row justify-between md:items-center mb-3">
-                        <h1 className="text-2xl font-bold mb-6">
-                            Discover Events
-                        </h1>
-                        <button
-                            onClick={handleCreate}
-                            className="px-3 py-2 text-blue-900 bg-[#f8f8f8] hover:bg-blue-900 hover:text-[#f8f8f8] hover:cursor-pointer border-blue-900 rounded-md transition-colors duration-300"
-                        >
-                            Create a Tournament
-                        </button>
-                    </div>
-                    {location.state?.message ? (
-                        <div className="mb-4 rounded-md border border-green-300 bg-green-50 text-green-800 px-3 py-2 text-sm">
-                            {location.state.message}
-                        </div>
-                    ) : null}
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-                        <div className="flex space-x-4 mb-4 md:mb-0">
-                            <TabButton
-                                active={activeTab === "upcoming"}
-                                onClick={() => setActiveTab("upcoming")}
-                            >
-                                Upcoming
-                            </TabButton>
-                            <TabButton
-                                active={activeTab === "past"}
-                                onClick={() => setActiveTab("past")}
-                            >
-                                Past
-                            </TabButton>
-                            <TabButton
-                                active={activeTab === "all"}
-                                onClick={() => setActiveTab("all")}
-                            >
-                                All
-                            </TabButton>
-                        </div>
-
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="Search events..."
-                                className="px-4 py-2 border rounded-lg w-64"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {filteredEvents.map((event, index) => (
-                            <EventCard key={index} {...event} />
-                        ))}
-                    </div>
-                </div>
-            </div>
+          <input
+            type="text"
+            placeholder="Search by event name or city"
+            className="op-input w-full md:w-80 p-2.5"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
         </div>
-    );
+
+        {loading ? (
+          <InlineBanner tone="info" title="Loading" message="Fetching events..." />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredEvents.map((event, index) => (
+              <EventCard key={event.id || index} {...event} />
+            ))}
+          </div>
+        )}
+      </div>
+    </TournamentPageShell>
+  );
 };
 
 export default TournamentsPage;
