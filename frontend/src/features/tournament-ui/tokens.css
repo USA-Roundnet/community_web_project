@@ -1,0 +1,92 @@
+:root {
+  --op-bg: #f4f6f8;
+  --op-surface: #ffffff;
+  --op-surface-muted: #f7fafc;
+  --op-border: #d7dde5;
+  --op-text: #102130;
+  --op-text-muted: #4d5f71;
+  --op-primary: #0f3f66;
+  --op-primary-strong: #0b2d49;
+  --op-secondary: #37495e;
+  --op-accent: #0f766e;
+  --op-success: #1f8f55;
+  --op-warning: #b9770e;
+  --op-danger: #b93737;
+  --op-focus: #0f766e;
+  --op-shadow-sm: 0 2px 8px rgba(16, 33, 48, 0.06);
+  --op-shadow-md: 0 10px 30px rgba(16, 33, 48, 0.09);
+  --op-radius-sm: 10px;
+  --op-radius-md: 14px;
+  --op-radius-lg: 20px;
+}
+
+.op-display {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+.op-ui {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.op-page {
+  background:
+    radial-gradient(circle at 10% -10%, rgba(15, 63, 102, 0.08), transparent 40%),
+    radial-gradient(circle at 95% 0%, rgba(15, 118, 110, 0.09), transparent 32%),
+    var(--op-bg);
+  color: var(--op-text);
+}
+
+.op-shell {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.op-card {
+  background: var(--op-surface);
+  border: 1px solid var(--op-border);
+  border-radius: var(--op-radius-md);
+  box-shadow: var(--op-shadow-sm);
+}
+
+.op-card-muted {
+  background: var(--op-surface-muted);
+  border: 1px solid var(--op-border);
+  border-radius: var(--op-radius-sm);
+}
+
+.op-btn {
+  border-radius: 999px;
+  font-weight: 600;
+  transition: 160ms ease;
+}
+
+.op-btn:focus-visible,
+.op-input:focus-visible,
+.op-select:focus-visible,
+.op-textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--op-focus) 55%, white);
+  outline-offset: 2px;
+}
+
+.op-input,
+.op-select,
+.op-textarea {
+  border: 1px solid var(--op-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--op-text);
+}
+
+.op-kicker {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.6rem;
+  background: #e8edf4;
+  color: #21405b;
+}

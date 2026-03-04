@@ -1,447 +1,464 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/LoginPage.css";
 import { GEOAPIFY_API_KEY } from "../config";
+import TournamentWizardLayout from "../features/tournament-ui/components/TournamentWizardLayout";
+import TournamentPanel from "../features/tournament-ui/components/TournamentPanel";
+import InlineBanner from "../features/tournament-ui/components/InlineBanner";
+import useLocalStorageState from "../features/tournament-ui/hooks/useLocalStorageState";
+import {
+  CREATE_DRAFT_KEYS,
+  requireAuthForCreateStep,
+} from "../features/tournament-ui/utils/createFlowStorage";
 
 type AddressSuggestion = {
-    label: string;
-    address1: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+  label: string;
+  address1: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+};
+
+type BasicInfoForm = {
+  tournamentName: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  time: string;
+  maxTeams: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+};
+
+const defaultBasicInfo: BasicInfoForm = {
+  tournamentName: "",
+  description: "",
+  startDate: "",
+  endDate: "",
+  time: "",
+  maxTeams: "",
+  address1: "",
+  address2: "",
+  city: "",
+  state: "",
+  zipCode: "",
+  country: "",
 };
 
 const AUTOCOMPLETE_LIMIT = 5;
 const AUTOCOMPLETE_DEBOUNCE_MS = 350;
 
 const toGeoapifySuggestions = (features: any[] = []): AddressSuggestion[] =>
-    features.map((feature) => {
-        const props = feature?.properties || {};
-        const address1 =
-            [props.housenumber, props.street].filter(Boolean).join(" ").trim() ||
-            props.address_line1 ||
-            "";
-        const city =
-            props.city || props.town || props.village || props.hamlet || "";
-        const state = props.state || props.state_code || "";
-        const zipCode = props.postcode || "";
-        const country = props.country || "";
+  features
+    .map((feature) => {
+      const props = feature?.properties || {};
+      const address1 =
+        [props.housenumber, props.street].filter(Boolean).join(" ").trim() ||
+        props.address_line1 ||
+        "";
+      const city = props.city || props.town || props.village || props.hamlet || "";
+      const state = props.state || props.state_code || "";
+      const zipCode = props.postcode || "";
+      const country = props.country || "";
 
-        return {
-            label:
-                props.formatted ||
-                [address1, city, state, country].filter(Boolean).join(", "),
-            address1,
-            city,
-            state,
-            zipCode,
-            country,
-        };
-    });
+      return {
+        label:
+          props.formatted || [address1, city, state, country].filter(Boolean).join(", "),
+        address1,
+        city,
+        state,
+        zipCode,
+        country,
+      };
+    })
+    .filter((entry) => entry.label.length > 0);
+
+const getCompletion = (value: BasicInfoForm) => {
+  const requiredKeys: (keyof BasicInfoForm)[] = [
+    "tournamentName",
+    "startDate",
+    "endDate",
+    "maxTeams",
+    "address1",
+    "city",
+    "state",
+    "zipCode",
+    "country",
+  ];
+
+  const complete = requiredKeys.filter((key) => `${value[key] || ""}`.trim().length > 0)
+    .length;
+
+  return {
+    complete,
+    total: requiredKeys.length,
+  };
+};
 
 const CreateTournamentBasicInfo = () => {
-    const [formData, setFormData] = useState(() => {
-        const saved = localStorage.getItem("tournamentBasicInfo");
-        return saved
-            ? JSON.parse(saved)
-            : {
-                  tournamentName: "",
-                  description: "",
-                  startDate: "",
-                  endDate: "",
-                  time: "",
-                  maxTeams: "",
-                  address1: "",
-                  address2: "",
-                  city: "",
-                  state: "",
-                  zipCode: "",
-                  country: "",
-              };
-    });
+  const navigate = useNavigate();
+  const [formData, setFormData] = useLocalStorageState(
+    CREATE_DRAFT_KEYS.basicInfo,
+    defaultBasicInfo
+  ) as [
+    BasicInfoForm,
+    Dispatch<SetStateAction<BasicInfoForm>>,
+    () => void
+  ];
+  const [error, setError] = useState<string | null>(null);
+  const [addressQuery, setAddressQuery] = useState(formData.address1 || "");
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [addressLoading, setAddressLoading] = useState(false);
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [addressQuery, setAddressQuery] = useState(formData.address1 || "");
-    const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([]);
-    const [addressLoading, setAddressLoading] = useState(false);
-    const navigate = useNavigate();
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const isAddressAutocompleteEnabled = Boolean(GEOAPIFY_API_KEY);
+  const completion = useMemo(() => getCompletion(formData), [formData]);
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const isAddressAutocompleteEnabled = Boolean(GEOAPIFY_API_KEY);
 
-    useEffect(() => {
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-            setError("Please log in to create a tournament.");
-            navigate("/login", {
-                replace: true,
-                state: { from: "/events/create" },
-            });
+  useEffect(() => {
+    requireAuthForCreateStep(navigate, "/events/create");
+  }, [navigate]);
+
+  useEffect(() => {
+    const query = addressQuery.trim();
+    if (query.length < 3 || !isAddressAutocompleteEnabled) {
+      setAddressSuggestions([]);
+      setAddressLoading(false);
+      return;
+    }
+
+    let isActive = true;
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      setAddressLoading(true);
+      try {
+        const geoapifyUrl = new URL("https://api.geoapify.com/v1/geocode/autocomplete");
+        geoapifyUrl.searchParams.set("text", query);
+        geoapifyUrl.searchParams.set("limit", String(AUTOCOMPLETE_LIMIT));
+        geoapifyUrl.searchParams.set("apiKey", GEOAPIFY_API_KEY);
+
+        const response = await fetch(geoapifyUrl.toString(), {
+          signal: abortController.signal,
+        });
+        if (!response.ok) {
+          throw new Error("Address lookup failed");
         }
-    }, [navigate]);
 
-    useEffect(() => {
-        const query = addressQuery.trim();
-        if (query.length < 3 || !isAddressAutocompleteEnabled) {
-            setAddressSuggestions([]);
-            setAddressLoading(false);
-            return;
+        const data = await response.json();
+        if (isActive) {
+          setAddressSuggestions(toGeoapifySuggestions(data?.features));
         }
-
-        let isActive = true;
-        const abortController = new AbortController();
-        const timeoutId = setTimeout(async () => {
-            setAddressLoading(true);
-            try {
-                const geoapifyUrl = new URL(
-                    "https://api.geoapify.com/v1/geocode/autocomplete"
-                );
-                geoapifyUrl.searchParams.set("text", query);
-                geoapifyUrl.searchParams.set("limit", String(AUTOCOMPLETE_LIMIT));
-                geoapifyUrl.searchParams.set("apiKey", GEOAPIFY_API_KEY);
-
-                const response = await fetch(geoapifyUrl.toString(), {
-                    signal: abortController.signal,
-                });
-                if (!response.ok) {
-                    throw new Error("Address lookup failed");
-                }
-
-                const data = await response.json();
-                const suggestions = toGeoapifySuggestions(data?.features);
-
-                setAddressSuggestions(
-                    suggestions.filter((suggestion) => suggestion.label.length > 0)
-                );
-            } catch (fetchError: any) {
-                if (!isActive) {
-                    return;
-                }
-                if (fetchError?.name !== "AbortError") {
-                    setAddressSuggestions([]);
-                }
-            } finally {
-                if (isActive) {
-                    setAddressLoading(false);
-                }
-            }
-        }, AUTOCOMPLETE_DEBOUNCE_MS);
-
-        return () => {
-            isActive = false;
-            clearTimeout(timeoutId);
-            abortController.abort();
-        };
-    }, [addressQuery, isAddressAutocompleteEnabled]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        const updatedData = { ...formData, [name]: value };
-        setFormData(updatedData);
-        if (name === "address1") {
-            setAddressQuery(value);
+      } catch (fetchError: any) {
+        if (isActive && fetchError?.name !== "AbortError") {
+          setAddressSuggestions([]);
         }
-        localStorage.setItem(
-            "tournamentBasicInfo",
-            JSON.stringify(updatedData)
-        );
+      } finally {
+        if (isActive) {
+          setAddressLoading(false);
+        }
+      }
+    }, AUTOCOMPLETE_DEBOUNCE_MS);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+      abortController.abort();
     };
+  }, [addressQuery, isAddressAutocompleteEnabled]);
 
-    const handleAddressSuggestionSelect = (suggestion: AddressSuggestion) => {
-        const updatedData = {
-            ...formData,
-            address1: suggestion.address1 || formData.address1,
-            city: suggestion.city || formData.city,
-            state: suggestion.state || formData.state,
-            zipCode: suggestion.zipCode || formData.zipCode,
-            country: suggestion.country || formData.country,
-        };
+  const setField = (name: keyof BasicInfoForm, value: string) => {
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
 
-        setFormData(updatedData);
-        setAddressQuery(updatedData.address1);
-        setAddressSuggestions([]);
-        localStorage.setItem("tournamentBasicInfo", JSON.stringify(updatedData));
-    };
+    if (name === "address1") {
+      setAddressQuery(value);
+    }
+  };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
+  const handleAddressSuggestionSelect = (suggestion: AddressSuggestion) => {
+    setFormData((previous) => ({
+      ...previous,
+      address1: suggestion.address1 || previous.address1,
+      city: suggestion.city || previous.city,
+      state: suggestion.state || previous.state,
+      zipCode: suggestion.zipCode || previous.zipCode,
+      country: suggestion.country || previous.country,
+    }));
+    setAddressQuery(suggestion.address1 || formData.address1);
+    setAddressSuggestions([]);
+  };
 
-        const requiredFields = [
-            { field: "tournamentName", label: "Tournament Name" },
-            { field: "startDate", label: "Start Date" },
-            { field: "endDate", label: "End Date" },
-            { field: "maxTeams", label: "Max Teams" },
-            { field: "address1", label: "Address" },
-            { field: "city", label: "City" },
-            { field: "state", label: "State" },
-            { field: "zipCode", label: "Zip Code" },
-            { field: "country", label: "Country" },
-        ];
+  const validate = () => {
+    const requiredFields: Array<{ key: keyof BasicInfoForm; label: string }> = [
+      { key: "tournamentName", label: "Tournament Name" },
+      { key: "startDate", label: "Start Date" },
+      { key: "endDate", label: "End Date" },
+      { key: "maxTeams", label: "Max Teams" },
+      { key: "address1", label: "Address" },
+      { key: "city", label: "City" },
+      { key: "state", label: "State" },
+      { key: "zipCode", label: "Zip Code" },
+      { key: "country", label: "Country" },
+    ];
 
-        const missingFields = requiredFields
-            .filter(({ field }) => !formData[field])
-            .map(({ label }) => label);
+    const missing = requiredFields
+      .filter((field) => `${formData[field.key] || ""}`.trim().length === 0)
+      .map((field) => field.label);
 
-        if (missingFields.length > 0) {
-            const fieldsList = missingFields.join(", ");
-            setError(
-                `Please fill in the following required fields: ${fieldsList}`
-            );
-            setIsLoading(false);
-            return;
-        }
+    if (missing.length > 0) {
+      throw new Error(`Complete required fields: ${missing.join(", ")}`);
+    }
 
-        if (formData.startDate < todayIso) {
-            setError("Start Date cannot be before today.");
-            setIsLoading(false);
-            return;
-        }
+    if (formData.startDate < todayIso) {
+      throw new Error("Start Date cannot be before today.");
+    }
 
-        if (formData.endDate < formData.startDate) {
-            setError("End Date must be on or after Start Date.");
-            setIsLoading(false);
-            return;
-        }
+    if (formData.endDate < formData.startDate) {
+      throw new Error("End Date must be on or after Start Date.");
+    }
 
-        try {
-            localStorage.setItem(
-                "tournamentBasicInfo",
-                JSON.stringify(formData)
-            );
-            navigate("/events/create/format", { replace: true });
-        } catch {
-            setError("Tournament creation failed. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const parsedMaxTeams = Number(formData.maxTeams);
+    if (!Number.isInteger(parsedMaxTeams) || parsedMaxTeams <= 0) {
+      throw new Error("Max Teams must be a positive integer.");
+    }
+  };
 
-    return (
-        <div className="min-h-[90vh] w-full flex items-center justify-center text-black">
-            <div className="w-full max-w-4xl flex flex-col gap-2 p-4 sm:p-6 md:p-8 lg:p-10">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
-                    Create Tournament
-                </h1>
-                <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-4 text-center">
-                    Basic Info
-                </h2>
-                {error && (
-                    <div className="text-red-600 text-center font-semibold mb-2">
-                        {error}
-                    </div>
-                )}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <input
-                            className="w-full p-3 sm:p-4 rounded-md text-black border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold text-sm sm:text-base"
-                            type="text"
-                            id="tournamentName"
-                            name="tournamentName"
-                            value={formData.tournamentName}
-                            onChange={handleChange}
-                            placeholder="Tournament Name"
-                            required
-                        />
-                    </div>
+  const handleNext = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
 
-                    <div>
-                        <textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            placeholder="Description"
-                            className="w-full p-3 sm:p-4 rounded-md text-black border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 min-h-[80px] font-medium text-sm sm:text-base"
-                        />
-                    </div>
+    try {
+      validate();
+      navigate("/events/create/format", { replace: true });
+    } catch (validationError: any) {
+      setError(validationError?.message || "Please review your entries.");
+    }
+  };
 
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="startDate"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                Start Date
-                            </label>
-                            <input
-                                type="date"
-                                id="startDate"
-                                name="startDate"
-                                value={formData.startDate}
-                                onChange={handleChange}
-                                min={todayIso}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            />
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="endDate"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                End Date
-                            </label>
-                            <input
-                                type="date"
-                                id="endDate"
-                                name="endDate"
-                                value={formData.endDate}
-                                onChange={handleChange}
-                                min={formData.startDate || todayIso}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="time"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                Start Time (optional)
-                            </label>
-                            <input
-                                type="time"
-                                id="time"
-                                name="time"
-                                value={formData.time}
-                                onChange={handleChange}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                            />
-                        </div>
-                        <div className="flex-1 flex flex-col">
-                            <label
-                                htmlFor="maxTeams"
-                                className="text-blue-900 font-semibold mb-1 text-sm sm:text-base"
-                            >
-                                Max Teams
-                            </label>
-                            <input
-                                type="number"
-                                id="maxTeams"
-                                name="maxTeams"
-                                value={formData.maxTeams}
-                                onChange={handleChange}
-                                min={1}
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            />
-                        </div>
-                    </div>
+  const summary = (
+    <div className="space-y-3 text-sm text-[var(--op-text-muted)]">
+      <p>
+        Step completion: <span className="font-semibold text-[var(--op-text)]">{completion.complete}/{completion.total}</span>
+      </p>
+      <p>Draft status: <span className="font-semibold text-[var(--op-accent)]">Saved automatically</span></p>
+      <ul className="list-disc list-inside space-y-1">
+        <li>Set valid dates (start cannot be in the past).</li>
+        <li>Define max team capacity.</li>
+        <li>Confirm tournament location details.</li>
+      </ul>
+    </div>
+  );
 
-                    <div>
-                        <label
-                            htmlFor="location"
-                            className="text-blue-900 font-semibold mb-2 block text-sm sm:text-base"
-                        >
-                            Location
-                        </label>
-                        <div className="flex flex-col gap-3">
-                            <input
-                                type="text"
-                                id="address1"
-                                name="address1"
-                                value={formData.address1}
-                                onChange={handleChange}
-                                placeholder="Address 1 (start typing for suggestions)"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                required
-                            />
-                            {addressLoading && (
-                                <p className="text-sm text-blue-900">Looking up addresses...</p>
-                            )}
-                            {addressSuggestions.length > 0 && (
-                                <div className="rounded-md border border-gray-300 bg-white shadow-sm max-h-56 overflow-y-auto">
-                                    {addressSuggestions.map((suggestion, index) => (
-                                        <button
-                                            key={`${suggestion.label}-${index}`}
-                                            type="button"
-                                            className="hover:cursor-pointer w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
-                                            onClick={() =>
-                                                handleAddressSuggestionSelect(suggestion)
-                                            }
-                                        >
-                                            {suggestion.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            {!isAddressAutocompleteEnabled && addressQuery.trim().length >= 3 && (
-                                <p className="text-xs text-gray-600">
-                                    Address suggestions are currently unavailable. You can keep entering your address manually.
-                                </p>
-                            )}
-                            <input
-                                type="text"
-                                id="address2"
-                                name="address2"
-                                value={formData.address2}
-                                onChange={handleChange}
-                                placeholder="Address 2"
-                                className="p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                            />
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <input
-                                    type="text"
-                                    id="city"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    placeholder="City"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    id="state"
-                                    name="state"
-                                    value={formData.state}
-                                    onChange={handleChange}
-                                    placeholder="State"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                    required
-                                />
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <input
-                                    type="text"
-                                    id="zipCode"
-                                    name="zipCode"
-                                    value={formData.zipCode}
-                                    onChange={handleChange}
-                                    placeholder="Zip"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    id="country"
-                                    name="country"
-                                    value={formData.country}
-                                    onChange={handleChange}
-                                    placeholder="Country"
-                                    className="flex-1 p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 text-sm sm:text-base"
-                                    required
-                                />
-                            </div>
-                        </div>
-                    </div>
+  return (
+    <TournamentWizardLayout
+      step={1}
+      title="Create Tournament"
+      subtitle="Capture core logistics first. This draft auto-saves and powers all downstream setup."
+      summary={summary}
+      banner={
+        error ? (
+          <InlineBanner tone="error" title="Validation issue" message={error} />
+        ) : (
+          <InlineBanner
+            tone="info"
+            title="Operator tip"
+            message="Use a full street address so scheduling and participant communications stay accurate."
+          />
+        )
+      }
+    >
+      <TournamentPanel title="Basic Information" subtitle="Fields marked as required are needed before moving to format setup.">
+        <form onSubmit={handleNext} className="space-y-4 op-ui">
+          <div>
+            <label htmlFor="tournamentName" className="block text-sm font-semibold mb-1">Tournament Name</label>
+            <input
+              id="tournamentName"
+              value={formData.tournamentName}
+              onChange={(event) => setField("tournamentName", event.target.value)}
+              className="op-input w-full p-3"
+              placeholder="USAR Regional Qualifier"
+              required
+            />
+          </div>
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="hover:cursor-pointer w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-base sm:text-lg shadow hover:bg-blue-800 transition-colors duration-300"
-                    >
-                        {isLoading ? "Next..." : "Next"}
-                    </button>
-                </form>
+          <div>
+            <label htmlFor="description" className="block text-sm font-semibold mb-1">Description</label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(event) => setField("description", event.target.value)}
+              className="op-textarea w-full p-3 min-h-[96px]"
+              placeholder="Add context for directors, teams, and spectators."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-semibold mb-1">Start Date</label>
+              <input
+                id="startDate"
+                type="date"
+                min={todayIso}
+                value={formData.startDate}
+                onChange={(event) => setField("startDate", event.target.value)}
+                className="op-input w-full p-3"
+                required
+              />
             </div>
-        </div>
-    );
+            <div>
+              <label htmlFor="endDate" className="block text-sm font-semibold mb-1">End Date</label>
+              <input
+                id="endDate"
+                type="date"
+                min={formData.startDate || todayIso}
+                value={formData.endDate}
+                onChange={(event) => setField("endDate", event.target.value)}
+                className="op-input w-full p-3"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="time" className="block text-sm font-semibold mb-1">Start Time (optional)</label>
+              <input
+                id="time"
+                type="time"
+                value={formData.time}
+                onChange={(event) => setField("time", event.target.value)}
+                className="op-input w-full p-3"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="maxTeams" className="block text-sm font-semibold mb-1">Max Teams</label>
+            <input
+              id="maxTeams"
+              type="number"
+              min={1}
+              value={formData.maxTeams}
+              onChange={(event) => setField("maxTeams", event.target.value)}
+              className="op-input w-full p-3"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="address1" className="block text-sm font-semibold mb-1">Address Line 1</label>
+            <input
+              id="address1"
+              value={formData.address1}
+              onChange={(event) => setField("address1", event.target.value)}
+              className="op-input w-full p-3"
+              placeholder="123 Example Avenue"
+              required
+            />
+            {isAddressAutocompleteEnabled ? (
+              <p className="mt-1 text-xs text-[var(--op-text-muted)]">
+                Address suggestions appear after 3 characters.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-[var(--op-warning)]">
+                Address autocomplete disabled (missing `VITE_GEOAPIFY_API_KEY`).
+              </p>
+            )}
+            {addressLoading ? <p className="mt-1 text-xs text-[var(--op-text-muted)]">Loading suggestions...</p> : null}
+            {addressSuggestions.length > 0 ? (
+              <div className="mt-2 border border-[var(--op-border)] rounded-xl overflow-hidden">
+                {addressSuggestions.map((suggestion, index) => (
+                  <button
+                    key={`${suggestion.label}-${index}`}
+                    type="button"
+                    onClick={() => handleAddressSuggestionSelect(suggestion)}
+                    className="w-full text-left p-2 text-sm hover:bg-[var(--op-surface-muted)] border-b border-[var(--op-border)] last:border-0"
+                  >
+                    {suggestion.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <label htmlFor="address2" className="block text-sm font-semibold mb-1">Address Line 2</label>
+            <input
+              id="address2"
+              value={formData.address2}
+              onChange={(event) => setField("address2", event.target.value)}
+              className="op-input w-full p-3"
+              placeholder="Suite, building, etc."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="city" className="block text-sm font-semibold mb-1">City</label>
+              <input
+                id="city"
+                value={formData.city}
+                onChange={(event) => setField("city", event.target.value)}
+                className="op-input w-full p-3"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="state" className="block text-sm font-semibold mb-1">State / Province</label>
+              <input
+                id="state"
+                value={formData.state}
+                onChange={(event) => setField("state", event.target.value)}
+                className="op-input w-full p-3"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="zipCode" className="block text-sm font-semibold mb-1">Zip / Postal Code</label>
+              <input
+                id="zipCode"
+                value={formData.zipCode}
+                onChange={(event) => setField("zipCode", event.target.value)}
+                className="op-input w-full p-3"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className="block text-sm font-semibold mb-1">Country</label>
+              <input
+                id="country"
+                value={formData.country}
+                onChange={(event) => setField("country", event.target.value)}
+                className="op-input w-full p-3"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button
+              type="submit"
+              className="op-btn px-5 py-2.5 bg-[var(--op-primary)] text-white hover:bg-[var(--op-primary-strong)]"
+            >
+              Continue to Format
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/events")}
+              className="op-btn px-5 py-2.5 bg-white border border-[var(--op-border)] text-[var(--op-secondary)] hover:bg-[var(--op-surface-muted)]"
+            >
+              Cancel Setup
+            </button>
+          </div>
+        </form>
+      </TournamentPanel>
+    </TournamentWizardLayout>
+  );
 };
 
 export default CreateTournamentBasicInfo;

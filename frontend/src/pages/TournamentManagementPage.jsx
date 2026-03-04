@@ -1,158 +1,225 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { API_BASE_URL } from "../config";
+import TournamentPageShell from "../features/tournament-ui/components/TournamentPageShell";
+import TournamentPanel from "../features/tournament-ui/components/TournamentPanel";
+import InlineBanner from "../features/tournament-ui/components/InlineBanner";
+import StatusPill from "../features/tournament-ui/components/StatusPill";
+import { deleteTournament, getTournament } from "../features/tournament-ui/api/tournamentApi";
 
 const formatDate = (dateValue) => {
-    if (!dateValue) {
-        return "TBD";
-    }
+  if (!dateValue) {
+    return "TBD";
+  }
 
-    const parsedDate = new Date(dateValue);
-    if (Number.isNaN(parsedDate.getTime())) {
-        return "TBD";
-    }
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "TBD";
+  }
 
-    return parsedDate.toLocaleDateString();
+  return parsedDate.toLocaleDateString();
 };
 
-const formatStatus = (status) => {
-    switch ((status || "").toLowerCase()) {
-        case "upcoming":
-            return "Upcoming";
-        case "in_progress":
-            return "In Progress";
-        case "completed":
-            return "Completed";
-        default:
-            return "Unknown";
-    }
+const statusToTone = (status) => {
+  switch ((status || "").toLowerCase()) {
+    case "upcoming":
+      return "upcoming";
+    case "in_progress":
+      return "in_progress";
+    case "completed":
+      return "completed";
+    default:
+      return "neutral";
+  }
 };
 
 const TournamentManagementPage = () => {
-    const { id } = useParams();
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [tournament, setTournament] = useState(null);
-    const [error, setError] = useState("");
-    const [deleting, setDeleting] = useState(false);
+  const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const loadTournament = async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/tournaments/${id}`);
-                if (!response.ok) {
-                    throw new Error("Unable to load tournament details.");
-                }
-                const data = await response.json();
-                setTournament(data);
-            } catch (err) {
-                setError(err?.message || "Unable to load tournament details.");
-            }
-        };
+  const [tournament, setTournament] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
-        loadTournament();
-    }, [id]);
-
-    const handleDeleteTournament = async () => {
-        const shouldDelete = window.confirm(
-            "Are you sure you want to delete this tournament? This action cannot be undone."
-        );
-
-        if (!shouldDelete) {
-            return;
-        }
-
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-            setError("Please log in to delete this tournament.");
-            navigate("/login", {
-                replace: true,
-                state: { from: `/events/${id}/manage` },
-            });
-            return;
-        }
-
-        try {
-            setDeleting(true);
-            setError("");
-            const response = await fetch(`${API_BASE_URL}/api/tournaments/${id}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                const errorPayload = await response.json().catch(() => ({}));
-                throw new Error(
-                    errorPayload?.message ||
-                        "Unable to delete the tournament. Please try again."
-                );
-            }
-
-            navigate("/events", {
-                replace: true,
-                state: {
-                    message: `Tournament "${tournament?.name || id}" deleted successfully.`,
-                },
-            });
-        } catch (err) {
-            setError(err?.message || "Unable to delete the tournament.");
-        } finally {
-            setDeleting(false);
-        }
+  useEffect(() => {
+    const loadTournament = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await getTournament(id);
+        setTournament(data);
+      } catch (loadError) {
+        setError(loadError?.message || "Unable to load tournament details.");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    return (
-        <div className="min-h-[90vh] w-full flex items-center justify-center text-black px-4">
-            <div className="w-full max-w-3xl bg-white rounded-lg border border-gray-200 p-6 sm:p-8 shadow-sm">
-                <h1 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-2">
-                    Tournament Management
-                </h1>
-                {location.state?.message ? (
-                    <p className="text-green-700 font-semibold mb-4">
-                        {location.state.message}
-                    </p>
-                ) : null}
-                {error ? (
-                    <p className="text-red-600">{error}</p>
-                ) : (
-                    <div className="space-y-1">
-                        <p><span className="font-semibold">Tournament ID:</span> {tournament?.id || id}</p>
-                        <p><span className="font-semibold">Name:</span> {tournament?.name || "Loading..."}</p>
-                        <p><span className="font-semibold">Location:</span> {[tournament?.city, tournament?.state_province, tournament?.country].filter(Boolean).join(", ") || "Loading..."}</p>
-                        <p><span className="font-semibold">Format:</span> {tournament?.format || "Loading..."}</p>
-                        <p><span className="font-semibold">Status:</span> {formatStatus(tournament?.status)}</p>
-                        <p><span className="font-semibold">Dates:</span> {formatDate(tournament?.start_date)} - {formatDate(tournament?.end_date)}</p>
-                        <div className="mt-6 flex flex-wrap gap-3">
-                            <button
-                                type="button"
-                                onClick={() => navigate(`/events/${id}`)}
-                                className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200 transition-colors"
-                            >
-                                View Event Page
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate(`/events/${id}/edit`)}
-                                className="px-4 py-2 rounded-md bg-blue-900 text-white hover:bg-blue-800 transition-colors"
-                            >
-                                Edit Tournament
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleDeleteTournament}
-                                disabled={deleting}
-                                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:bg-gray-400"
-                            >
-                                {deleting ? "Deleting..." : "Delete Tournament"}
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+    loadTournament();
+  }, [id]);
+
+  const runDelete = async () => {
+    const shouldDelete = window.confirm(
+      "Delete this tournament? This action cannot be undone."
     );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      navigate("/login", {
+        replace: true,
+        state: { from: `/events/${id}/manage` },
+      });
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await deleteTournament(token, id);
+      navigate("/events", {
+        replace: true,
+        state: {
+          message: `Tournament "${tournament?.name || id}" deleted successfully.`,
+        },
+      });
+    } catch (deleteError) {
+      setError(deleteError?.message || "Unable to delete this tournament.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const nextActions = useMemo(
+    () => [
+      {
+        label: "Review details",
+        description: "Inspect divisions, registration roster, and published schedule.",
+        action: () => navigate(`/events/${id}/details`),
+      },
+      {
+        label: "Edit tournament",
+        description: "Update logistics, dates, format, and capacity.",
+        action: () => navigate(`/events/${id}/edit`),
+      },
+      {
+        label: "Manage scheduling",
+        description: "Seed pools, schedule matches, and record outcomes.",
+        action: () => navigate(`/events/${id}/schedule`),
+      },
+      {
+        label: "Open participant view",
+        description: "Check what players and teams currently see.",
+        action: () => navigate(`/events/${id}`),
+      },
+    ],
+    [id, navigate]
+  );
+
+  return (
+    <TournamentPageShell
+      kicker="Director Console"
+      title="Tournament Management"
+      subtitle="Use this command page to navigate core tournament operations quickly and safely."
+      actions={
+        <>
+          <button
+            type="button"
+            onClick={() => navigate("/events")}
+            className="op-btn px-4 py-2 bg-white border border-[var(--op-border)] text-[var(--op-secondary)] hover:bg-[var(--op-surface-muted)]"
+          >
+            Back to Events
+          </button>
+          <button
+            type="button"
+            onClick={runDelete}
+            disabled={deleting}
+            className="op-btn px-4 py-2 bg-[var(--op-danger)] text-white hover:brightness-95"
+          >
+            {deleting ? "Deleting..." : "Delete Tournament"}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {location.state?.message ? (
+          <InlineBanner tone="success" title="Update" message={location.state.message} />
+        ) : null}
+        {error ? <InlineBanner tone="error" title="Error" message={error} /> : null}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <TournamentPanel title="Tournament Snapshot" className="lg:col-span-7">
+            {loading ? (
+              <p className="op-ui text-sm text-[var(--op-text-muted)]">Loading tournament...</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 op-ui text-sm">
+                <div className="op-card-muted p-3">
+                  <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Name</p>
+                  <p className="font-semibold">{tournament?.name || "-"}</p>
+                </div>
+                <div className="op-card-muted p-3">
+                  <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Status</p>
+                  <div className="mt-1">
+                    <StatusPill
+                      label={(tournament?.status || "unknown").replace("_", " ")}
+                      tone={statusToTone(tournament?.status)}
+                    />
+                  </div>
+                </div>
+                <div className="op-card-muted p-3">
+                  <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Location</p>
+                  <p className="font-semibold">
+                    {[tournament?.city, tournament?.state_province, tournament?.country]
+                      .filter(Boolean)
+                      .join(", ") || "-"}
+                  </p>
+                </div>
+                <div className="op-card-muted p-3">
+                  <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Format</p>
+                  <p className="font-semibold">{tournament?.format || "-"}</p>
+                </div>
+                <div className="op-card-muted p-3">
+                  <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Date Range</p>
+                  <p className="font-semibold">
+                    {formatDate(tournament?.start_date)} - {formatDate(tournament?.end_date)}
+                  </p>
+                </div>
+                <div className="op-card-muted p-3">
+                  <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Max Teams</p>
+                  <p className="font-semibold">{tournament?.max_teams ?? "-"}</p>
+                </div>
+              </div>
+            )}
+          </TournamentPanel>
+
+          <TournamentPanel
+            title="Next Actions"
+            subtitle="Keep tournament operations moving with minimal context switching."
+            className="lg:col-span-5"
+          >
+            <div className="space-y-2">
+              {nextActions.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={item.action}
+                  className="w-full text-left op-card-muted p-3 hover:border-[var(--op-primary)] hover:bg-white transition"
+                >
+                  <p className="op-display font-semibold text-[var(--op-primary-strong)] text-sm">
+                    {item.label}
+                  </p>
+                  <p className="op-ui text-xs text-[var(--op-text-muted)] mt-1">{item.description}</p>
+                </button>
+              ))}
+            </div>
+          </TournamentPanel>
+        </div>
+      </div>
+    </TournamentPageShell>
+  );
 };
 
 export default TournamentManagementPage;

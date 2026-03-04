@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const db = require("../knex-config");
 const { UnauthorizedError } = require("../utils/customErrors");
+const { getJwtSecret } = require("../utils/authConfig");
 
 const verifyToken = async (req, res, next) => {
   try {
@@ -12,8 +13,15 @@ const verifyToken = async (req, res, next) => {
     }
 
     let decoded;
+    let jwtSecret;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      jwtSecret = getJwtSecret();
+    } catch (configError) {
+      return next(configError);
+    }
+
+    try {
+      decoded = jwt.verify(token, jwtSecret, {
         algorithms: ["HS256"],
       });
       req.user = { id: decoded.id, role: decoded.role || "user" };

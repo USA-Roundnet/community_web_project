@@ -1,146 +1,170 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
+import TournamentWizardLayout from "../features/tournament-ui/components/TournamentWizardLayout";
+import TournamentPanel from "../features/tournament-ui/components/TournamentPanel";
+import InlineBanner from "../features/tournament-ui/components/InlineBanner";
+import useLocalStorageState from "../features/tournament-ui/hooks/useLocalStorageState";
+import {
+  CREATE_DRAFT_KEYS,
+  hasDraft,
+  requireAuthForCreateStep,
+} from "../features/tournament-ui/utils/createFlowStorage";
+
+type FormatForm = {
+  format: string;
+  bracketStyle: string;
+  rules: string;
+};
+
+const defaultFormat: FormatForm = {
+  format: "",
+  bracketStyle: "",
+  rules: "",
+};
 
 const CreateTournamentFormat = () => {
-    const [formData, setFormData] = useState(() => {
-        const saved = localStorage.getItem("tournamentFormat");
-        return saved
-            ? JSON.parse(saved)
-            : {
-                  format: "",
-                  bracketStyle: "",
-                  rules: "",
-              };
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useLocalStorageState(
+    CREATE_DRAFT_KEYS.format,
+    defaultFormat
+  ) as [FormatForm, Dispatch<SetStateAction<FormatForm>>, () => void];
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-            setError("Please log in to continue.");
-            navigate("/login", {
-                replace: true,
-                state: { from: "/events/create/format" },
-            });
-        }
-    }, [navigate]);
+  useEffect(() => {
+    const token = requireAuthForCreateStep(navigate, "/events/create/format");
+    if (!token) {
+      return;
+    }
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        const updatedData = { ...formData, [name]: value };
-        setFormData(updatedData);
-        localStorage.setItem("tournamentFormat", JSON.stringify(updatedData));
+    if (!hasDraft(CREATE_DRAFT_KEYS.basicInfo)) {
+      navigate("/events/create", { replace: true });
+    }
+  }, [navigate]);
+
+  const completion = useMemo(() => {
+    const fields: Array<keyof FormatForm> = ["format", "bracketStyle"];
+    const complete = fields.filter((field) => `${formData[field]}`.trim().length > 0)
+      .length;
+    return {
+      complete,
+      total: fields.length,
     };
+  }, [formData]);
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
+  const setField = (name: keyof FormatForm, value: string) => {
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
 
-        if (!formData.format || !formData.bracketStyle) {
-            setError("All fields are required.");
-            setIsLoading(false);
-            return;
-        }
+  const handleNext = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
 
-        try {
-            localStorage.setItem("tournamentFormat", JSON.stringify(formData));
-            navigate("/events/create/registration", { replace: true });
-        } catch {
-            setError("Tournament creation failed. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    if (!formData.format || !formData.bracketStyle) {
+      setError("Format and bracket style are required.");
+      return;
+    }
 
-    return (
-        <div className="min-h-[90vh] w-full flex items-center justify-center text-black">
-            <div className="w-full max-w-4xl flex flex-col gap-4 p-4 sm:p-6 md:p-8 lg:p-10">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-2 text-center tracking-tight">
-                    Create Tournament
-                </h1>
-                <h2 className="text-lg sm:text-xl font-semibold text-blue-800 mb-4 text-center">
-                    Format
-                </h2>
-                {error && (
-                    <div className="text-red-600 text-center font-semibold mb-2">
-                        {error}
-                    </div>
-                )}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label
-                            htmlFor="format"
-                            className="text-blue-900 font-semibold mb-1 block text-sm sm:text-base"
-                        >
-                            Format
-                        </label>
-                        <select
-                            id="format"
-                            name="format"
-                            value={formData.format}
-                            onChange={handleChange}
-                            className="w-full p-3 sm:p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold text-sm sm:text-base"
-                            required
-                        >
-                            <option value="">Select format</option>
-                            <option value="classic">Classic</option>
-                            <option value="college">College</option>
-                            <option value="asl">ASL</option>
-                        </select>
-                    </div>
+    navigate("/events/create/registration", { replace: true });
+  };
 
-                    <div>
-                        <label
-                            htmlFor="bracketStyle"
-                            className="text-blue-900 font-semibold mb-1 block text-sm sm:text-base"
-                        >
-                            Bracket Style
-                        </label>
-                        <select
-                            id="bracketStyle"
-                            name="bracketStyle"
-                            value={formData.bracketStyle}
-                            onChange={handleChange}
-                            className="w-full p-3 sm:p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 font-semibold text-sm sm:text-base"
-                            required
-                        >
-                            <option value="">Select Bracket</option>
-                            <option value="single">Single Elimination</option>
-                            <option value="double">Double Elimination</option>
-                        </select>
-                    </div>
+  const summary = (
+    <div className="space-y-3 text-sm text-[var(--op-text-muted)]">
+      <p>
+        Step completion: <span className="font-semibold text-[var(--op-text)]">{completion.complete}/{completion.total}</span>
+      </p>
+      <p>Draft status: <span className="font-semibold text-[var(--op-accent)]">Saved automatically</span></p>
+      <ul className="list-disc list-inside space-y-1">
+        <li>Select sanctioned format profile.</li>
+        <li>Define elimination bracket model.</li>
+        <li>Add optional rules context for directors.</li>
+      </ul>
+    </div>
+  );
 
-                    <div>
-                        <label
-                            htmlFor="rules"
-                            className="text-blue-900 font-semibold mb-1 block text-sm sm:text-base"
-                        >
-                            Rules
-                        </label>
-                        <textarea
-                            id="rules"
-                            name="rules"
-                            value={formData.rules}
-                            onChange={handleChange}
-                            placeholder="Ruleset"
-                            className="w-full p-3 sm:p-4 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none bg-blue-50 min-h-[80px] font-medium text-sm sm:text-base"
-                        />
-                    </div>
+  return (
+    <TournamentWizardLayout
+      step={2}
+      title="Tournament Format"
+      subtitle="Set the competition model so scheduling and score validation stay aligned with expectations."
+      summary={summary}
+      banner={
+        error ? (
+          <InlineBanner tone="error" title="Validation issue" message={error} />
+        ) : (
+          <InlineBanner
+            tone="info"
+            title="Operator tip"
+            message="Rules entered here are displayed to staff and can be expanded later in tournament management."
+          />
+        )
+      }
+    >
+      <TournamentPanel title="Format Configuration" subtitle="Choose the format profile and bracket strategy used across this event.">
+        <form onSubmit={handleNext} className="space-y-4 op-ui">
+          <div>
+            <label htmlFor="format" className="block text-sm font-semibold mb-1">Format</label>
+            <select
+              id="format"
+              value={formData.format}
+              onChange={(event) => setField("format", event.target.value)}
+              className="op-select w-full p-3"
+              required
+            >
+              <option value="">Select format</option>
+              <option value="classic">Classic</option>
+              <option value="college">College</option>
+              <option value="asl">ASL</option>
+            </select>
+          </div>
 
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 mt-2 rounded-md bg-blue-900 text-white font-bold text-base sm:text-lg shadow hover:bg-blue-800 transition-colors hover:cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                    >
-                        {isLoading ? "Next..." : "Next"}
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
+          <div>
+            <label htmlFor="bracketStyle" className="block text-sm font-semibold mb-1">Bracket Style</label>
+            <select
+              id="bracketStyle"
+              value={formData.bracketStyle}
+              onChange={(event) => setField("bracketStyle", event.target.value)}
+              className="op-select w-full p-3"
+              required
+            >
+              <option value="">Select bracket style</option>
+              <option value="single">Single Elimination</option>
+              <option value="double">Double Elimination</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="rules" className="block text-sm font-semibold mb-1">Rules / Notes</label>
+            <textarea
+              id="rules"
+              value={formData.rules}
+              onChange={(event) => setField("rules", event.target.value)}
+              className="op-textarea w-full p-3 min-h-[110px]"
+              placeholder="Optional tournament-specific notes..."
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate("/events/create", { replace: true })}
+              className="op-btn px-5 py-2.5 bg-white border border-[var(--op-border)] text-[var(--op-secondary)] hover:bg-[var(--op-surface-muted)]"
+            >
+              Back to Basics
+            </button>
+            <button
+              type="submit"
+              className="op-btn px-5 py-2.5 bg-[var(--op-primary)] text-white hover:bg-[var(--op-primary-strong)]"
+            >
+              Continue to Registration Setup
+            </button>
+          </div>
+        </form>
+      </TournamentPanel>
+    </TournamentWizardLayout>
+  );
 };
 
 export default CreateTournamentFormat;

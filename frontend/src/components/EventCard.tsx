@@ -1,95 +1,74 @@
 import { useNavigate } from "react-router-dom";
+import StatusPill from "../features/tournament-ui/components/StatusPill";
 
 interface EventCardProps {
-    date: string;
-    city: string;
-    eventName: string;
-    description: string;
-    teamsRegistered: number;
-    teamLimit: number;
-    registrationStatus: string;
-    id?: number;
-    image?: string;
+  date: string;
+  endDate?: string;
+  city: string;
+  eventName: string;
+  description: string;
+  teamsRegistered: number;
+  teamLimit: number;
+  registrationStatus: string;
+  id?: number;
 }
 
-const getRegistrationText = (registrationStatus: string) => {
-    switch (registrationStatus?.toLowerCase()) {
-        case "upcoming":
-            return "Status: Upcoming";
-        case "in_progress":
-            return "Status: In Progress";
-        case "completed":
-            return "Status: Completed";
-        case "open":
-            return "Registration Open";
-        case "closing":
-            return "Registration Closes Soon";
-        case "closed":
-            return "Registration Closed";
-        default:
-            return "";
-    }
-};
-
-const getRegistrationColor = (registrationStatus: string) => {
-    switch (registrationStatus?.toLowerCase()) {
-        case "upcoming":
-            return "text-blue-600";
-        case "in_progress":
-            return "text-green-600";
-        case "completed":
-            return "text-gray-600";
-        case "open":
-            return "text-green-500";
-        case "closing":
-            return "text-yellow-500";
-        case "closed":
-            return "text-red-500";
-        default:
-            return "text-gray-500";
-    }
+const toneFromStatus = (status: string) => {
+  const normalized = (status || "").toLowerCase();
+  if (normalized === "upcoming" || normalized === "open" || normalized === "closing") {
+    return "upcoming";
+  }
+  if (normalized === "in_progress") {
+    return "in_progress";
+  }
+  if (normalized === "completed" || normalized === "closed") {
+    return "completed";
+  }
+  return "neutral";
 };
 
 const EventCard = (event: EventCardProps) => {
-    const navigate = useNavigate();
-    const handleClick = () => {
-        navigate(`/events/${event.id}`, {
-            state: { event },
-        });
-    };
+  const navigate = useNavigate();
 
-    return (
-        <div
-            className="flex items-stretch w-full h-[20vh] bg-white rounded-lg shadow hover:shadow-md transition-all cursor-pointer"
-            onClick={handleClick}
-        >
-            <div className="relative h-full w-20 bg-gray-100 rounded-l-lg overflow-hidden flex-shrink-0">
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <img
-                        src={event.image || "/default-event-image.jpg"}
-                        alt={event.eventName}
-                        className="h-full w-auto transform -rotate-90 max-w-none"
-                    />
-                </div>
-            </div>
-            <div className="flex-1 min-w-0 px-4 sm:px-6 flex flex-col justify-center">
-                <div className="text-gray-500 text-sm">{event.date}</div>
-                <h3 className="text-lg sm:text-xl font-semibold mt-1 truncate">{event.eventName}</h3>
-                <div className="text-gray-600 text-sm mt-1 truncate">{event.city}</div>
-                <div className="text-left flex-shrink-0">
-
-                    <div className="text-sm text-gray-500">
-                        {event.teamLimit ? `Teams: ${event.teamsRegistered}/${event.teamLimit}` : `Teams: ${event.teamsRegistered}`}
-                    </div>
-                    <div
-                        className={`${getRegistrationColor(event.registrationStatus)} text-sm font-medium`}
-                    >
-                        {getRegistrationText(event.registrationStatus)}
-                    </div>
-                </div>
-            </div>
+  return (
+    <button
+      type="button"
+      className="op-card text-left p-4 w-full hover:shadow-md transition"
+      onClick={() => navigate(`/events/${event.id}`)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="op-display text-lg font-semibold text-[var(--op-primary-strong)]">
+            {event.eventName}
+          </h3>
+          <p className="op-ui text-sm text-[var(--op-text-muted)] mt-1">{event.city}</p>
         </div>
-    );
+        <StatusPill
+          label={(event.registrationStatus || "unknown").replace("_", " ")}
+          tone={toneFromStatus(event.registrationStatus)}
+        />
+      </div>
+
+      <p className="op-ui text-sm text-[var(--op-text-muted)] mt-2 line-clamp-2">
+        {event.description}
+      </p>
+
+      <div className="op-ui mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+        <div className="op-card-muted p-2">
+          <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Dates</p>
+          <p className="font-semibold">{event.date} {event.endDate ? `- ${event.endDate}` : ""}</p>
+        </div>
+        <div className="op-card-muted p-2">
+          <p className="text-xs uppercase tracking-wide text-[var(--op-text-muted)]">Teams</p>
+          <p className="font-semibold">
+            {event.teamLimit
+              ? `${event.teamsRegistered}/${event.teamLimit}`
+              : `${event.teamsRegistered}`}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
 };
 
 export default EventCard;
