@@ -121,77 +121,67 @@ const normalizeOutcomeStats = (statsPayload) => ({
     : [],
 });
 
-const buildDefaultScoreRows = (winsNeeded) => {
-  const parsedWinsNeeded = Number(winsNeeded);
-  const maxGames = Math.max(
-    1,
-    Number.isInteger(parsedWinsNeeded) && parsedWinsNeeded > 0
-      ? parsedWinsNeeded * 2 - 1
-      : 1
-  );
-  return Array.from({ length: maxGames }, (_, index) => ({
-    game_number: index + 1,
+const buildDefaultScoreRows = () => [
+  {
+    game_number: 1,
     team1_score: "",
     team2_score: "",
-  }));
+  },
+];
+
+const normalizeScoreRows = (rows) => {
+  const firstRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+  return [
+    {
+      game_number: 1,
+      team1_score:
+        firstRow?.team1_score === null || firstRow?.team1_score === undefined
+          ? ""
+          : `${firstRow.team1_score}`,
+      team2_score:
+        firstRow?.team2_score === null || firstRow?.team2_score === undefined
+          ? ""
+          : `${firstRow.team2_score}`,
+    },
+  ];
 };
 
-const normalizeScoreRows = (rows, winsNeeded) => {
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return buildDefaultScoreRows(winsNeeded);
+const summarizeScoreRows = (rows) => {
+  const [row] = normalizeScoreRows(rows);
+  if (row.team1_score === "" || row.team2_score === "") {
+    return {
+      team1Wins: 0,
+      team2Wins: 0,
+      winnerSide: null,
+    };
   }
 
-  return rows.map((row, index) => ({
-    game_number: Number(row?.game_number || index + 1),
-    team1_score:
-      row?.team1_score === null || row?.team1_score === undefined
-        ? ""
-        : `${row.team1_score}`,
-    team2_score:
-      row?.team2_score === null || row?.team2_score === undefined
-        ? ""
-        : `${row.team2_score}`,
-  }));
-};
+  const team1Score = Number(row.team1_score);
+  const team2Score = Number(row.team2_score);
+  if (
+    !Number.isInteger(team1Score) ||
+    !Number.isInteger(team2Score) ||
+    team1Score === team2Score
+  ) {
+    return {
+      team1Wins: 0,
+      team2Wins: 0,
+      winnerSide: null,
+    };
+  }
 
-const summarizeScoreRows = (rows, winsNeeded) => {
-  const winsTarget = Number(winsNeeded) || 1;
-  let team1Wins = 0;
-  let team2Wins = 0;
-
-  rows.forEach((row) => {
-    if (row.team1_score === "" || row.team2_score === "") {
-      return;
-    }
-
-    const team1Score = Number(row.team1_score);
-    const team2Score = Number(row.team2_score);
-    if (
-      !Number.isInteger(team1Score) ||
-      !Number.isInteger(team2Score) ||
-      team1Score === team2Score
-    ) {
-      return;
-    }
-
-    if (team1Score > team2Score) {
-      team1Wins += 1;
-    } else {
-      team2Wins += 1;
-    }
-  });
-
-  let winnerSide = null;
-  if (team1Wins >= winsTarget) {
-    winnerSide = 1;
-  } else if (team2Wins >= winsTarget) {
-    winnerSide = 2;
+  if (team1Score > team2Score) {
+    return {
+      team1Wins: 1,
+      team2Wins: 0,
+      winnerSide: 1,
+    };
   }
 
   return {
-    team1Wins,
-    team2Wins,
-    winnerSide,
+    team1Wins: 0,
+    team2Wins: 1,
+    winnerSide: 2,
   };
 };
 
@@ -275,7 +265,6 @@ const TournamentSchedulePage = () => {
     scheduled_time: "09:00",
     location_prefix: "Pool Play",
     minutes_between_matches: "30",
-    wins_needed: "1",
   });
 
   const [manualMatchForm, setManualMatchForm] = useState({
@@ -293,7 +282,6 @@ const TournamentSchedulePage = () => {
     scheduled_date: "",
     scheduled_time: "",
     location: "",
-    wins_needed: "1",
   });
   const [scoreDraftsByMatchId, setScoreDraftsByMatchId] = useState({});
 
@@ -540,7 +528,7 @@ const TournamentSchedulePage = () => {
     setScoreDraftsByMatchId((previous) => {
       const next = {};
       matches.forEach((match) => {
-        next[match.id] = normalizeScoreRows(previous[match.id], match.wins_needed);
+        next[match.id] = normalizeScoreRows(previous[match.id]);
       });
       return next;
     });
@@ -1044,10 +1032,6 @@ const TournamentSchedulePage = () => {
           autoGenerateForm.minutes_between_matches,
           "Minutes between matches"
         ),
-        wins_needed: normalizeOptionalPositiveInt(
-          autoGenerateForm.wins_needed,
-          "Wins needed"
-        ),
       };
       if (autoGenerateForm.scheduled_date) {
         payload.scheduled_date = autoGenerateForm.scheduled_date;
@@ -1150,7 +1134,6 @@ const TournamentSchedulePage = () => {
       scheduled_date: toDateInputValue(match.scheduled_at),
       scheduled_time: toTimeInputValue(match.scheduled_at),
       location: match.location || "",
-      wins_needed: String(match.wins_needed || 1),
     });
   };
 
@@ -1162,7 +1145,6 @@ const TournamentSchedulePage = () => {
       scheduled_date: "",
       scheduled_time: "",
       location: "",
-      wins_needed: "1",
     });
   };
 
@@ -1204,10 +1186,6 @@ const TournamentSchedulePage = () => {
         scheduled_date: editingMatchForm.scheduled_date,
         scheduled_time: editingMatchForm.scheduled_time,
         location: editingMatchForm.location.trim(),
-        wins_needed: normalizeOptionalPositiveInt(
-          editingMatchForm.wins_needed,
-          "Wins needed"
-        ),
       });
 
       setMessage("Match updated successfully.");
@@ -1220,9 +1198,9 @@ const TournamentSchedulePage = () => {
     }
   };
 
-  const handleScoreDraftChange = (matchId, winsNeeded, gameIndex, field, value) => {
+  const handleScoreDraftChange = (matchId, gameIndex, field, value) => {
     setScoreDraftsByMatchId((previous) => {
-      const currentRows = normalizeScoreRows(previous[matchId], winsNeeded);
+      const currentRows = normalizeScoreRows(previous[matchId]);
       const updatedRows = currentRows.map((row, index) =>
         index === gameIndex
           ? {
@@ -1238,42 +1216,6 @@ const TournamentSchedulePage = () => {
     });
   };
 
-  const handleAddScoreRow = (matchId, winsNeeded) => {
-    setScoreDraftsByMatchId((previous) => {
-      const currentRows = normalizeScoreRows(previous[matchId], winsNeeded);
-      return {
-        ...previous,
-        [matchId]: [
-          ...currentRows,
-          {
-            game_number: currentRows.length + 1,
-            team1_score: "",
-            team2_score: "",
-          },
-        ],
-      };
-    });
-  };
-
-  const handleRemoveLastScoreRow = (matchId, winsNeeded) => {
-    setScoreDraftsByMatchId((previous) => {
-      const currentRows = normalizeScoreRows(previous[matchId], winsNeeded);
-      if (currentRows.length <= 1) {
-        return previous;
-      }
-
-      const lastRow = currentRows[currentRows.length - 1];
-      if (lastRow.team1_score !== "" || lastRow.team2_score !== "") {
-        return previous;
-      }
-
-      return {
-        ...previous,
-        [matchId]: currentRows.slice(0, -1),
-      };
-    });
-  };
-
   const handleSaveMatchScores = async (match) => {
     const token = getTokenOrRedirect();
     if (!token) {
@@ -1285,8 +1227,7 @@ const TournamentSchedulePage = () => {
       clearFeedback();
 
       const currentRows = normalizeScoreRows(
-        scoreDraftsByMatchId[match.id],
-        match.wins_needed
+        scoreDraftsByMatchId[match.id]
       );
       const hasPartialRows = currentRows.some(
         (row) =>
@@ -1320,7 +1261,7 @@ const TournamentSchedulePage = () => {
             team1_score: `${game.team1_score}`,
             team2_score: `${game.team2_score}`,
           }))
-        : normalizeScoreRows(scoreDraftsByMatchId[match.id], match.wins_needed);
+        : normalizeScoreRows(scoreDraftsByMatchId[match.id]);
 
       setScoreDraftsByMatchId((previous) => ({
         ...previous,
@@ -1690,20 +1631,6 @@ const TournamentSchedulePage = () => {
                         required
                       />
                     </div>
-                    <div>
-                      <label className="font-semibold block mb-1 text-sm" htmlFor="auto-wins">
-                        Wins Needed
-                      </label>
-                      <input
-                        id="auto-wins"
-                        type="number"
-                        min="1"
-                        value={autoGenerateForm.wins_needed}
-                        onChange={updateAutoGenerateField("wins_needed")}
-                        className="w-full border border-gray-300 rounded-md p-2"
-                        required
-                      />
-                    </div>
                     <div className="md:col-span-2 lg:col-span-5">
                       <button
                         type="submit"
@@ -1834,7 +1761,7 @@ const TournamentSchedulePage = () => {
                             <th className="text-left p-3 font-semibold">Teams</th>
                             <th className="text-left p-3 font-semibold">Date & Time</th>
                             <th className="text-left p-3 font-semibold">Location</th>
-                            <th className="text-left p-3 font-semibold">Wins</th>
+                            <th className="text-left p-3 font-semibold">Format</th>
                             <th className="text-left p-3 font-semibold">Winner</th>
                             <th className="text-left p-3 font-semibold">Actions</th>
                           </tr>
@@ -1914,18 +1841,7 @@ const TournamentSchedulePage = () => {
                                   )}
                                 </td>
                                 <td className="p-3 min-w-[100px]">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      name="wins_needed"
-                                      value={editingMatchForm.wins_needed}
-                                      onChange={handleEditingMatchFormChange}
-                                      className="w-20 border border-gray-300 rounded-md p-1"
-                                    />
-                                  ) : (
-                                    <span>{match.wins_needed}</span>
-                                  )}
+                                  <span>Single Game</span>
                                 </td>
                                 <td className="p-3 min-w-[150px]">
                                   {Number(match.winner_id) === Number(match.registration1_id)
@@ -1985,13 +1901,9 @@ const TournamentSchedulePage = () => {
                     <div className="space-y-4">
                       {matches.map((match) => {
                         const scoreRows = normalizeScoreRows(
-                          scoreDraftsByMatchId[match.id],
-                          match.wins_needed
+                          scoreDraftsByMatchId[match.id]
                         );
-                        const scoreSummary = summarizeScoreRows(
-                          scoreRows,
-                          Number(match.wins_needed || 1)
-                        );
+                        const scoreSummary = summarizeScoreRows(scoreRows);
                         const winnerPreview =
                           scoreSummary.winnerSide === 1
                             ? match.team1_name
@@ -2010,8 +1922,7 @@ const TournamentSchedulePage = () => {
                                   {match.team1_name} vs {match.team2_name}
                                 </p>
                                 <p className="text-xs text-gray-600">
-                                  Match #{match.id} | Best-of context wins needed:{" "}
-                                  {match.wins_needed}
+                                  Match #{match.id} | Single-game result
                                 </p>
                               </div>
                               <div className="text-sm text-gray-700">
@@ -2038,7 +1949,6 @@ const TournamentSchedulePage = () => {
                                       onChange={(event) =>
                                         handleScoreDraftChange(
                                           match.id,
-                                          match.wins_needed,
                                           gameIndex,
                                           "team1_score",
                                           event.target.value
@@ -2056,7 +1966,6 @@ const TournamentSchedulePage = () => {
                                       onChange={(event) =>
                                         handleScoreDraftChange(
                                           match.id,
-                                          match.wins_needed,
                                           gameIndex,
                                           "team2_score",
                                           event.target.value
@@ -2070,22 +1979,6 @@ const TournamentSchedulePage = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleAddScoreRow(match.id, match.wins_needed)}
-                                className="px-3 py-1 rounded bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200"
-                              >
-                                Add Game
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleRemoveLastScoreRow(match.id, match.wins_needed)
-                                }
-                                className="px-3 py-1 rounded bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200"
-                              >
-                                Remove Empty Last Game
-                              </button>
                               <button
                                 type="button"
                                 onClick={() => handleSaveMatchScores(match)}

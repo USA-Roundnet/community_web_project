@@ -18,50 +18,9 @@ exports.up = async function (knex) {
     });
   }
 
-  const seriesExists = await knex.schema.hasTable("Series");
-  if (seriesExists) {
-    const hasReg1SeedSnapshot = await knex.schema.hasColumn(
-      "Series",
-      "registration1_seed_snapshot"
-    );
-    const hasReg2SeedSnapshot = await knex.schema.hasColumn(
-      "Series",
-      "registration2_seed_snapshot"
-    );
-
-    await knex.schema.alterTable("Series", (table) => {
-      if (!hasReg1SeedSnapshot) {
-        table.integer("registration1_seed_snapshot").nullable();
-      }
-      if (!hasReg2SeedSnapshot) {
-        table.integer("registration2_seed_snapshot").nullable();
-      }
-    });
-  }
 };
 
 exports.down = async function (knex) {
-  const seriesExists = await knex.schema.hasTable("Series");
-  if (seriesExists) {
-    const hasReg1SeedSnapshot = await knex.schema.hasColumn(
-      "Series",
-      "registration1_seed_snapshot"
-    );
-    const hasReg2SeedSnapshot = await knex.schema.hasColumn(
-      "Series",
-      "registration2_seed_snapshot"
-    );
-
-    await knex.schema.alterTable("Series", (table) => {
-      if (hasReg1SeedSnapshot) {
-        table.dropColumn("registration1_seed_snapshot");
-      }
-      if (hasReg2SeedSnapshot) {
-        table.dropColumn("registration2_seed_snapshot");
-      }
-    });
-  }
-
   const tournamentExists = await knex.schema.hasTable("Tournament");
   if (tournamentExists) {
     const hasPointsToWin = await knex.schema.hasColumn("Tournament", "points_to_win");

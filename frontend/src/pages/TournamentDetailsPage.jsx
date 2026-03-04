@@ -194,7 +194,7 @@ const TournamentDetailsPage = () => {
                     <tr>
                       <th className="text-left p-2">Match</th>
                       <th className="text-left p-2">Location</th>
-                      <th className="text-left p-2">Wins</th>
+                      <th className="text-left p-2">Format</th>
                       <th className="text-left p-2">Scheduled</th>
                     </tr>
                   </thead>
@@ -204,12 +204,12 @@ const TournamentDetailsPage = () => {
                         <td className="p-3 text-[var(--op-text-muted)]" colSpan={4}>No schedule available yet.</td>
                       </tr>
                     ) : (
-                      schedule.map((series) => (
-                        <tr key={series.id} className="border-t border-[var(--op-border)]">
-                          <td className="p-2">{series.registration1_team_name || "TBD"} vs {series.registration2_team_name || "TBD"}</td>
-                          <td className="p-2">{series.location || "TBD"}</td>
-                          <td className="p-2">{series.wins_needed}</td>
-                          <td className="p-2">{formatDate(series.created_at)}</td>
+                      schedule.map((match) => (
+                        <tr key={match.id} className="border-t border-[var(--op-border)]">
+                          <td className="p-2">{match.registration1_team_name || "TBD"} vs {match.registration2_team_name || "TBD"}</td>
+                          <td className="p-2">{match.location || "TBD"}</td>
+                          <td className="p-2">Single Game</td>
+                          <td className="p-2">{formatDate(match.created_at)}</td>
                         </tr>
                       ))
                     )}

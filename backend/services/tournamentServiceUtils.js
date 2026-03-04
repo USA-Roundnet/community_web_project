@@ -1,4 +1,3 @@
-const knex = require("../knex-config.js");
 const { BadRequestError } = require("../utils/customErrors");
 
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -73,11 +72,6 @@ const getTournamentScoreRules = (tournament) => {
   };
 };
 
-const parsePositiveIntegerOrNull = (value) => {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-};
-
 const validateDateAndTimeFormat = (scheduledDate, scheduledTime) => {
   if (!DATE_ONLY_REGEX.test(scheduledDate)) {
     throw new BadRequestError("scheduled_date must be in YYYY-MM-DD format");
@@ -99,64 +93,10 @@ const parseScheduledDateTime = (
   return parsed;
 };
 
-let cachedSeriesSeedSnapshotSupport = null;
-const hasSeriesSeedSnapshotColumns = async () => {
-  if (cachedSeriesSeedSnapshotSupport !== null) {
-    return cachedSeriesSeedSnapshotSupport;
-  }
-
-  const hasSeriesTable = await knex.schema.hasTable("Series");
-  if (!hasSeriesTable) {
-    cachedSeriesSeedSnapshotSupport = false;
-    return false;
-  }
-
-  const [hasRegistrationOneSeedSnapshot, hasRegistrationTwoSeedSnapshot] =
-    await Promise.all([
-      knex.schema.hasColumn("Series", "registration1_seed_snapshot"),
-      knex.schema.hasColumn("Series", "registration2_seed_snapshot"),
-    ]);
-
-  cachedSeriesSeedSnapshotSupport =
-    hasRegistrationOneSeedSnapshot && hasRegistrationTwoSeedSnapshot;
-  return cachedSeriesSeedSnapshotSupport;
-};
-
-const getSeedSnapshotSelects = async () => {
-  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
-  return seedSnapshotColumnsSupported
-    ? ["s.registration1_seed_snapshot", "s.registration2_seed_snapshot"]
-    : [
-        knex.raw("NULL as registration1_seed_snapshot"),
-        knex.raw("NULL as registration2_seed_snapshot"),
-      ];
-};
-
-const applySeedSnapshotValuesIfSupported = async (
-  payload,
-  registrationOne,
-  registrationTwo
-) => {
-  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
-  if (!seedSnapshotColumnsSupported) {
-    return;
-  }
-
-  payload.registration1_seed_snapshot = parsePositiveIntegerOrNull(
-    registrationOne?.seed
-  );
-  payload.registration2_seed_snapshot = parsePositiveIntegerOrNull(
-    registrationTwo?.seed
-  );
-};
-
 module.exports = {
-  applySeedSnapshotValuesIfSupported,
   buildTournamentWritePayload,
   deriveTournamentStatus,
-  getSeedSnapshotSelects,
   getTournamentScoreRules,
-  hasSeriesSeedSnapshotColumns,
   parseScheduledDateTime,
   toIsoDateOnly,
   toSqlDateTime,

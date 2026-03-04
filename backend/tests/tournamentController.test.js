@@ -858,7 +858,7 @@ describe("Tournament Controller API Tests", () => {
       expect(Array.isArray(response.body.registrations)).toBe(true);
       expect(Array.isArray(response.body.schedule)).toBe(true);
       expect(
-        response.body.schedule.some((series) => series.id === scheduleRes.body.id)
+        response.body.schedule.some((match) => match.id === scheduleRes.body.id)
       ).toBe(true);
     } finally {
       await cleanupScheduleFixture(fixture);
@@ -1120,7 +1120,6 @@ describe("Tournament Controller API Tests", () => {
           scheduled_time: "09:00",
           location_prefix: "Pool Round",
           minutes_between_matches: 15,
-          wins_needed: 2,
         });
 
       expect(generateResponse.statusCode).toBe(201);
@@ -1214,12 +1213,11 @@ describe("Tournament Controller API Tests", () => {
         .send({
           scheduled_date: patchDate,
           scheduled_time: "17:45",
-          wins_needed: 3,
           location: "Court Edit After",
         });
 
       expect(patchResponse.statusCode).toBe(200);
-      expect(patchResponse.body.wins_needed).toBe(3);
+      expect(patchResponse.body.wins_needed).toBe(1);
       expect(patchResponse.body.location).toBe("Court Edit After");
       expect(`${patchResponse.body.scheduled_at}`).toContain(patchDate);
       expect(Number.isNaN(Date.parse(patchResponse.body.scheduled_at))).toBe(false);
@@ -1244,7 +1242,6 @@ describe("Tournament Controller API Tests", () => {
           scheduled_date: dateWithOffset(2),
           scheduled_time: "10:00",
           location: "Court Results",
-          wins_needed: 2,
         });
       expect(scheduleResponse.statusCode).toBe(201);
 
@@ -1256,16 +1253,14 @@ describe("Tournament Controller API Tests", () => {
         .send({
           games: [
             { game_number: 1, team1_score: 21, team2_score: 18 },
-            { game_number: 2, team1_score: 19, team2_score: 21 },
-            { game_number: 3, team1_score: 25, team2_score: 24 },
           ],
         });
 
       expect(resultsResponse.statusCode).toBe(200);
       expect(resultsResponse.body.winner_id).toBe(fixture.registrationOneId);
-      expect(resultsResponse.body.games).toHaveLength(3);
-      expect(resultsResponse.body.result_summary.team1_wins).toBe(2);
-      expect(resultsResponse.body.result_summary.team2_wins).toBe(1);
+      expect(resultsResponse.body.games).toHaveLength(1);
+      expect(resultsResponse.body.result_summary.team1_wins).toBe(1);
+      expect(resultsResponse.body.result_summary.team2_wins).toBe(0);
 
       const statsResponse = await request(app)
         .get(`/api/tournaments/${testTournamentId}/stats`)
@@ -1318,6 +1313,43 @@ describe("Tournament Controller API Tests", () => {
       expect(invalidResultsResponse.statusCode).toBe(400);
       expect(invalidResultsResponse.body.message).toContain(
         "Winning score must reach at least"
+      );
+    } finally {
+      await cleanupScheduleFixture(fixture);
+    }
+  });
+
+  test("POST /api/tournaments/:id/matches/:matchId/results should reject multi-game submissions", async () => {
+    const fixture = await createScheduleFixture();
+
+    try {
+      const scheduleResponse = await request(app)
+        .post(`/api/tournaments/${testTournamentId}/matches`)
+        .set(authHeader())
+        .send({
+          registration1_id: fixture.registrationOneId,
+          registration2_id: fixture.registrationTwoId,
+          scheduled_date: dateWithOffset(2),
+          scheduled_time: "11:30",
+          location: "Court Multi-Game Rejection",
+        });
+      expect(scheduleResponse.statusCode).toBe(201);
+
+      const invalidResultsResponse = await request(app)
+        .post(
+          `/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}/results`
+        )
+        .set(authHeader())
+        .send({
+          games: [
+            { game_number: 1, team1_score: 21, team2_score: 18 },
+            { game_number: 2, team1_score: 19, team2_score: 21 },
+          ],
+        });
+
+      expect(invalidResultsResponse.statusCode).toBe(400);
+      expect(invalidResultsResponse.body.message).toContain(
+        "Only single-game results are supported"
       );
     } finally {
       await cleanupScheduleFixture(fixture);
