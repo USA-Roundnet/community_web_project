@@ -101,6 +101,8 @@ const normalizeGroupId = (value) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 };
 
+const BOARD_STAGED_MESSAGE = "Board changes are staged locally. Save when ready.";
+
 const buildDefaultScoreRows = (winsNeeded) => {
   const parsedWinsNeeded = Number(winsNeeded);
   const maxGames = Math.max(
@@ -280,6 +282,17 @@ const TournamentSchedulePage = () => {
     wins_needed: "1",
   });
   const [scoreDraftsByMatchId, setScoreDraftsByMatchId] = useState({});
+
+  const clearFeedback = () => {
+    setError("");
+    setMessage("");
+  };
+
+  const stageBoardChanges = () => {
+    setBoardDirty(true);
+    setError("");
+    setMessage(BOARD_STAGED_MESSAGE);
+  };
 
   const getTokenOrRedirect = () => {
     const token = localStorage.getItem("authToken");
@@ -544,8 +557,7 @@ const TournamentSchedulePage = () => {
 
     try {
       setSavingBoard(true);
-      setError("");
-      setMessage("");
+      clearFeedback();
 
       const payload = await reorderTournamentRegistrations(token, id, updates);
       const normalizedRegistrations = Array.isArray(payload) ? payload : [];
@@ -664,9 +676,7 @@ const TournamentSchedulePage = () => {
       return previous.map((registration) => patchById.get(registration.id) || registration);
     });
 
-    setBoardDirty(true);
-    setError("");
-    setMessage("Board changes are staged locally. Save when ready.");
+    stageBoardChanges();
     setDragState(null);
   };
 
@@ -776,9 +786,7 @@ const TournamentSchedulePage = () => {
       return previous.map((registration) => patchById.get(registration.id) || registration);
     });
 
-    setBoardDirty(true);
-    setError("");
-    setMessage("Board changes are staged locally. Save when ready.");
+    stageBoardChanges();
     setDragState(null);
   };
 
@@ -889,9 +897,7 @@ const TournamentSchedulePage = () => {
           return registration;
         })
       );
-      setBoardDirty(true);
-      setError("");
-      setMessage("Board changes are staged locally. Save when ready.");
+      stageBoardChanges();
     }
 
     setPoolLaneCount((previous) => Math.max(previous - 1, 1));
@@ -986,9 +992,7 @@ const TournamentSchedulePage = () => {
       setPoolLaneCount(destinationGroupId);
     }
 
-    setBoardDirty(true);
-    setError("");
-    setMessage("Board changes are staged locally. Save when ready.");
+    stageBoardChanges();
   };
 
   const handleGeneratePools = async () => {
@@ -999,8 +1003,7 @@ const TournamentSchedulePage = () => {
 
     try {
       setGeneratingPools(true);
-      setError("");
-      setMessage("");
+      clearFeedback();
 
       const normalizedPoolCount = normalizeOptionalPositiveInt(
         snakePoolCount,
@@ -1031,8 +1034,7 @@ const TournamentSchedulePage = () => {
 
     try {
       setGeneratingMatches(true);
-      setError("");
-      setMessage("");
+      clearFeedback();
 
       const payload = {
         scheduled_time: autoGenerateForm.scheduled_time,
@@ -1065,6 +1067,13 @@ const TournamentSchedulePage = () => {
     } finally {
       setGeneratingMatches(false);
     }
+  };
+
+  const updateAutoGenerateField = (field) => (event) => {
+    setAutoGenerateForm((previous) => ({
+      ...previous,
+      [field]: event.target.value,
+    }));
   };
 
   const handleManualMatchFormChange = (event) => {
@@ -1104,8 +1113,7 @@ const TournamentSchedulePage = () => {
 
     try {
       setSubmittingMatch(true);
-      setError("");
-      setMessage("");
+      clearFeedback();
 
       await createMatch(token, id, {
         registration1_id: Number(registration1_id),
@@ -1173,8 +1181,7 @@ const TournamentSchedulePage = () => {
 
     try {
       setSavingMatchId(matchId);
-      setError("");
-      setMessage("");
+      clearFeedback();
 
       if (
         !editingMatchForm.registration1_id ||
@@ -1274,8 +1281,7 @@ const TournamentSchedulePage = () => {
 
     try {
       setSavingScoreMatchId(match.id);
-      setError("");
-      setMessage("");
+      clearFeedback();
 
       const currentRows = normalizeScoreRows(
         scoreDraftsByMatchId[match.id],
@@ -1640,12 +1646,7 @@ const TournamentSchedulePage = () => {
                         id="auto-date"
                         type="date"
                         value={autoGenerateForm.scheduled_date}
-                        onChange={(event) =>
-                          setAutoGenerateForm((previous) => ({
-                            ...previous,
-                            scheduled_date: event.target.value,
-                          }))
-                        }
+                        onChange={updateAutoGenerateField("scheduled_date")}
                         className="w-full border border-gray-300 rounded-md p-2"
                       />
                     </div>
@@ -1657,12 +1658,7 @@ const TournamentSchedulePage = () => {
                         id="auto-time"
                         type="time"
                         value={autoGenerateForm.scheduled_time}
-                        onChange={(event) =>
-                          setAutoGenerateForm((previous) => ({
-                            ...previous,
-                            scheduled_time: event.target.value,
-                          }))
-                        }
+                        onChange={updateAutoGenerateField("scheduled_time")}
                         className="w-full border border-gray-300 rounded-md p-2"
                         required
                       />
@@ -1674,12 +1670,7 @@ const TournamentSchedulePage = () => {
                       <input
                         id="auto-loc"
                         value={autoGenerateForm.location_prefix}
-                        onChange={(event) =>
-                          setAutoGenerateForm((previous) => ({
-                            ...previous,
-                            location_prefix: event.target.value,
-                          }))
-                        }
+                        onChange={updateAutoGenerateField("location_prefix")}
                         className="w-full border border-gray-300 rounded-md p-2"
                         required
                       />
@@ -1693,12 +1684,7 @@ const TournamentSchedulePage = () => {
                         type="number"
                         min="1"
                         value={autoGenerateForm.minutes_between_matches}
-                        onChange={(event) =>
-                          setAutoGenerateForm((previous) => ({
-                            ...previous,
-                            minutes_between_matches: event.target.value,
-                          }))
-                        }
+                        onChange={updateAutoGenerateField("minutes_between_matches")}
                         className="w-full border border-gray-300 rounded-md p-2"
                         required
                       />
@@ -1712,12 +1698,7 @@ const TournamentSchedulePage = () => {
                         type="number"
                         min="1"
                         value={autoGenerateForm.wins_needed}
-                        onChange={(event) =>
-                          setAutoGenerateForm((previous) => ({
-                            ...previous,
-                            wins_needed: event.target.value,
-                          }))
-                        }
+                        onChange={updateAutoGenerateField("wins_needed")}
                         className="w-full border border-gray-300 rounded-md p-2"
                         required
                       />

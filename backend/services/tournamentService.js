@@ -2,6 +2,9 @@ const knex = require("../knex-config.js");
 const { validateDuplicateRegistration } = require("../utils/validation");
 const { BadRequestError, NotFoundError } = require("../utils/customErrors");
 
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_ONLY_REGEX = /^\d{2}:\d{2}$/;
+
 const toIsoDateOnly = (dateValue) => {
   const parsedDate = new Date(dateValue);
   if (Number.isNaN(parsedDate.getTime())) {
@@ -69,6 +72,60 @@ const getTournamentScoreRules = (tournament) => {
     overtime_cap: Number.isInteger(overtimeCap) && overtimeCap > 0 ? overtimeCap : 25,
     win_by: Number.isInteger(winBy) && winBy > 0 ? winBy : 2,
   };
+};
+
+const parsePositiveIntegerOrNull = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const validateDateAndTimeFormat = (scheduledDate, scheduledTime) => {
+  if (!DATE_ONLY_REGEX.test(scheduledDate)) {
+    throw new BadRequestError("scheduled_date must be in YYYY-MM-DD format");
+  }
+  if (!TIME_ONLY_REGEX.test(scheduledTime)) {
+    throw new BadRequestError("scheduled_time must be in HH:mm format");
+  }
+};
+
+const parseScheduledDateTime = (
+  scheduledDate,
+  scheduledTime,
+  errorMessage = "Invalid scheduled date/time"
+) => {
+  const parsed = new Date(`${scheduledDate}T${scheduledTime}:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestError(errorMessage);
+  }
+  return parsed;
+};
+
+const getSeedSnapshotSelects = async () => {
+  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
+  return seedSnapshotColumnsSupported
+    ? ["s.registration1_seed_snapshot", "s.registration2_seed_snapshot"]
+    : [
+        knex.raw("NULL as registration1_seed_snapshot"),
+        knex.raw("NULL as registration2_seed_snapshot"),
+      ];
+};
+
+const applySeedSnapshotValuesIfSupported = async (
+  payload,
+  registrationOne,
+  registrationTwo
+) => {
+  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
+  if (!seedSnapshotColumnsSupported) {
+    return;
+  }
+
+  payload.registration1_seed_snapshot = parsePositiveIntegerOrNull(
+    registrationOne?.seed
+  );
+  payload.registration2_seed_snapshot = parsePositiveIntegerOrNull(
+    registrationTwo?.seed
+  );
 };
 
 let cachedSeriesSeedSnapshotSupport = null;
@@ -588,50 +645,44 @@ const registerForTournament = async (
   team_id,
   tournament_division_id
 ) => {
+  const tournament = await knex("Tournament").where({ id: tournament_id }).first();
+  if (!tournament) {
+    return { status: 404, message: "Tournament not found" };
+  }
+
+  const tournamentDivision = await knex("TournamentDivision")
+    .where({ id: tournament_division_id, tournament_id })
+    .first();
+  if (!tournamentDivision) {
+    return { status: 404, message: "Tournament division not found" };
+  }
+
   try {
-    const tournament = await knex("Tournament")
-      .where({ id: tournament_id })
-      .first();
-    if (!tournament) {
-      return { status: 404, message: "Tournament not found" };
-    }
+    await validateDuplicateRegistration(team_id, tournament_division_id);
+  } catch (error) {
+    return error;
+  }
 
-    const tournamentDivision = await knex("TournamentDivision")
-      .where({ id: tournament_division_id, tournament_id })
-      .first();
-    if (!tournamentDivision) {
-      return { status: 404, message: "Tournament division not found" };
-    }
+  const [registrationId] = await knex("Registration").insert({
+    team_id,
+    tournament_division_id,
+    status: "registered",
+    payment_status: "unpaid",
+    created_at: new Date(),
+  });
 
-    try {
-      await validateDuplicateRegistration(team_id, tournament_division_id);
-    } catch (error) {
-      return error;
-    }
-
-    const [registrationId] = await knex("Registration").insert({
-      team_id,
-      tournament_division_id,
-      status: "registered",
-      payment_status: "unpaid",
+  const existingTournamentUser = await knex("TournamentUser")
+    .where({ user_id, tournament_id })
+    .first();
+  if (!existingTournamentUser) {
+    await knex("TournamentUser").insert({
+      user_id,
+      tournament_id,
       created_at: new Date(),
     });
-
-    const existingTournamentUser = await knex("TournamentUser")
-      .where({ user_id, tournament_id })
-      .first();
-    if (!existingTournamentUser) {
-      await knex("TournamentUser").insert({
-        user_id,
-        tournament_id,
-        created_at: new Date(),
-      });
-    }
-
-    return { id: registrationId };
-  } catch (error) {
-    throw error;
   }
+
+  return { id: registrationId };
 };
 
 const unregisterFromTournament = async (
@@ -640,38 +691,34 @@ const unregisterFromTournament = async (
   team_id,
   tournament_division_id
 ) => {
-  try {
-    const registration = await knex("Registration")
-      .where({ team_id, tournament_division_id })
-      .first();
-    if (!registration) {
-      return { status: 404, message: "Registration not found" };
-    }
-
-    await knex("Registration").where({ team_id, tournament_division_id }).del();
-
-    const remainingRegistrations = await knex("Registration")
-      .join(
-        "TournamentDivision",
-        "Registration.tournament_division_id",
-        "TournamentDivision.id"
-      )
-      .where("TournamentDivision.tournament_id", tournament_id)
-      .andWhere("Registration.team_id", team_id)
-      .count("Registration.id as count")
-      .first();
-
-    if (remainingRegistrations.count === 0) {
-      await knex("TournamentUser").where({ user_id, tournament_id }).del();
-    }
-
-    return {
-      status: 200,
-      message: "Successfully unregistered from the tournament",
-    };
-  } catch (error) {
-    throw error;
+  const registration = await knex("Registration")
+    .where({ team_id, tournament_division_id })
+    .first();
+  if (!registration) {
+    return { status: 404, message: "Registration not found" };
   }
+
+  await knex("Registration").where({ team_id, tournament_division_id }).del();
+
+  const remainingRegistrations = await knex("Registration")
+    .join(
+      "TournamentDivision",
+      "Registration.tournament_division_id",
+      "TournamentDivision.id"
+    )
+    .where("TournamentDivision.tournament_id", tournament_id)
+    .andWhere("Registration.team_id", team_id)
+    .count("Registration.id as count")
+    .first();
+
+  if (remainingRegistrations.count === 0) {
+    await knex("TournamentUser").where({ user_id, tournament_id }).del();
+  }
+
+  return {
+    status: 200,
+    message: "Successfully unregistered from the tournament",
+  };
 };
 
 const getTournamentMatchCandidates = async (
@@ -863,13 +910,7 @@ const generateDivisionPoolsSnake = async (
 };
 
 const getTournamentMatches = async (tournament_id, filters = {}) => {
-  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
-  const seedSnapshotSelects = seedSnapshotColumnsSupported
-    ? ["s.registration1_seed_snapshot", "s.registration2_seed_snapshot"]
-    : [
-        knex.raw("NULL as registration1_seed_snapshot"),
-        knex.raw("NULL as registration2_seed_snapshot"),
-      ];
+  const seedSnapshotSelects = await getSeedSnapshotSelects();
 
   const query = knex("Series as s")
     .join("Registration as r1", "s.registration1_id", "r1.id")
@@ -1000,18 +1041,8 @@ const validateMatchScheduleInput = (matchData = {}) => {
     );
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduled_date)) {
-    throw new BadRequestError("scheduled_date must be in YYYY-MM-DD format");
-  }
-
-  if (!/^\d{2}:\d{2}$/.test(scheduled_time)) {
-    throw new BadRequestError("scheduled_time must be in HH:mm format");
-  }
-
-  const scheduledDateTime = new Date(`${scheduled_date}T${scheduled_time}:00`);
-  if (Number.isNaN(scheduledDateTime.getTime())) {
-    throw new BadRequestError("Invalid scheduled date/time");
-  }
+  validateDateAndTimeFormat(scheduled_date, scheduled_time);
+  parseScheduledDateTime(scheduled_date, scheduled_time);
 
   const winsNeeded =
     matchData.wins_needed === undefined || matchData.wins_needed === null
@@ -1064,7 +1095,6 @@ const createTournamentMatch = async (tournament_id, matchData) => {
     registration2IdNumber
     );
 
-  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
   const insertPayload = {
     tournament_id,
     registration1_id: registration1IdNumber,
@@ -1073,17 +1103,11 @@ const createTournamentMatch = async (tournament_id, matchData) => {
     location,
     created_at: scheduledAtSql,
   };
-
-  if (seedSnapshotColumnsSupported) {
-    insertPayload.registration1_seed_snapshot =
-      Number.isInteger(Number(registrationOne.seed)) && Number(registrationOne.seed) > 0
-        ? Number(registrationOne.seed)
-        : null;
-    insertPayload.registration2_seed_snapshot =
-      Number.isInteger(Number(registrationTwo.seed)) && Number(registrationTwo.seed) > 0
-        ? Number(registrationTwo.seed)
-        : null;
-  }
+  await applySeedSnapshotValuesIfSupported(
+    insertPayload,
+    registrationOne,
+    registrationTwo
+  );
 
   const [seriesId] = await knex("Series").insert(insertPayload);
 
@@ -1184,12 +1208,7 @@ const autoGenerateDivisionPoolMatches = async (
   const winsNeeded =
     options.wins_needed === undefined ? 1 : Number(options.wins_needed);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
-    throw new BadRequestError("scheduled_date must be in YYYY-MM-DD format");
-  }
-  if (!/^\d{2}:\d{2}$/.test(scheduledTime)) {
-    throw new BadRequestError("scheduled_time must be in HH:mm format");
-  }
+  validateDateAndTimeFormat(scheduledDate, scheduledTime);
   if (!Number.isInteger(minutesBetweenMatches) || minutesBetweenMatches <= 0) {
     throw new BadRequestError(
       "minutes_between_matches must be a positive integer"
@@ -1199,10 +1218,11 @@ const autoGenerateDivisionPoolMatches = async (
     throw new BadRequestError("wins_needed must be a positive integer");
   }
 
-  const startDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
-  if (Number.isNaN(startDateTime.getTime())) {
-    throw new BadRequestError("Invalid scheduled_date/scheduled_time");
-  }
+  const startDateTime = parseScheduledDateTime(
+    scheduledDate,
+    scheduledTime,
+    "Invalid scheduled_date/scheduled_time"
+  );
 
   const existingDivisionMatches = await knex("Series as s")
     .join("Registration as r1", "s.registration1_id", "r1.id")
@@ -1329,20 +1349,14 @@ const updateTournamentMatch = async (tournament_id, match_id, updates = {}) => {
       tournament_id,
       registration1Id,
       registration2Id
-      );
+    );
     patch.registration1_id = registration1Id;
     patch.registration2_id = registration2Id;
-    const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
-    if (seedSnapshotColumnsSupported) {
-      patch.registration1_seed_snapshot =
-        Number.isInteger(Number(registrationOne.seed)) && Number(registrationOne.seed) > 0
-          ? Number(registrationOne.seed)
-          : null;
-      patch.registration2_seed_snapshot =
-        Number.isInteger(Number(registrationTwo.seed)) && Number(registrationTwo.seed) > 0
-          ? Number(registrationTwo.seed)
-          : null;
-    }
+    await applySeedSnapshotValuesIfSupported(
+      patch,
+      registrationOne,
+      registrationTwo
+    );
   }
 
   if (updates.wins_needed !== undefined) {
@@ -1370,12 +1384,7 @@ const updateTournamentMatch = async (tournament_id, match_id, updates = {}) => {
         "scheduled_date and scheduled_time are both required when editing schedule"
       );
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(updates.scheduled_date)) {
-      throw new BadRequestError("scheduled_date must be in YYYY-MM-DD format");
-    }
-    if (!/^\d{2}:\d{2}$/.test(updates.scheduled_time)) {
-      throw new BadRequestError("scheduled_time must be in HH:mm format");
-    }
+    validateDateAndTimeFormat(updates.scheduled_date, updates.scheduled_time);
     patch.created_at = `${updates.scheduled_date} ${updates.scheduled_time}:00`;
   }
 
@@ -1581,13 +1590,7 @@ const getTournamentOutcomeStats = async (tournament_id) => {
       "d.name as division_name"
     );
 
-  const seedSnapshotColumnsSupported = await hasSeriesSeedSnapshotColumns();
-  const seedSnapshotSelects = seedSnapshotColumnsSupported
-    ? ["s.registration1_seed_snapshot", "s.registration2_seed_snapshot"]
-    : [
-        knex.raw("NULL as registration1_seed_snapshot"),
-        knex.raw("NULL as registration2_seed_snapshot"),
-      ];
+  const seedSnapshotSelects = await getSeedSnapshotSelects();
 
   const matches = await knex("Series as s")
     .join("Registration as r1", "s.registration1_id", "r1.id")

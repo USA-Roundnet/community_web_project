@@ -5,6 +5,10 @@ import TournamentWizardLayout from "../features/tournament-ui/components/Tournam
 import TournamentPanel from "../features/tournament-ui/components/TournamentPanel";
 import InlineBanner from "../features/tournament-ui/components/InlineBanner";
 import useLocalStorageState from "../features/tournament-ui/hooks/useLocalStorageState";
+import {
+  CREATE_DRAFT_KEYS,
+  requireAuthForCreateStep,
+} from "../features/tournament-ui/utils/createFlowStorage";
 
 type AddressSuggestion = {
   label: string;
@@ -98,7 +102,7 @@ const getCompletion = (value: BasicInfoForm) => {
 const CreateTournamentBasicInfo = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useLocalStorageState(
-    "tournamentBasicInfo",
+    CREATE_DRAFT_KEYS.basicInfo,
     defaultBasicInfo
   ) as [
     BasicInfoForm,
@@ -115,13 +119,7 @@ const CreateTournamentBasicInfo = () => {
   const isAddressAutocompleteEnabled = Boolean(GEOAPIFY_API_KEY);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      navigate("/login", {
-        replace: true,
-        state: { from: "/events/create" },
-      });
-    }
+    requireAuthForCreateStep(navigate, "/events/create");
   }, [navigate]);
 
   useEffect(() => {

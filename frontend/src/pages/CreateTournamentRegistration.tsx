@@ -15,6 +15,14 @@ import {
   createTournament,
   createTournamentDivision,
 } from "../features/tournament-ui/api/tournamentApi";
+import {
+  clearCreateDrafts,
+  CREATE_DRAFT_KEYS,
+  getAuthToken,
+  hasDraft,
+  readDraftObject,
+  requireAuthForCreateStep,
+} from "../features/tournament-ui/utils/createFlowStorage";
 
 type DivisionDraft = {
   divisionName: string;
@@ -39,6 +47,22 @@ type PublishDivisionResult = {
   error?: string;
 };
 
+type BasicInfoDraft = {
+  tournamentName: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  startDate: string;
+  endDate: string;
+  time: string;
+  maxTeams: string;
+};
+
+type FormatDraft = {
+  format: string;
+};
+
 const defaultRegistration: RegistrationForm = {
   availability: "",
   divisionsType: "",
@@ -55,7 +79,7 @@ const defaultRegistration: RegistrationForm = {
 const CreateTournamentRegistration = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useLocalStorageState(
-    "tournamentRegistration",
+    CREATE_DRAFT_KEYS.registration,
     defaultRegistration
   ) as [RegistrationForm, Dispatch<SetStateAction<RegistrationForm>>, () => void];
   const [error, setError] = useState<string | null>(null);
@@ -65,22 +89,16 @@ const CreateTournamentRegistration = () => {
   const [divisionResults, setDivisionResults] = useState<PublishDivisionResult[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = requireAuthForCreateStep(navigate, "/events/create/registration");
     if (!token) {
-      navigate("/login", {
-        replace: true,
-        state: { from: "/events/create/registration" },
-      });
       return;
     }
 
-    const hasBasics = localStorage.getItem("tournamentBasicInfo");
-    const hasFormat = localStorage.getItem("tournamentFormat");
-    if (!hasBasics) {
+    if (!hasDraft(CREATE_DRAFT_KEYS.basicInfo)) {
       navigate("/events/create", { replace: true });
       return;
     }
-    if (!hasFormat) {
+    if (!hasDraft(CREATE_DRAFT_KEYS.format)) {
       navigate("/events/create/format", { replace: true });
     }
   }, [navigate]);
@@ -204,8 +222,20 @@ const CreateTournamentRegistration = () => {
   };
 
   const createTournamentPayload = () => {
-    const basicInfo = JSON.parse(localStorage.getItem("tournamentBasicInfo") || "{}");
-    const formatInfo = JSON.parse(localStorage.getItem("tournamentFormat") || "{}");
+    const basicInfo = readDraftObject<BasicInfoDraft>(CREATE_DRAFT_KEYS.basicInfo, {
+      tournamentName: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
+      startDate: "",
+      endDate: "",
+      time: "",
+      maxTeams: "",
+    });
+    const formatInfo = readDraftObject<FormatDraft>(CREATE_DRAFT_KEYS.format, {
+      format: "",
+    });
 
     const tournamentStartDate = new Date(basicInfo.startDate);
     const tournamentEndDate = new Date(basicInfo.endDate);
@@ -311,9 +341,7 @@ const CreateTournamentRegistration = () => {
   };
 
   const finalizeSuccessAndNavigate = (tournamentId: number, tournamentName: string, divisionCount: number) => {
-    localStorage.removeItem("tournamentBasicInfo");
-    localStorage.removeItem("tournamentFormat");
-    localStorage.removeItem("tournamentRegistration");
+    clearCreateDrafts();
 
     navigate(`/events/${tournamentId}/manage`, {
       replace: true,
@@ -328,7 +356,7 @@ const CreateTournamentRegistration = () => {
     setIsPublishing(true);
 
     try {
-      const token = localStorage.getItem("authToken");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("You must be logged in to publish a tournament.");
       }

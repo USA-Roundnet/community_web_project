@@ -4,6 +4,11 @@ import TournamentWizardLayout from "../features/tournament-ui/components/Tournam
 import TournamentPanel from "../features/tournament-ui/components/TournamentPanel";
 import InlineBanner from "../features/tournament-ui/components/InlineBanner";
 import useLocalStorageState from "../features/tournament-ui/hooks/useLocalStorageState";
+import {
+  CREATE_DRAFT_KEYS,
+  hasDraft,
+  requireAuthForCreateStep,
+} from "../features/tournament-ui/utils/createFlowStorage";
 
 type FormatForm = {
   format: string;
@@ -20,23 +25,18 @@ const defaultFormat: FormatForm = {
 const CreateTournamentFormat = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useLocalStorageState(
-    "tournamentFormat",
+    CREATE_DRAFT_KEYS.format,
     defaultFormat
   ) as [FormatForm, Dispatch<SetStateAction<FormatForm>>, () => void];
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = requireAuthForCreateStep(navigate, "/events/create/format");
     if (!token) {
-      navigate("/login", {
-        replace: true,
-        state: { from: "/events/create/format" },
-      });
       return;
     }
 
-    const basicInfo = localStorage.getItem("tournamentBasicInfo");
-    if (!basicInfo) {
+    if (!hasDraft(CREATE_DRAFT_KEYS.basicInfo)) {
       navigate("/events/create", { replace: true });
     }
   }, [navigate]);

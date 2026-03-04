@@ -2,14 +2,43 @@ const tournamentService = require("../services/tournamentService");
 const asyncHandler = require("../middleware/asyncHandler");
 const { NotFoundError, BadRequestError } = require("../utils/customErrors");
 
+const ensureFound = (value, message) => {
+  if (!value) {
+    throw new NotFoundError(message);
+  }
+  return value;
+};
+
+const resolveServiceStatusResult = (
+  serviceResult,
+  { defaultStatus, fallbackMessage }
+) => {
+  const statusCode = Number.isInteger(serviceResult?.status)
+    ? serviceResult.status
+    : defaultStatus;
+
+  if (statusCode >= 400) {
+    const err = new Error(serviceResult?.message || fallbackMessage);
+    err.statusCode = statusCode;
+    throw err;
+  }
+
+  return {
+    statusCode,
+    payload: serviceResult,
+  };
+};
+
 const getAllTournaments = asyncHandler(async (req, res) => {
   const tournaments = await tournamentService.getAllTournaments();
   res.status(200).json(tournaments);
 });
 
 const getTournamentById = asyncHandler(async (req, res) => {
-  const tournament = await tournamentService.getTournamentById(req.params.id);
-  if (!tournament) throw new NotFoundError("Tournament not found");
+  const tournament = ensureFound(
+    await tournamentService.getTournamentById(req.params.id),
+    "Tournament not found"
+  );
   res.status(200).json(tournament);
 });
 
@@ -21,17 +50,16 @@ const createTournament = asyncHandler(async (req, res) => {
 });
 
 const updateTournament = asyncHandler(async (req, res) => {
-  const updatedTournament = await tournamentService.updateTournament(
-    req.params.id,
-    req.body
+  const updatedTournament = ensureFound(
+    await tournamentService.updateTournament(req.params.id, req.body),
+    "Tournament not found"
   );
-  if (!updatedTournament) throw new NotFoundError("Tournament not found");
   res.status(200).json(updatedTournament);
 });
 
 const deleteTournament = asyncHandler(async (req, res) => {
   const deleted = await tournamentService.deleteTournament(req.params.id);
-  if (!deleted) throw new NotFoundError("Tournament not found");
+  ensureFound(deleted, "Tournament not found");
   res.status(200).json({ message: "Tournament deleted successfully" });
 });
 
@@ -52,18 +80,12 @@ const createTournamentDivision = asyncHandler(async (req, res) => {
     req.body
   );
 
-  const statusCode = Number.isInteger(createdDivision?.status)
-    ? createdDivision.status
-    : 201;
-  if (statusCode >= 400) {
-    const err = new Error(
-      createdDivision.message || "Failed to create tournament division"
-    );
-    err.statusCode = statusCode;
-    throw err;
-  }
+  const { statusCode, payload } = resolveServiceStatusResult(createdDivision, {
+    defaultStatus: 201,
+    fallbackMessage: "Failed to create tournament division",
+  });
 
-  res.status(statusCode).json(createdDivision);
+  res.status(statusCode).json(payload);
 });
 
 const getTournamentRegistrations = asyncHandler(async (req, res) => {
@@ -82,18 +104,12 @@ const updateTournamentRegistration = asyncHandler(async (req, res) => {
     req.body
   );
 
-  const statusCode = Number.isInteger(updatedRegistration?.status)
-    ? updatedRegistration.status
-    : 200;
-  if (statusCode >= 400) {
-    const err = new Error(
-      updatedRegistration.message || "Failed to update registration"
-    );
-    err.statusCode = statusCode;
-    throw err;
-  }
+  const { statusCode, payload } = resolveServiceStatusResult(updatedRegistration, {
+    defaultStatus: 200,
+    fallbackMessage: "Failed to update registration",
+  });
 
-  res.status(statusCode).json(updatedRegistration);
+  res.status(statusCode).json(payload);
 });
 
 const reorderTournamentRegistrations = asyncHandler(async (req, res) => {
@@ -105,10 +121,10 @@ const reorderTournamentRegistrations = asyncHandler(async (req, res) => {
 });
 
 const getTournamentDetails = asyncHandler(async (req, res) => {
-  const details = await tournamentService.getTournamentDetails(req.params.id);
-  if (!details) {
-    throw new NotFoundError("Tournament not found");
-  }
+  const details = ensureFound(
+    await tournamentService.getTournamentDetails(req.params.id),
+    "Tournament not found"
+  );
   res.status(200).json(details);
 });
 
@@ -125,14 +141,12 @@ const registerForTournament = asyncHandler(async (req, res) => {
     tournament_division_id
   );
 
-  const status = registration.status || 201;
-  if (status >= 400) {
-    const err = new Error(registration.message || "Failed to register for tournament");
-    err.statusCode = status;
-    throw err;
-  }
+  const { statusCode, payload } = resolveServiceStatusResult(registration, {
+    defaultStatus: 201,
+    fallbackMessage: "Failed to register for tournament",
+  });
 
-  res.status(status).json(registration);
+  res.status(statusCode).json(payload);
 });
 
 const unregisterFromTournament = asyncHandler(async (req, res) => {
@@ -148,14 +162,12 @@ const unregisterFromTournament = asyncHandler(async (req, res) => {
     tournament_division_id
   );
 
-  const status = result.status || 200;
-  if (status >= 400) {
-    const err = new Error(result.message || "Failed to unregister from tournament");
-    err.statusCode = status;
-    throw err;
-  }
+  const { statusCode, payload } = resolveServiceStatusResult(result, {
+    defaultStatus: 200,
+    fallbackMessage: "Failed to unregister from tournament",
+  });
 
-  res.status(status).json({ message: result.message });
+  res.status(statusCode).json({ message: payload.message });
 });
 
 const getTournamentMatchCandidates = asyncHandler(async (req, res) => {
