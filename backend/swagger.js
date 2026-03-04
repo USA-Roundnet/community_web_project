@@ -460,6 +460,130 @@ module.exports = {
       },
     },
 
+    "/userTeams": {
+      get: {
+        summary: "Get all userTeams",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "Successful response",
+            schema: {
+              type: "array",
+              items: {
+                $ref: "#/definitions/UserTeamResponse",
+              },
+            },
+          },
+        },
+      },
+      post: {
+        summary: "Add user to a team by creating a UserTeam",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              $ref: "#/definitions/UserTeamCreateRequest",
+            },
+          },
+        ],
+        responses: {
+          201: {
+            description: "UserTeam created successfully (User successfully added)",
+            schema: {
+              $ref: "#/definitions/UserTeamResponse",
+            },
+          },
+        },
+      },
+    },
+
+    "/userTeams/{id}": {
+      get: {
+        summary: "Get userTeam by ID",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successful response",
+            schema: {
+              $ref: "#/definitions/UserTeamResponse",
+            },
+          },
+          404: {
+            description: "UserTeam not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+        },
+      },
+      put: {
+        summary: "Update a userTeam by ID",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+          {
+            in: "body",
+            name: "body",
+            required: true,
+            schema: {
+              // reuse create request for now; can create UserTeamUpdateRequest later
+              $ref: "#/definitions/UserTeamCreateRequest",
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "UserTeam updated successfully",
+            schema: {
+              $ref: "#/definitions/UserTeamResponse",
+            },
+          },
+          404: {
+            description: "UserTeam not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+        },
+      },
+      delete: {
+        summary: "Delete a userTeam by ID",
+        parameters: [
+          {
+            in: "path",
+            name: "id",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          200: { description: "UserTeam deleted successfully" },
+          404: {
+            description: "UserTeam not found",
+            schema: {
+              $ref: "#/definitions/ErrorResponse",
+            },
+          },
+        },
+      },
+    },
+
     "/organizations": {
       get: {
         summary: "Get all organizations",
@@ -803,6 +927,61 @@ module.exports = {
           type: "string",
           format: "date-time",
           example: "2025-01-31T12:00:00Z",
+        },
+      },
+    },
+
+    // -------- USER TEAMS --------
+    UserTeamCreateRequest: {
+      type: "object",
+      properties: {
+        user_id: { type: "integer", example: 123},
+        team_id: { type: "integer", example: 42},
+        role: {
+          type: "string",
+          enum: ["player", "coach", "other"],
+          example: "player",
+        },
+        status: {
+          type: "string",
+          enum: ["invited", "accepted", "declined"],
+          example: "invited",
+        },
+        created_at: {
+          type: "string",
+          format: "date-time",
+          example: "2026-01-31T12:00:00Z",
+        },
+      },
+      required: [
+        "user_id",
+        "team_id",
+        "role",
+        "status",
+        "created_at",
+      ],
+    },
+
+    UserTeamResponse: {
+      type: "object",
+      properties: {
+        id: { type: "integer", example: 321},
+        user_id: { type: "integer", example: 123},
+        team_id: { type: "integer", example: 42},
+        role: {
+          type: "string",
+          enum: ["player", "coach", "other"],
+          example: "player",
+        },
+        status: {
+          type: "string",
+          enum: ["invited", "accepted", "declined"],
+          example: "invited",
+        },
+        created_at: {
+          type: "string",
+          format: "date-time",
+          example: "2026-01-31T12:00:00Z",
         },
       },
     },

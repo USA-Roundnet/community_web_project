@@ -12,6 +12,12 @@ const TeamPage = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
+    const [isEditingNewUser, setIsEditingNewUser] = useState(false);
+    const [isLoadingNewUser, setIsLoadingNewUser] = useState(true);
+    const [isSavingNewUser, setIsSavingNewUser] = useState(false);
+    const [errorNewUser, setErrorNewUser] = useState(null);
+    const [successNewUser, setSuccessNewUser] = useState(null);
+
     const [team, setTeam] = useState({
         team_name: "",
         team_type_id: 0,
@@ -22,6 +28,9 @@ const TeamPage = () => {
     });
 
     const [editForm, setEditForm] = useState({ ...team });
+
+    const [newUserData, setNewUserData] = useState({id: 0, role: "player"});
+    const [newUserDataForm, setNewUserDataForm] = useState({...newUserData});
 
     useEffect(() => {
         const fetchTeam = async () => {
@@ -81,12 +90,8 @@ const TeamPage = () => {
                         userData.teamStatus = userTeam.status;
                         userData.teamJoined = userTeam.created_at;
                         return userData;
-                        // console.log(userData);
-                        // users.push(userData.id);
                     })
                 );
-
-                {console.log(users.length);}
 
                 const teamData = {
                     team_name: data.name || "",
@@ -110,18 +115,22 @@ const TeamPage = () => {
                     public: 0,
                     description: "Example team for testing",
                     users: [{
-                        user_id: 123,
+                        id: 123,
                         first_name: "John",
                         last_name: "Smith",
-                        role: "player",
-                        status: "accepted"
+                        teamRole: "player",
+                        teamStatus: "accepted",
+                        teamJoined: "2026-01-31",
+                        profile_picture_url: "www.JohnSmith.com/picture"
                     },
                     {
-                        user_id: 246,
+                        id: 246,
                         first_name: "Jane",
                         last_name: "Doe",
-                        role: "player",
-                        status: "invited"
+                        teamRole: "player",
+                        teamStatus: "invited",
+                        teamJoined: "2026-02-01",
+                        profile_picture_url: "www.JaneDoe.com/picture"
                     }],
                     created_at: "2026-01-31",
                 };
@@ -192,6 +201,59 @@ const TeamPage = () => {
             setError(err.message);
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleChangeNewUser = (e) => {
+        const { name, value } = e.target;
+        setNewUserDataForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleCancelNewUser = () => {
+        setNewUserDataForm({ ...newUserData });
+        setIsEditingNewUser(false);
+        setErrorNewUser(null);
+        setSuccessNewUser(null);
+    };
+
+    const handleSaveNewUser = async (e) => {
+        e.preventDefault();
+        setIsSavingNewUser(true);
+        setErrorNewUser(null);
+        setSuccessNewUser(null);
+
+        try {
+            const token = localStorage.getItem("authToken");
+            const response = await fetch(
+                `${API_BASE_URL}/api/userTeams`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        user_id: newUserDataForm.id,
+                        team_id: teamId,
+                        role: newUserDataForm.role,
+                        status: "invited",
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || "Failed to add user");
+            }
+
+            const updated = await response.json();
+
+            setIsEditingNewUser(false);
+            setSuccessNewUser("Team updated successfully!");
+        } catch (err) {
+            setErrorNewUser(err.message);
+        } finally {
+            setIsSavingNewUser(false);
         }
     };
 
@@ -307,9 +369,9 @@ const TeamPage = () => {
           <div className="max-w-3xl mx-auto px-6 py-10">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold">Team Members</h1>
-                    {!isEditing && (
+                    {!isEditingNewUser && (
                         <button
-                            onClick={() => doSomething(true)}
+                            onClick={() => setIsEditingNewUser(true)}
                             className="px-5 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 font-medium hover:cursor-pointer"
                         >
                             Invite Team Member
@@ -317,19 +379,67 @@ const TeamPage = () => {
                     )}
                 </div>
 
-                {success && (
+                {successNewUser && (
                     <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
-                        {success}
+                        {successNewUser}
                     </div>
                 )}
-                {error && (
+                {errorNewUser && (
                     <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
-                        {error}
+                        {errorNewUser}
                     </div>
                 )}
 
                 <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        {isEditingNewUser && (
+                            <div>
+                                <form onSubmit={handleSaveNewUser}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <label className="block text-xl font-medium text-gray-500 mb-1">
+                                            User ID
+                                        </label>
+                                        <input
+                                            type="string"
+                                            name="id"
+                                            value={newUserDataForm.id}
+                                            onChange={handleChangeNewUser}
+                                            className="w-full p-3 rounded-md bg-gray-50 text-black border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                                        />
+                                        <label className="block text-xl font-medium text-gray-500 mb-1">
+                                            User Role
+                                        </label>
+                                        <select
+                                          name="role"
+                                          onChange={handleChangeNewUser}
+                                          className="w-full p-3 rounded-md bg-gray-50 text-black border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                                            <option value="player">Player</option>
+                                            <option value="coach">Coach</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    {/* Action buttons */}
+                                    {isEditingNewUser && (
+                                        <div className="flex gap-3 pt-4 border-t">
+                                            <button
+                                                type="submit"
+                                                disabled={isSavingNewUser}
+                                                className="px-6 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 font-medium disabled:opacity-50 hover:cursor-pointer"
+                                            >
+                                                {isSavingNewUser ? "Saving..." : "Save Changes"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleCancelNewUser}
+                                                className="px-6 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors duration-300 font-medium hover:cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    )}
+                                </form>
+                            </div>
+                        )}
                         {team.users.map((user) => (
                             <UserField
                                 firstName={user.first_name}

@@ -17,6 +17,7 @@ const createUserTeam = async (data) => {
     user_id: data.user_id,
     team_id: data.team_id,
     status: data.status,
+    role: data.role,
   });
   return getUserTeamById(insertedId);
 };
