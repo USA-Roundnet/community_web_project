@@ -102,6 +102,24 @@ const normalizeGroupId = (value) => {
 };
 
 const BOARD_STAGED_MESSAGE = "Board changes are staged locally. Save when ready.";
+const EMPTY_OUTCOME_STATS = {
+  rules: null,
+  team_stats: [],
+  player_stats: [],
+};
+
+const normalizeOutcomeStats = (statsPayload) => ({
+  rules:
+    statsPayload && typeof statsPayload === "object"
+      ? statsPayload.rules || null
+      : null,
+  team_stats: Array.isArray(statsPayload?.team_stats)
+    ? statsPayload.team_stats
+    : [],
+  player_stats: Array.isArray(statsPayload?.player_stats)
+    ? statsPayload.player_stats
+    : [],
+});
 
 const buildDefaultScoreRows = (winsNeeded) => {
   const parsedWinsNeeded = Number(winsNeeded);
@@ -234,11 +252,7 @@ const TournamentSchedulePage = () => {
   const [boardDirty, setBoardDirty] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [matches, setMatches] = useState([]);
-  const [outcomeStats, setOutcomeStats] = useState({
-    rules: null,
-    team_stats: [],
-    player_stats: [],
-  });
+  const [outcomeStats, setOutcomeStats] = useState(EMPTY_OUTCOME_STATS);
 
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
@@ -483,11 +497,7 @@ const TournamentSchedulePage = () => {
     if (!divisionId) {
       setCandidates([]);
       setMatches([]);
-      setOutcomeStats({
-        rules: null,
-        team_stats: [],
-        player_stats: [],
-      });
+      setOutcomeStats(EMPTY_OUTCOME_STATS);
       return;
     }
 
@@ -508,16 +518,7 @@ const TournamentSchedulePage = () => {
 
       setCandidates(Array.isArray(candidatesPayload) ? candidatesPayload : []);
       setMatches(Array.isArray(matchesPayload) ? matchesPayload : []);
-      setOutcomeStats({
-        rules:
-          statsPayload && typeof statsPayload === "object" ? statsPayload.rules || null : null,
-        team_stats: Array.isArray(statsPayload?.team_stats)
-          ? statsPayload.team_stats
-          : [],
-        player_stats: Array.isArray(statsPayload?.player_stats)
-          ? statsPayload.player_stats
-          : [],
-      });
+      setOutcomeStats(normalizeOutcomeStats(statsPayload));
     } catch (loadError) {
       setError(loadError?.message || "Unable to load schedule data.");
     } finally {

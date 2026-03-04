@@ -15,6 +15,9 @@ const dateTimeWithOffset = (daysFromToday) => {
   return date.toISOString().slice(0, 19).replace("T", " ");
 };
 
+const buildUniqueSuffix = () =>
+  `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+
 describe("Tournament Controller API Tests", () => {
   let testUserObject;
   let otherUserObject;
@@ -29,6 +32,9 @@ describe("Tournament Controller API Tests", () => {
   let cascadeDeleteDivisionId;
 
   let server;
+  const authHeader = (user = testUserObject) => ({
+    Authorization: `Bearer ${user.token}`,
+  });
 
   beforeAll(async () => {
     server = startServer(); // Explicitly start the server
@@ -104,7 +110,7 @@ describe("Tournament Controller API Tests", () => {
     registrationOneStatus = "registered",
     registrationTwoStatus = "registered",
   } = {}) => {
-    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const uniqueSuffix = buildUniqueSuffix();
 
     const [teamOneId] = await knex("Team").insert({
       name: `Schedule Team One ${uniqueSuffix}`,
@@ -166,7 +172,7 @@ describe("Tournament Controller API Tests", () => {
   };
 
   const createIsolatedTournamentDivision = async () => {
-    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const uniqueSuffix = buildUniqueSuffix();
     const [isolatedTournamentId] = await knex("Tournament").insert({
       name: `Pool Fixture Tournament ${uniqueSuffix}`,
       city: "Austin",
@@ -211,7 +217,7 @@ describe("Tournament Controller API Tests", () => {
       targetDivisionId = isolated.tournamentDivisionId;
     }
 
-    const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const uniqueSuffix = buildUniqueSuffix();
     const teamIds = [];
     const registrationIds = [];
 
@@ -321,7 +327,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "Test Tournament",
         city: "Round Rock",
@@ -348,7 +354,7 @@ describe("Tournament Controller API Tests", () => {
   test("POST /api/tournaments should fail when required fields are missing", async () => {
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "Incomplete Tournament",
         format: "college",
@@ -364,7 +370,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "Invalid Max Tournament",
         city: "Austin",
@@ -387,7 +393,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "Invalid Dates Tournament",
         city: "Austin",
@@ -410,7 +416,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "Past Start Tournament",
         city: "Austin",
@@ -433,7 +439,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "shit tournament",
         city: "Austin",
@@ -456,7 +462,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .post("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "My Event'; DROP TABLE Tournament; --",
         city: "Austin",
@@ -476,7 +482,7 @@ describe("Tournament Controller API Tests", () => {
   test("GET /api/tournaments should return all tournaments", async () => {
     const res = await request(app)
       .get("/api/tournaments")
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -486,7 +492,7 @@ describe("Tournament Controller API Tests", () => {
   test("GET /api/tournaments/:id should return a specific tournament", async () => {
     const res = await request(app)
       .get(`/api/tournaments/${testTournamentId}`)
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(res.statusCode).toBe(200);
     expect(res.body.id).toBe(testTournamentId);
@@ -498,7 +504,7 @@ describe("Tournament Controller API Tests", () => {
 
     const res = await request(app)
       .put(`/api/tournaments/${testTournamentId}`)
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         name: "Updated Tournament Name",
         city: "San Diego",
@@ -574,13 +580,13 @@ describe("Tournament Controller API Tests", () => {
     const [upcomingRes, inProgressRes, completedRes] = await Promise.all([
       request(app)
         .get(`/api/tournaments/${statusTournamentUpcomingId}`)
-        .set("Authorization", `Bearer ${testUserObject.token}`),
+        .set(authHeader()),
       request(app)
         .get(`/api/tournaments/${statusTournamentInProgressId}`)
-        .set("Authorization", `Bearer ${testUserObject.token}`),
+        .set(authHeader()),
       request(app)
         .get(`/api/tournaments/${statusTournamentCompletedId}`)
-        .set("Authorization", `Bearer ${testUserObject.token}`),
+        .set(authHeader()),
     ]);
 
     expect(upcomingRes.statusCode).toBe(200);
@@ -646,7 +652,7 @@ describe("Tournament Controller API Tests", () => {
 
     const deleteRes = await request(app)
       .delete(`/api/tournaments/${cascadeDeleteTournamentId}`)
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(deleteRes.statusCode).toBe(200);
 
@@ -675,14 +681,14 @@ describe("Tournament Controller API Tests", () => {
   test("DELETE /api/tournaments/:id should delete a tournament", async () => {
     const res = await request(app)
       .delete(`/api/tournaments/${deleteTestTournamentId}`)
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(res.statusCode).toBe(200);
 
     // Verify deletion
     const checkRes = await request(app)
       .get(`/api/tournaments/${deleteTestTournamentId}`)
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
     expect(checkRes.statusCode).toBe(404);
     expect(checkRes.body.code).toBe("NotFoundError");
   });
@@ -691,7 +697,7 @@ describe("Tournament Controller API Tests", () => {
     // Register the team for the tournament division
     const res = await request(app)
       .post(`/api/tournaments/${testTournamentId}/register`)
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         team_id: testTeamId,
         tournament_division_id: tournamentDivisionId,
@@ -699,8 +705,6 @@ describe("Tournament Controller API Tests", () => {
         payment_status: "unpaid",
         created_at: new Date(),
       });
-    registrationId = res.body;
-    // console.log("Registration ID:", registrationId);
     expect(res.statusCode).toBe(201);
     expect(res.body).toHaveProperty("id");
 
@@ -731,7 +735,7 @@ describe("Tournament Controller API Tests", () => {
     // Fetch all teams for the tournament
     const res = await request(app)
       .get(`/api/tournaments/${testTournamentId}/teams`)
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -745,7 +749,7 @@ describe("Tournament Controller API Tests", () => {
     // Fetch tournaments for the test user
     const res = await request(app)
       .get(`/api/users/${testUserObject.id}/tournaments`)
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -756,7 +760,7 @@ describe("Tournament Controller API Tests", () => {
     // Unregister the team
     const res = await request(app)
       .delete(`/api/tournaments/${testTournamentId}/unregister`)
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         team_id: testTeamId,
         tournament_division_id: tournamentDivisionId,
@@ -791,7 +795,7 @@ describe("Tournament Controller API Tests", () => {
     // First registration
     const firstRes = await request(app)
       .post(`/api/tournaments/${testTournamentId}/register`)
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         team_id: testTeamId,
         tournament_division_id: tournamentDivisionId,
@@ -814,7 +818,7 @@ describe("Tournament Controller API Tests", () => {
     // Duplicate registration
     const duplicateRes = await request(app)
       .post(`/api/tournaments/${testTournamentId}/register`)
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         team_id: testTeamId,
         tournament_division_id: tournamentDivisionId,
@@ -831,7 +835,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleRes = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -843,7 +847,7 @@ describe("Tournament Controller API Tests", () => {
 
       const response = await request(app)
         .get(`/api/tournaments/${testTournamentId}/details`)
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(response.statusCode).toBe(200);
       expect(response.body).toHaveProperty("tournament");
@@ -872,7 +876,7 @@ describe("Tournament Controller API Tests", () => {
   test("GET /api/tournaments/:id/details should reject non-directors", async () => {
     const response = await request(app)
       .get(`/api/tournaments/${testTournamentId}/details`)
-      .set("Authorization", `Bearer ${otherUserObject.token}`);
+      .set(authHeader(otherUserObject));
 
     expect(response.statusCode).toBe(403);
     expect(response.body.message).toContain("not authorized");
@@ -883,7 +887,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const response = await request(app)
         .get(`/api/tournaments/${testTournamentId}/matches/candidates`)
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(response.statusCode).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
@@ -913,7 +917,7 @@ describe("Tournament Controller API Tests", () => {
         .patch(
           `/api/tournaments/${fixture.tournamentId}/registrations/${fixture.registrationIds[0]}`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           seed: 9,
           group_id: 2,
@@ -949,7 +953,7 @@ describe("Tournament Controller API Tests", () => {
 
       const response = await request(app)
         .patch(`/api/tournaments/${fixture.tournamentId}/registrations/reorder`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           updates: [
             {
@@ -1005,7 +1009,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const response = await request(app)
         .patch(`/api/tournaments/${fixture.tournamentId}/registrations/reorder`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           updates: [
             {
@@ -1041,7 +1045,7 @@ describe("Tournament Controller API Tests", () => {
         .get(
           `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/pools`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(response.statusCode).toBe(200);
       expect(response.body.pools).toEqual([]);
@@ -1062,7 +1066,7 @@ describe("Tournament Controller API Tests", () => {
         .post(
           `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/pools/generate`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({ pool_count: 3 });
 
       expect(response.statusCode).toBe(200);
@@ -1102,7 +1106,7 @@ describe("Tournament Controller API Tests", () => {
         .post(
           `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/pools/generate`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({ pool_count: 1 });
       expect(poolResponse.statusCode).toBe(200);
 
@@ -1110,7 +1114,7 @@ describe("Tournament Controller API Tests", () => {
         .post(
           `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/matches/auto-generate`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           scheduled_date: dateWithOffset(3),
           scheduled_time: "09:00",
@@ -1135,7 +1139,7 @@ describe("Tournament Controller API Tests", () => {
         .post(
           `/api/tournaments/${fixture.tournamentId}/divisions/${fixture.tournamentDivisionId}/matches/auto-generate`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           scheduled_date: dateWithOffset(3),
           scheduled_time: "09:00",
@@ -1155,7 +1159,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleResponse = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1176,7 +1180,7 @@ describe("Tournament Controller API Tests", () => {
 
       const listResponse = await request(app)
         .get(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(listResponse.statusCode).toBe(200);
       expect(Array.isArray(listResponse.body)).toBe(true);
@@ -1193,7 +1197,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleResponse = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1206,7 +1210,7 @@ describe("Tournament Controller API Tests", () => {
       const patchDate = dateWithOffset(5);
       const patchResponse = await request(app)
         .patch(`/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           scheduled_date: patchDate,
           scheduled_time: "17:45",
@@ -1233,7 +1237,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleResponse = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1248,7 +1252,7 @@ describe("Tournament Controller API Tests", () => {
         .post(
           `/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}/results`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           games: [
             { game_number: 1, team1_score: 21, team2_score: 18 },
@@ -1265,7 +1269,7 @@ describe("Tournament Controller API Tests", () => {
 
       const statsResponse = await request(app)
         .get(`/api/tournaments/${testTournamentId}/stats`)
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(statsResponse.statusCode).toBe(200);
       expect(Array.isArray(statsResponse.body.team_stats)).toBe(true);
@@ -1292,7 +1296,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleResponse = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1306,7 +1310,7 @@ describe("Tournament Controller API Tests", () => {
         .post(
           `/api/tournaments/${testTournamentId}/matches/${scheduleResponse.body.id}/results`
         )
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           games: [{ game_number: 1, team1_score: 20, team2_score: 18 }],
         });
@@ -1325,7 +1329,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const response = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationOneId,
@@ -1346,7 +1350,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const response = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1366,7 +1370,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const response = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1389,7 +1393,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const response = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1413,7 +1417,7 @@ describe("Tournament Controller API Tests", () => {
 
       const firstSchedule = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1425,7 +1429,7 @@ describe("Tournament Controller API Tests", () => {
 
       const secondSchedule = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1437,7 +1441,7 @@ describe("Tournament Controller API Tests", () => {
 
       const filteredResponse = await request(app)
         .get(`/api/tournaments/${testTournamentId}/matches?date=${dateOne}`)
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(filteredResponse.statusCode).toBe(200);
       expect(
@@ -1459,7 +1463,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleResponse = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1471,7 +1475,7 @@ describe("Tournament Controller API Tests", () => {
 
       const alertsResponse = await request(app)
         .get(`/api/tournaments/${testTournamentId}/my-match-alerts`)
-        .set("Authorization", `Bearer ${testUserObject.token}`);
+        .set(authHeader());
 
       expect(alertsResponse.statusCode).toBe(200);
       expect(Array.isArray(alertsResponse.body)).toBe(true);
@@ -1492,7 +1496,7 @@ describe("Tournament Controller API Tests", () => {
     try {
       const scheduleResponse = await request(app)
         .post(`/api/tournaments/${testTournamentId}/matches`)
-        .set("Authorization", `Bearer ${testUserObject.token}`)
+        .set(authHeader())
         .send({
           registration1_id: fixture.registrationOneId,
           registration2_id: fixture.registrationTwoId,
@@ -1504,7 +1508,7 @@ describe("Tournament Controller API Tests", () => {
 
       const alertsResponse = await request(app)
         .get(`/api/tournaments/${testTournamentId}/my-match-alerts`)
-        .set("Authorization", `Bearer ${otherUserObject.token}`);
+        .set(authHeader(otherUserObject));
 
       expect(alertsResponse.statusCode).toBe(200);
       expect(alertsResponse.body).toEqual([]);
@@ -1516,7 +1520,7 @@ describe("Tournament Controller API Tests", () => {
   test("GET /api/tournaments/:id/teams should return 404 for a non-existent tournament", async () => {
     const res = await request(app)
       .get("/api/tournaments/999999/teams") // Non-existent tournament ID
-      .set("Authorization", `Bearer ${testUserObject.token}`);
+      .set(authHeader());
 
     expect(res.statusCode).toBe(404);
     expect(res.body.message).toBe("Tournament not found");
@@ -1526,7 +1530,7 @@ describe("Tournament Controller API Tests", () => {
   test("POST /api/tournaments/:id/register should return 404 for a non-existent tournament", async () => {
     const res = await request(app)
       .post("/api/tournaments/999999/register") // Non-existent tournament ID
-      .set("Authorization", `Bearer ${testUserObject.token}`)
+      .set(authHeader())
       .send({
         team_id: testTeamId,
         tournament_division_id: tournamentDivisionId,
